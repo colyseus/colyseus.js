@@ -9,7 +9,7 @@
   "scripts": {
     "start": "npm run dist-release && nodemon --harmony ./examples/server.js",
     "dist-release": "browserify ./src/index.js -t babelify -s Colyseus -o dist/colyseus.js",
-    "dist-uglify": "uglifyjs --compress --mangle dist/colyseus.js > dist/colyseus.min.js",
+    "dist-uglify": "uglifyjs dist/colyseus.js --compress --mangle > dist/colyseus.min.js",
     "dist": "npm run dist-release && npm run dist-uglify",
     "prepublish": "babel src -d lib"
   },

@@ -5564,8 +5564,6 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var EventEmitter = require('events').EventEmitter,
     protocol = require('./protocol');
 
-debugger;
-
 var Room = (function (_EventEmitter) {
   _inherits(Room, _EventEmitter);
 
