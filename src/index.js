@@ -3,7 +3,7 @@ import msgpack from 'msgpack-lite'
 import jsonpatch from 'fast-json-patch'
 
 import protocol from './protocol'
-import Room from './Room'
+import { createRoom } from './room'
 
 class Colyseus extends WebSocketClient {
 
@@ -40,7 +40,7 @@ class Colyseus extends WebSocketClient {
     }
 
     if (!this.rooms[ roomName ]) {
-      this.rooms[ roomName ] = new Room(this, roomName)
+      this.rooms[ roomName ] = createRoom(this, roomName)
     }
 
     return this.rooms[ roomName ]

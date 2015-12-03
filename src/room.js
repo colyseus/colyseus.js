@@ -20,4 +20,6 @@ class Room extends EventEmitter {
 
 }
 
-module.exports = Room
+export function createRoom (client, name) {
+  return new Room(client, name)
+}
