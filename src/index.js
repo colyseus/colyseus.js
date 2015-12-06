@@ -68,11 +68,13 @@ class Colyseus extends WebSocketClient {
         return true
 
       } else if (message[0] == protocol.JOIN_ROOM) {
-        // first room message received, keep association only with roomId
-        this.rooms[ roomId ] = this.rooms[ message[2] ]
+        // joining room from room name:
+        // when first room message is received, keep only roomId association on `rooms` object
+        if (this.rooms[ message[2] ]) {
+          this.rooms[ roomId ] = this.rooms[ message[2] ]
+        }
         this.rooms[ roomId ].roomId = roomId
         this.rooms[ roomId ].emit('join')
-        // delete this.rooms[ message[2] ]
         return true
 
       } else if (message[0] == protocol.JOIN_ERROR) {
