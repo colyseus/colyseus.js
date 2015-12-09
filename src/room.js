@@ -18,6 +18,10 @@ class Room extends EventEmitter {
     }
   }
 
+  send (data) {
+    this.client.send([protocol.ROOM_DATA, this.roomId, data])
+  }
+
 }
 
 export function createRoom (client, name) {

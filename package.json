@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "JavaScript client for Colyseus MMO Game Server",
   "keywords": ["mmo", "game", "client", "networking", "websockets"],
   "repository": {
