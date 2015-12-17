@@ -26,16 +26,12 @@ room.on('data', function(data) {
   console.log(client.id, "received on", roomName, data)
 })
 
-room.on('setup', function(state) {
-  console.log(roomName, "initial state:", state)
-})
-
 room.on('patch', function(patches) {
-  console.log(roomName, "has these changes:", patches)
+  console.log(roomName, "will apply these changes:", patches)
 })
 
-room.on('update', function(newState) {
-  console.log(roomName, "has a new state:", newState)
+room.on('update', function(newState, patches) {
+  console.log(roomName, "new state:", newState, "changes applied:", patches)
 })
 
 ```

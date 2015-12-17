@@ -40,10 +40,13 @@
       var battleRoom = null
 
       setTimeout(function () {
-        battleRoom = client.join("BattleRoom", {invalid_param: 10})
-        battleRoom.on('error', function(data) {
+        var invalidBattleRoom = client.join("BattleRoom", {invalid_param: 10})
+        invalidBattleRoom.on('error', function(data) {
           console.error("BattleRoom, couldn't join:", data)
+          battleRoom = client.join("BattleRoom")
+          battleRoom.on('error', function(data) { console.error("BattleRoom, couldn't join:", data) })
         })
+
       }, 1000)
 
       chatRoom.on('join', function() {
@@ -54,33 +57,22 @@
         console.log(client.id, "leaved", chatRoom.name)
       })
 
+      chatRoom.on('update', function(state, patches) {
+        console.log("Patches:", patches)
+
+        var messages = (!patches)
+          ? state.messages
+          : patches.map(function(patch) { return patch.value })
+
+        for (var i=0; i<messages.length; i++) {
+          var node = document.createElement("p");
+          node.innerHTML = messages[i]
+          document.getElementById('messages').appendChild(node)
+        }
+      })
+
       chatRoom.on('data', function(data) {
         console.log(client.id, "received on", chatRoom.name, data)
-      })
-
-      chatRoom.on('setup', function(state) {
-        console.log("setup:", state)
-
-        // setup initial messages
-        for (var i=0; i<state.messages.length; i++) {
-          var node = document.createElement("p");
-          node.innerHTML = state.messages[i]
-          document.getElementById('messages').appendChild(node)
-        }
-      })
-
-      chatRoom.on('patch', function(patch) {
-        for (var i=0; i<patch.length; i++) {
-          var node = document.createElement("p");
-          node.innerHTML = patch[i].value
-          document.getElementById('messages').appendChild(node)
-        }
-
-        console.log("patch:", patch)
-      })
-
-      chatRoom.on('update', function(state) {
-        console.log("update:", state)
       })
 
       document.getElementById('form').onsubmit = function(e) {

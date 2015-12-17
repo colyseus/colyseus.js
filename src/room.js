@@ -6,20 +6,20 @@ class Room extends EventEmitter {
   constructor (client, name) {
     super()
 
-    this.roomId = null
+    this.id = null
     this.client = client
     this.name = name
     this.state = {}
   }
 
   leave () {
-    if (this.roomId) {
-      this.client.send([protocol.LEAVE_ROOM, this.roomId])
+    if (this.id) {
+      this.client.send([protocol.LEAVE_ROOM, this.id])
     }
   }
 
   send (data) {
-    this.client.send([protocol.ROOM_DATA, this.roomId, data])
+    this.client.send([protocol.ROOM_DATA, this.id, data])
   }
 
 }

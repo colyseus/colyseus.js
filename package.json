@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "description": "JavaScript client for Colyseus MMO Game Server",
   "keywords": ["mmo", "game", "client", "networking", "websockets"],
   "repository": {
@@ -32,7 +32,7 @@
     "babelify": "^7.2.0",
     "uglify-js": "^2.6.1",
 
-    "colyseus": "../",
+    "colyseus": "^0.2.1",
     "express": "^4.13.3",
     "nodemon": "^1.7.1",
     "watchify": "^3.6.1"

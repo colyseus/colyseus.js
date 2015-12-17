@@ -5553,49 +5553,6 @@ this.open(true)} /**
 },{"backoff":1}],41:[function(require,module,exports){
 'use strict';
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var EventEmitter = require('events').EventEmitter,
-    protocol = require('./protocol');
-
-var Room = (function (_EventEmitter) {
-  _inherits(Room, _EventEmitter);
-
-  function Room(client, name) {
-    _classCallCheck(this, Room);
-
-    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Room).call(this));
-
-    _this.roomId = null;
-    _this.client = client;
-    _this.name = name;
-    _this.state = {};
-    return _this;
-  }
-
-  _createClass(Room, [{
-    key: 'leave',
-    value: function leave() {
-      if (this.roomId) {
-        this.client.send([protocol.LEAVE_ROOM, this.roomId]);
-      }
-    }
-  }]);
-
-  return Room;
-})(EventEmitter);
-
-module.exports = Room;
-
-},{"./protocol":43,"events":10}],42:[function(require,module,exports){
-'use strict';
-
 var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -5618,9 +5575,7 @@ var _protocol = require('./protocol');
 
 var _protocol2 = _interopRequireDefault(_protocol);
 
-var _Room = require('./Room');
-
-var _Room2 = _interopRequireDefault(_Room);
+var _room = require('./room');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -5680,7 +5635,7 @@ var Colyseus = (function (_WebSocketClient) {
       }
 
       if (!this.rooms[roomName]) {
-        this.rooms[roomName] = new _Room2.default(this, roomName);
+        this.rooms[roomName] = (0, _room.createRoom)(this, roomName);
       }
 
       return this.rooms[roomName];
@@ -5711,11 +5666,13 @@ var Colyseus = (function (_WebSocketClient) {
           if (this.listeners['onopen']) this.listeners['onopen'].apply(null);
           return true;
         } else if (message[0] == _protocol2.default.JOIN_ROOM) {
-          // first room message received, keep association only with roomId
-          this.rooms[roomId] = this.rooms[message[2]];
-          this.rooms[roomId].roomId = roomId;
+          // joining room from room name:
+          // when first room message is received, keep only roomId association on `rooms` object
+          if (this.rooms[message[2]]) {
+            this.rooms[roomId] = this.rooms[message[2]];
+          }
+          this.rooms[roomId].id = roomId;
           this.rooms[roomId].emit('join');
-          // delete this.rooms[ message[2] ]
           return true;
         } else if (message[0] == _protocol2.default.JOIN_ERROR) {
           this.rooms[roomId].emit('error', message[2]);
@@ -5728,14 +5685,14 @@ var Colyseus = (function (_WebSocketClient) {
           var roomState = message[2];
 
           this.rooms[roomId].state = roomState;
-          this.rooms[roomId].emit('setup', this.rooms[roomId].state);
+          this.rooms[roomId].emit('update', roomState);
 
           this.roomStates[roomId] = roomState;
           return true;
         } else if (message[0] == _protocol2.default.ROOM_STATE_PATCH) {
           this.rooms[roomId].emit('patch', message[2]);
           _fastJsonPatch2.default.apply(this.roomStates[roomId], message[2]);
-          this.rooms[roomId].emit('update', this.roomStates[roomId]);
+          this.rooms[roomId].emit('update', this.roomStates[roomId], message[2]);
 
           return true;
         } else if (message[0] == _protocol2.default.ROOM_DATA) {
@@ -5753,7 +5710,7 @@ var Colyseus = (function (_WebSocketClient) {
 
 module.exports = Colyseus;
 
-},{"./Room":41,"./protocol":43,"fast-json-patch":11,"msgpack-lite":15,"websocket.js":40}],43:[function(require,module,exports){
+},{"./protocol":42,"./room":43,"fast-json-patch":11,"msgpack-lite":15,"websocket.js":40}],42:[function(require,module,exports){
 "use strict";
 
 // Use codes between 0~127 for lesser throughput (1 byte)
@@ -5772,5 +5729,60 @@ module.exports.ROOM_STATE_PATCH = 15;
 // Generic messages (50~60)
 module.exports.BAD_REQUEST = 50;
 
-},{}]},{},[42])(42)
+},{}],43:[function(require,module,exports){
+'use strict';
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.createRoom = createRoom;
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var EventEmitter = require('events').EventEmitter,
+    protocol = require('./protocol');
+
+var Room = (function (_EventEmitter) {
+  _inherits(Room, _EventEmitter);
+
+  function Room(client, name) {
+    _classCallCheck(this, Room);
+
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Room).call(this));
+
+    _this.id = null;
+    _this.client = client;
+    _this.name = name;
+    _this.state = {};
+    return _this;
+  }
+
+  _createClass(Room, [{
+    key: 'leave',
+    value: function leave() {
+      if (this.id) {
+        this.client.send([protocol.LEAVE_ROOM, this.id]);
+      }
+    }
+  }, {
+    key: 'send',
+    value: function send(data) {
+      this.client.send([protocol.ROOM_DATA, this.id, data]);
+    }
+  }]);
+
+  return Room;
+})(EventEmitter);
+
+function createRoom(client, name) {
+  return new Room(client, name);
+}
+
+},{"./protocol":42,"events":10}]},{},[41])(41)
 });

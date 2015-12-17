@@ -3,8 +3,10 @@ var Room = require('colyseus').Room
 class ChatRoom extends Room {
 
   constructor (options) {
-    options.updateInterval = 1000
-    super(options, { messages: [] })
+    super(options, 1000)
+
+    this.setState({ messages: [] })
+
     console.log("ChatRoom created!", options)
   }
 
@@ -29,10 +31,6 @@ class ChatRoom extends Room {
     }
 
     console.log("ChatRoom:", client.id, data)
-  }
-
-  update () {
-    this.broadcast()
   }
 
   dispose () {

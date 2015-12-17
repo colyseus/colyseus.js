@@ -73,7 +73,7 @@ class Colyseus extends WebSocketClient {
         if (this.rooms[ message[2] ]) {
           this.rooms[ roomId ] = this.rooms[ message[2] ]
         }
-        this.rooms[ roomId ].roomId = roomId
+        this.rooms[ roomId ].id = roomId
         this.rooms[ roomId ].emit('join')
         return true
 
@@ -90,7 +90,7 @@ class Colyseus extends WebSocketClient {
         let roomState = message[2]
 
         this.rooms[ roomId ].state = roomState
-        this.rooms[ roomId ].emit('setup', this.rooms[ roomId ].state)
+        this.rooms[ roomId ].emit('update', roomState)
 
         this.roomStates[ roomId ] = roomState
         return true
@@ -98,7 +98,7 @@ class Colyseus extends WebSocketClient {
       } else if (message[0] == protocol.ROOM_STATE_PATCH) {
         this.rooms[ roomId ].emit('patch', message[2])
         jsonpatch.apply(this.roomStates[ roomId ], message[2])
-        this.rooms[ roomId ].emit('update', this.roomStates[ roomId ])
+        this.rooms[ roomId ].emit('update', this.roomStates[ roomId ], message[2])
 
         return true
 
