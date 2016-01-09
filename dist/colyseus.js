@@ -5626,6 +5626,10 @@ var Colyseus = (function (_WebSocketClient) {
   }, {
     key: 'join',
     value: function join(roomName, options) {
+      if (!this.rooms[roomName]) {
+        this.rooms[roomName] = (0, _room.createRoom)(this, roomName);
+      }
+
       if (this.ws.readyState == WebSocket.OPEN) {
         this.send([_protocol2.default.JOIN_ROOM, roomName, options || {}]);
       } else {
@@ -5634,19 +5638,7 @@ var Colyseus = (function (_WebSocketClient) {
         this._enqueuedCalls.push(['join', arguments]);
       }
 
-      if (!this.rooms[roomName]) {
-        this.rooms[roomName] = (0, _room.createRoom)(this, roomName);
-      }
-
       return this.rooms[roomName];
-    }
-  }, {
-    key: 'leave',
-    value: function leave(roomNameOrId) {
-      if (typeof roomNameOrId !== "number" && this.rooms[roomNameOrId]) {
-        roomNameOrId = this.rooms[roomNameOrId];
-      }
-      this.send([_protocol2.default.LEAVE_ROOM, roomName]);
     }
 
     /**
@@ -5657,6 +5649,7 @@ var Colyseus = (function (_WebSocketClient) {
     key: 'onMessageCallback',
     value: function onMessageCallback(event) {
       var message = _msgpackLite2.default.decode(new Uint8Array(event.data));
+      console.log("colyseus.js: ", message);
 
       if (typeof message[0] === "number") {
         var roomId = message[1];
@@ -5670,6 +5663,7 @@ var Colyseus = (function (_WebSocketClient) {
           // when first room message is received, keep only roomId association on `rooms` object
           if (this.rooms[message[2]]) {
             this.rooms[roomId] = this.rooms[message[2]];
+            delete this.rooms[message[2]];
           }
           this.rooms[roomId].id = roomId;
           this.rooms[roomId].emit('join');
@@ -5720,7 +5714,7 @@ module.exports.USER_ID = 1;
 
 // Room-related (10~20)
 module.exports.JOIN_ROOM = 10;
-module.exports.JOIN_ERROR = 12;
+module.exports.JOIN_ERROR = 11;
 module.exports.LEAVE_ROOM = 12;
 module.exports.ROOM_DATA = 13;
 module.exports.ROOM_STATE = 14;
@@ -5760,6 +5754,10 @@ var Room = (function (_EventEmitter) {
     _this.client = client;
     _this.name = name;
     _this.state = {};
+
+    _this.on('leave', function () {
+      return _this.removeAllListeners();
+    });
     return _this;
   }
 

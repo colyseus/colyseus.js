@@ -10,6 +10,8 @@ class Room extends EventEmitter {
     this.client = client
     this.name = name
     this.state = {}
+
+    this.on('leave', () => this.removeAllListeners())
   }
 
   leave () {

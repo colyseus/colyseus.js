@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "JavaScript client for Colyseus MMO Game Server",
   "keywords": ["mmo", "game", "client", "networking", "websockets"],
   "repository": {
@@ -13,6 +13,7 @@
     "dist-release": "browserify ./src/index.js -t babelify -s Colyseus -o dist/colyseus.js",
     "dist-uglify": "uglifyjs dist/colyseus.js --compress --mangle > dist/colyseus.min.js",
     "dist": "npm run dist-release && npm run dist-uglify",
+    "watch": "babel src -d lib -w",
     "prepublish": "babel src -d lib"
   },
   "engines": {

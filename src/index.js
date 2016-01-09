@@ -30,6 +30,10 @@ class Colyseus extends WebSocketClient {
   }
 
   join (roomName, options) {
+    if (!this.rooms[ roomName ]) {
+      this.rooms[ roomName ] = createRoom(this, roomName)
+    }
+
     if (this.ws.readyState == WebSocket.OPEN) {
       this.send([protocol.JOIN_ROOM, roomName, options || {}])
 
@@ -39,18 +43,7 @@ class Colyseus extends WebSocketClient {
       this._enqueuedCalls.push(['join', arguments])
     }
 
-    if (!this.rooms[ roomName ]) {
-      this.rooms[ roomName ] = createRoom(this, roomName)
-    }
-
     return this.rooms[ roomName ]
-  }
-
-  leave (roomNameOrId) {
-    if (typeof(roomNameOrId)!=="number" && this.rooms[ roomNameOrId ]) {
-      roomNameOrId = this.rooms[ roomNameOrId ]
-    }
-    this.send([protocol.LEAVE_ROOM, roomName])
   }
 
   /**
@@ -58,6 +51,7 @@ class Colyseus extends WebSocketClient {
    */
   onMessageCallback (event) {
     var message = msgpack.decode( new Uint8Array(event.data) )
+    console.log("colyseus.js: ", message)
 
     if (typeof(message[0]) === "number") {
       let roomId = message[1]
@@ -72,6 +66,7 @@ class Colyseus extends WebSocketClient {
         // when first room message is received, keep only roomId association on `rooms` object
         if (this.rooms[ message[2] ]) {
           this.rooms[ roomId ] = this.rooms[ message[2] ]
+          delete this.rooms[ message[2] ]
         }
         this.rooms[ roomId ].id = roomId
         this.rooms[ roomId ].emit('join')
