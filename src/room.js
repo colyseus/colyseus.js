@@ -15,7 +15,7 @@ class Room extends EventEmitter {
   }
 
   leave () {
-    if (this.id) {
+    if (this.id >= 0) {
       this.client.send([protocol.LEAVE_ROOM, this.id])
     }
   }

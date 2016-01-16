@@ -51,7 +51,6 @@ class Colyseus extends WebSocketClient {
    */
   onMessageCallback (event) {
     var message = msgpack.decode( new Uint8Array(event.data) )
-    console.log("colyseus.js: ", message)
 
     if (typeof(message[0]) === "number") {
       let roomId = message[1]
