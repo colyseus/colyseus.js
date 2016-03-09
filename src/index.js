@@ -26,7 +26,14 @@ class Colyseus extends WebSocketClient {
   }
 
   send (data) {
-    return super.send( msgpack.encode(data) )
+    if (this.ws.readyState == WebSocket.OPEN) {
+      return super.send( msgpack.encode(data) )
+
+    } else {
+      // WebSocket not connected.
+      // Enqueue data to be sent when readyState == OPEN
+      this._enqueuedCalls.push(['send', data])
+    }
   }
 
   join (roomName, options) {
@@ -34,14 +41,7 @@ class Colyseus extends WebSocketClient {
       this.rooms[ roomName ] = createRoom(this, roomName)
     }
 
-    if (this.ws.readyState == WebSocket.OPEN) {
-      this.send([protocol.JOIN_ROOM, roomName, options || {}])
-
-    } else {
-      // WebSocket not connected.
-      // Enqueue it to be called when readyState == OPEN
-      this._enqueuedCalls.push(['join', arguments])
-    }
+    this.send([protocol.JOIN_ROOM, roomName, options || {}])
 
     return this.rooms[ roomName ]
   }
