@@ -32,7 +32,7 @@ class Colyseus extends WebSocketClient {
     } else {
       // WebSocket not connected.
       // Enqueue data to be sent when readyState == OPEN
-      this._enqueuedCalls.push(['send', data])
+      this._enqueuedCalls.push(['send', [data]])
     }
   }
 
