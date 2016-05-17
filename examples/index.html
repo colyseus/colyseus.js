@@ -14,6 +14,7 @@
     <form id="form">
       <input type="text" id="input" value="" />
       <input type="submit" value="send" />
+      ping: <span id="ping"></span>
     </form>
 
     <div id="messages"></div>
@@ -80,6 +81,12 @@
         client.send( {message: document.getElementById('input').value} )
         document.getElementById('input').value = null
       }
+
+      setInterval( function () {
+
+        document.querySelector('#ping').innerHTML = chatRoom.ping
+
+      }, 1000 / 60 )
 
     </script>
 

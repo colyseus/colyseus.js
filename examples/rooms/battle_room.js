@@ -3,7 +3,7 @@ var Room = require('colyseus').Room
 class BattleRoom extends Room {
 
   constructor (options) {
-    super(options, 500)
+    super(options)
     console.log("BattleRoom created!", options)
   }
 
