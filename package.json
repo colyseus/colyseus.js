@@ -1,7 +1,7 @@
 {
   "name": "colyseus.js",
-  "version": "0.3.0",
-  "description": "JavaScript client for Colyseus Game Server",
+  "version": "0.4.1",
+  "description": "JavaScript client for Colyseus Multiplayer Game Server",
   "keywords": [
     "multiplayer",
     "mmo",
@@ -26,7 +26,9 @@
     "node": ">= 5.x"
   },
   "dependencies": {
+    "clock.js": "^1.1.0",
     "fast-json-patch": "^0.5.4",
+    "fossil-delta": "^0.2.5",
     "msgpack-lite": "^0.1.20",
     "websocket.js": "^0.1.4"
   },

@@ -1,6 +1,9 @@
 var EventEmitter = require('events').EventEmitter
-  , protocol = require('./protocol')
   , jsonpatch = require('fast-json-patch')
+  , msgpack = require('msgpack-lite')
+  , fossilDelta = require('fossil-delta')
+  , Clock = require('clock.js')
+  , protocol = require('./protocol')
 
 class Room extends EventEmitter {
 
@@ -14,6 +17,9 @@ class Room extends EventEmitter {
     this.name = name
     this.state = {}
 
+    this.clock = new Clock()
+    this.remoteClock = new Clock()
+
     this.lastPatchTime = null
     this.ping = null
 
@@ -24,13 +30,23 @@ class Room extends EventEmitter {
   setState ( state, remoteCurrentTime, remoteElapsedTime ) {
 
     this.state = state
+    this._previousState = msgpack.encode( this.state )
+
+    // set remote clock properties
+    this.remoteClock.currentTime = remoteCurrentTime
+    this.remoteClock.elapsedTime = remoteElapsedTime
+
+    this.clock.start()
 
     this.emit('update', state)
 
   }
 
-  patch ( patches ) {
+  patch ( binaryPatch ) {
 
+    //
+    // calculate client-side ping
+    //
     let patchTime = Date.now()
 
     if ( this.lastPatchTime ) {
@@ -39,6 +55,15 @@ class Room extends EventEmitter {
 
     this.lastPatchTime = patchTime
 
+    this.clock.tick()
+
+    //
+    // apply patch
+    //
+    this._previousState = fossilDelta.apply( this._previousState, binaryPatch )
+    let newState = msgpack.decode( this._previousState )
+
+    let patches = jsonpatch.compare( this.state, newState )
     this.emit('patch', patches)
 
     jsonpatch.apply(this.state, patches)
