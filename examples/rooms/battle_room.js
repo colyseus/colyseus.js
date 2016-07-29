@@ -4,6 +4,7 @@ class BattleRoom extends Room {
 
   constructor (options) {
     super(options)
+    this.setState({})
     console.log("BattleRoom created!", options)
   }
 
