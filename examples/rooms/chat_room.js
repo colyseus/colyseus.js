@@ -7,7 +7,7 @@ class ChatRoom extends Room {
 
     // this.useTimeline()
 
-    this.setPatchRate( 1000 )
+    this.setPatchRate(1000 / 192);
 
     this.setState({ messages: [] })
 
@@ -23,6 +23,7 @@ class ChatRoom extends Room {
   }
 
   onLeave (client) {
+    this.state.messages.push("Left!");
     // console.log("ChatRoom:", client.id, "disconnected")
   }
 

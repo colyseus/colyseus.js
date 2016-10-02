@@ -55,7 +55,7 @@
       })
 
       chatRoom.on('leave', function() {
-        console.log(client.id, "leaved", chatRoom.name)
+        console.log(client.id, "left", chatRoom.name)
       })
 
       chatRoom.on('update', function(state, patches) {

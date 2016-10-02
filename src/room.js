@@ -66,8 +66,7 @@ class Room extends EventEmitter {
     let patches = jsonpatch.compare( this.state, newState )
     this.emit('patch', patches)
 
-    jsonpatch.apply(this.state, patches)
-
+    this.state = newState;
     this.emit('update', this.state, patches)
 
   }
