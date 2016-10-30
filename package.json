@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "JavaScript client for Colyseus Multiplayer Game Server",
   "keywords": [
     "multiplayer",
@@ -13,6 +13,7 @@
     "url": "git://github.com/gamestdio/colyseus.js.git"
   },
   "main": "lib/index.js",
+  "typings": "index.d.ts",
   "scripts": {
     "start": "npm run dist-release && nodemon --harmony ./examples/server.js",
     "watch-release": "watchify ./src/index.js -t babelify -s Colyseus -o dist/colyseus.js",

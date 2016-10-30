@@ -30,6 +30,7 @@ declare class Room {
 declare class Colyseus {
   constructor (endpoint: string, protocols?: string[], options?: WebSocketConnectionOptions);
 
+  id?: string;
   send (data: any): void;
   join (roomName: string, options?: any): Room;
 
