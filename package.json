@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.4.5",
+  "version": "0.5.0",
   "description": "JavaScript client for Colyseus Multiplayer Game Server",
   "keywords": [
     "multiplayer",
@@ -13,15 +13,12 @@
     "url": "git://github.com/gamestdio/colyseus.js.git"
   },
   "main": "lib/index.js",
-  "typings": "index.d.ts",
+  "typings": "lib/index.d.ts",
   "scripts": {
     "start": "npm run dist-release && nodemon --harmony ./examples/server.js",
-    "watch-release": "watchify ./src/index.js -t babelify -s Colyseus -o dist/colyseus.js",
-    "dist-release": "browserify ./src/index.js -t babelify -s Colyseus -o dist/colyseus.js",
-    "dist-uglify": "uglifyjs dist/colyseus.js --compress --mangle > dist/colyseus.min.js",
     "dist": "npm run dist-release && npm run dist-uglify",
-    "watch": "babel src -d lib -w",
-    "prepublish": "babel src -d lib",
+    "watch": "tsc -d -w",
+    "prepublish": "tsc -d",
     "test": "mocha test/"
   },
   "engines": {
@@ -32,19 +29,23 @@
     "fast-json-patch": "^1.0.0",
     "fossil-delta": "^0.2.5",
     "msgpack-lite": "^0.1.20",
+    "signals.js": "^1.0.0-alpha.8",
+    "tiny-emitter": "^1.1.0",
     "websocket.js": "^0.1.4"
   },
   "devDependencies": {
-    "babel-cli": "^6.1.2",
-    "babel-preset-es2015": "^6.1.2",
-    "babelify": "^7.2.0",
-    "browserify": "^12.0.1",
+    "@types/fast-json-patch": "^1.0.4",
+    "@types/fossil-delta": "^0.2.1",
+    "@types/msgpack-lite": "^0.1.1",
     "chai": "^3.5.0",
     "colyseus": "^0.4.0",
     "express": "^4.13.3",
     "mocha": "^3.1.0",
     "nodemon": "^1.7.1",
+    "ts-loader": "^0.9.5",
+    "typescript": "^2.0.6",
     "uglify-js": "^2.6.1",
-    "watchify": "^3.6.1"
+    "watchify": "^3.6.1",
+    "webpack": "^2.1.0-beta.25"
   }
 }

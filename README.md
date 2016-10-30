@@ -23,7 +23,7 @@ room.on('error', function() {
 })
 
 room.on('leave', function() {
-  console.log(client.id, "leaved", roomName)
+  console.log(client.id, "left", roomName)
 })
 
 room.on('data', function(data) {
