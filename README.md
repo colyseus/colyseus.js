@@ -11,7 +11,9 @@ Game Server for Node.js.
 ## Usage
 
 ```javascript
-var client = new Colyseus('ws://localhost:2657');
+import * as Colyseus from "colyseus.js";
+
+var client = new Colyseus.Client('ws://localhost:2657');
 var roomName = "room_name"
 var room = client.join(roomName)
 
