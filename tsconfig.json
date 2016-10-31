@@ -1,11 +1,12 @@
 {
     "compilerOptions": {
-        "outDir": "lib",
-        "module": "commonjs",
         "target": "es5",
+        "module": "commonjs",
         "lib": ["dom", "es5"],
+        "allowSyntheticDefaultImports": true,
         "noImplicitAny": false,
-        "sourceMap": false
+        "sourceMap": false,
+        "outDir": "lib"
     },
     "include": [
         "src/**.ts"

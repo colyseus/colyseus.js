@@ -9,11 +9,12 @@ import { Protocol } from "./Protocol";
 import { Client } from "./Client";
 
 export class Room<T> {
-    id: string;
+    id: number;
     name: string;
 
     client: Client;
     state: T & any;
+    private _previousState: any;
 
     lastPatchTime: number;
     ping: number;
@@ -30,8 +31,6 @@ export class Room<T> {
     onLeave: Signal = new Signal();
 
     constructor (client: Client, name: string) {
-        super()
-
         this.id = null;
         this.client = client;
 
@@ -44,7 +43,7 @@ export class Room<T> {
         this.lastPatchTime = null;
         this.ping = null;
 
-        this.on('leave', () => this.removeAllListeners())
+        this.onLeave.add( this.removeAllListeners );
     }
 
     setState ( state: T, remoteCurrentTime?: number, remoteElapsedTime?: number ) {
@@ -59,7 +58,7 @@ export class Room<T> {
 
         this.clock.start();
 
-        this.emit('update', state);
+        this.onUpdate.dispatch(state);
     }
 
     patch ( binaryPatch ) {
@@ -83,10 +82,10 @@ export class Room<T> {
         let newState = msgpack.decode( this._previousState );
 
         let patches = jsonpatch.compare( this.state, newState );
-        this.emit('patch', patches);
+        this.onPatch.dispatch(patches);
 
         this.state = newState;
-        this.emit('update', this.state, patches);
+        this.onUpdate.dispatch(this.state, patches);
     }
 
     leave () {
@@ -97,6 +96,15 @@ export class Room<T> {
 
     send (data) {
         this.client.send([ Protocol.ROOM_DATA, this.id, data ]);
+    }
+
+    removeAllListeners = () => {
+        this.onJoin.removeAll();
+        this.onPatch.removeAll();
+        this.onUpdate.removeAll();
+        this.onData.removeAll();
+        this.onError.removeAll();
+        this.onLeave.removeAll();
     }
 
 }

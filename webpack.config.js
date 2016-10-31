@@ -22,6 +22,23 @@ module.exports = function(options) {
             ],
         },
 
+
+        plugins: (
+            (options.production)
+                ? [
+                    new webpack.LoaderOptionsPlugin({
+                        minimize: true,
+                        debug: false
+                    }),
+                    new webpack.optimize.UglifyJsPlugin({
+                        compress: {},
+                        output: { comments: false },
+                        sourceMap: false
+                    })
+                  ]
+                : []
+        ),
+
         resolve: {
             extensions: ['.ts', '.js', '.json']
         }

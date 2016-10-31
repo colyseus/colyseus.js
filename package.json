@@ -15,8 +15,8 @@
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "scripts": {
-    "start": "npm run dist-release && nodemon --harmony ./examples/server.js",
-    "dist": "npm run dist-release && npm run dist-uglify",
+    "start": "npm run build && nodemon --harmony ./examples/server.js",
+    "build": "webpack --env.production",
     "watch": "tsc -d -w",
     "prepublish": "tsc -d",
     "test": "mocha test/"

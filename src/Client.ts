@@ -74,7 +74,7 @@ export class Client extends WebSocketClient {
                 }
 
                 this.rooms[ roomId ].id = roomId;
-                this.rooms[ roomId ].emit('join');
+                this.rooms[ roomId ].onJoin.dispatch();
 
                 return true;
 
@@ -82,13 +82,13 @@ export class Client extends WebSocketClient {
                 let room = this.rooms[ roomId ];
                 delete this.rooms[ roomId ];
 
-                room.emit('error', message[2]);
+                room.onError.dispatch(message[2]);
 
                 return true;
 
             } else if (message[0] == Protocol.LEAVE_ROOM) {
 
-                this.rooms[ roomId ].emit('leave');
+                this.rooms[ roomId ].onLeave.dispatch();
 
                 return true;
 
@@ -111,7 +111,7 @@ export class Client extends WebSocketClient {
 
             } else if (message[0] == Protocol.ROOM_DATA) {
 
-                this.rooms[ roomId ].emit('data', message[2]);
+                this.rooms[ roomId ].onData.dispatch(message[2]);
                 message = [ message[2] ];
 
             }
