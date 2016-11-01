@@ -16,10 +16,11 @@
   "typings": "lib/index.d.ts",
   "scripts": {
     "start": "npm run build && nodemon --harmony ./examples/server.js",
-    "build": "webpack --env.production",
+    "build-dist": "webpack --env.production",
+    "build": "tsc -d",
     "watch": "tsc -d -w",
-    "prepublish": "tsc -d",
-    "test": "mocha test/"
+    "prepublish": "npm run build",
+    "test": "npm run build && mocha test/"
   },
   "engines": {
     "node": ">= 5.x"

@@ -1,5 +1,5 @@
 var assert = require('chai').assert;
-var createRoom = require('../lib/room').createRoom;
+var Room = require('../lib/Room').Room;
 
 var fossilDelta = require('fossil-delta');
 var msgpack = require('msgpack-lite');
@@ -8,7 +8,7 @@ describe("Room", function() {
   var room = null;
 
   beforeEach(function() {
-    room = createRoom(null, "chat");
+    room = new Room(null, "chat");
   });
 
   it("should initialize room with empty state", function() {
@@ -17,7 +17,7 @@ describe("Room", function() {
   });
 
   it("should emit state change", function(done) {
-    room.on('update', function(data) {
+    room.onUpdate.add(function(data) {
       assert.deepEqual(data.messages, []);
       done();
     });
@@ -45,7 +45,7 @@ describe("Room", function() {
     });
     var delta = fossilDelta.create(previousState, nextState);
 
-    room.on('patch', function(patches) {
+    room.onPatch.add(function(patches) {
       assert.equal(patches.length, 2)
       done();
     })
