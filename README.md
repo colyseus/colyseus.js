@@ -17,28 +17,34 @@ var client = new Colyseus.Client('ws://localhost:2657');
 var roomName = "room_name"
 var room = client.join(roomName)
 
+// successfully joined the room
 room.onJoin.add(function() {
   console.log(client.id, "joined", roomName)
 })
 
-room.onError.add(function() {
-  console.log(client.id, "couldn't join", roomName)
+// new state / patches comming from the server
+room.onUpdate.add(function(newState, patches) {
+  console.log(roomName, "new state:", newState, "changes applied:", patches)
 })
 
-room.onLeave.add(function() {
-  console.log(client.id, "left", roomName)
-})
-
-room.onData.add(function(data) {
-  console.log(client.id, "received on", roomName, data)
-})
-
+// patches comming from the server
 room.onPatch.add(function(patches) {
   console.log(roomName, "will apply these changes:", patches)
 })
 
-room.onUpdate.add(function(newState, patches) {
-  console.log(roomName, "new state:", newState, "changes applied:", patches)
+// the server sent data directly for this client
+room.onData.add(function(data) {
+  console.log(client.id, "received on", roomName, data)
+})
+
+// oops, some error happened in the server!
+room.onError.add(function() {
+  console.log(client.id, "couldn't join", roomName)
+})
+
+// client left the room.
+room.onLeave.add(function() {
+  console.log(client.id, "left", roomName)
 })
 
 ```
