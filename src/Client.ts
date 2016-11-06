@@ -4,10 +4,18 @@ import * as msgpack from "msgpack-lite";
 import { Protocol } from "./Protocol";
 import { Room } from "./Room";
 
+import { Signal } from "signals.js";
+
 export class Client extends WebSocketClient {
 
     id?: string;
     rooms: { [id: string]: Room<any> } = {};
+
+    // signals
+    onOpen: Signal = new Signal();
+    onMessage: Signal = new Signal();
+    onClose: Signal = new Signal();
+    onError: Signal = new Signal();
 
     private _enqueuedCalls: any[] = [];
 
@@ -18,11 +26,19 @@ export class Client extends WebSocketClient {
 
     onOpenCallback (event) {
         if (this._enqueuedCalls.length > 0) {
-            for (var i=0; i<this._enqueuedCalls.length; i++) {
+            for (let i=0; i<this._enqueuedCalls.length; i++) {
                 let [ method, args ] = this._enqueuedCalls[i];
                 this[ method ].apply(this, args);
             }
         }
+    }
+
+    onCloseCallback () {
+        this.onClose.dispatch();
+    }
+
+    onErrorCallback () {
+        this.onError.dispatch();
     }
 
     send (data: any): void {
@@ -51,75 +67,55 @@ export class Client extends WebSocketClient {
      * @override
      */
     onMessageCallback (event) {
-        var message = msgpack.decode( new Uint8Array(event.data) );
+        let message = msgpack.decode( new Uint8Array(event.data) );
 
-        if (typeof(message[0]) === "number") {
-            let roomId = message[1];
+        let code = message[0];
+        let roomId = message[1];
 
-            if (message[0] == Protocol.USER_ID) {
-                this.id = roomId
+        if (code == Protocol.USER_ID) {
+            this.id = roomId
 
-                if (this.listeners['onopen']) {
-                    this.listeners['onopen'].apply(null);
-                }
+            this.onOpen.dispatch();
 
-                return true
-
-            } else if (message[0] == Protocol.JOIN_ROOM) {
-                // joining room from room name:
-                // when first room message is received, keep only roomId association on `rooms` object
-                if (this.rooms[ message[2] ]) {
-                    this.rooms[ roomId ] = this.rooms[ message[2] ];
-                    delete this.rooms[ message[2] ];
-                }
-
-                this.rooms[ roomId ].id = roomId;
-                this.rooms[ roomId ].onJoin.dispatch();
-
-                return true;
-
-            } else if (message[0] == Protocol.JOIN_ERROR) {
-                let room = this.rooms[ roomId ];
-                delete this.rooms[ roomId ];
-
-                room.onError.dispatch(message[2]);
-
-                return true;
-
-            } else if (message[0] == Protocol.LEAVE_ROOM) {
-
-                this.rooms[ roomId ].onLeave.dispatch();
-
-                return true;
-
-            } else if (message[0] == Protocol.ROOM_STATE) {
-
-                let state = message[2];
-                let remoteCurrentTime = message[3];
-                let remoteElapsedTime = message[4];
-
-                this.rooms[ roomId ].setState( state, remoteCurrentTime, remoteElapsedTime );
-
-                return true;
-
-            } else if (message[0] == Protocol.ROOM_STATE_PATCH) {
-                let patches = message[2];
-
-                this.rooms[ roomId ].patch( patches );
-
-                return true;
-
-            } else if (message[0] == Protocol.ROOM_DATA) {
-
-                this.rooms[ roomId ].onData.dispatch(message[2]);
-                message = [ message[2] ];
-
+        } else if (code == Protocol.JOIN_ROOM) {
+            // joining room from room name:
+            // when first room message is received, keep only roomId association on `rooms` object
+            if (this.rooms[ message[2] ]) {
+                this.rooms[ roomId ] = this.rooms[ message[2] ];
+                delete this.rooms[ message[2] ];
             }
 
-        }
+            this.rooms[ roomId ].id = roomId;
+            this.rooms[ roomId ].onJoin.dispatch();
 
-        if (this.listeners['onmessage']) {
-            this.listeners['onmessage'].apply(null, message);
+        } else if (code == Protocol.JOIN_ERROR) {
+            let room = this.rooms[ roomId ];
+            delete this.rooms[ roomId ];
+
+            room.onError.dispatch(message[2]);
+
+        } else if (code == Protocol.LEAVE_ROOM) {
+
+            this.rooms[ roomId ].onLeave.dispatch();
+
+        } else if (code == Protocol.ROOM_STATE) {
+
+            let state = message[2];
+            let remoteCurrentTime = message[3];
+            let remoteElapsedTime = message[4];
+
+            this.rooms[ roomId ].setState( state, remoteCurrentTime, remoteElapsedTime );
+
+        } else if (code == Protocol.ROOM_STATE_PATCH) {
+            let patches = message[2];
+
+            this.rooms[ roomId ].patch( patches );
+
+        } else if (code == Protocol.ROOM_DATA) {
+
+            this.rooms[ roomId ].onData.dispatch(message[2]);
+            this.onMessage.dispatch(message[2]);
+
         }
 
     }

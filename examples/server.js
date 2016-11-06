@@ -9,8 +9,8 @@ var colyseus = require('colyseus')
 var server = http.createServer(app)
   , gameServer = new colyseus.Server({server: server})
 
-gameServer.register(ChatRoom)
-gameServer.register(BattleRoom)
+gameServer.register('chat', ChatRoom)
+gameServer.register('battle', BattleRoom)
 
 app.use(express.static(__dirname));
 server.listen(port);

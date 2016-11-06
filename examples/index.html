@@ -5,7 +5,6 @@
       body { font-family: Tahoma, Geneva, sans-serif; }
     </style>
     <script type="text/javascript" src="colyseus.js"></script>
-    <!-- <script type="text/javascript" src="colyseus.min.js"></script> -->
   </head>
   <body>
     <h1><img src="https://github.com/gamestdio/colyseus/raw/master/examples/logo.png?raw=true" alt="colyseus"></h1>
@@ -23,42 +22,42 @@
       var state = null
 
       var host = window.document.location.host.replace(/:.*/, '');
-      var client = new Colyseus('ws://' + host + ':2657');
+      var client = new Colyseus.Client('ws://' + host + ':2657');
 
-      client.onopen = function (event) {
+      client.onOpen.add(function (event) {
         console.log(client.id, "connected!")
-      }
+      })
 
-      client.onmessage = function (event) {
+      client.onMessage.add(function (event) {
         console.log("Client received message!", event)
-      };
+      });
 
-      client.onclose = function (event) {
+      client.onClose.add(function (event) {
         console.log("closing connection...")
-      }
+      })
 
-      var chatRoom = client.join("ChatRoom")
+      var chatRoom = client.join("chat")
       var battleRoom = null
 
       setTimeout(function () {
-        var invalidBattleRoom = client.join("BattleRoom", {invalid_param: 10})
-        invalidBattleRoom.on('error', function(data) {
-          console.error("BattleRoom, couldn't join:", data)
-          battleRoom = client.join("BattleRoom")
-          battleRoom.on('error', function(data) { console.error("BattleRoom, couldn't join:", data) })
+        var invalidBattleRoom = client.join("battle", {invalid_param: 10})
+        invalidBattleRoom.onError.add(function(data) {
+          console.error("couldn't join on battle room:", data)
+          battleRoom = client.join("battle")
+          battleRoom.onError.add(function(data) { console.error("couldn't join on battle room", data) })
         })
 
       }, 1000)
 
-      chatRoom.on('join', function() {
+      chatRoom.onJoin.add(function() {
         console.log(client.id, "joined", chatRoom.name)
       })
 
-      chatRoom.on('leave', function() {
+      chatRoom.onLeave.add(function() {
         console.log(client.id, "left", chatRoom.name)
       })
 
-      chatRoom.on('update', function(state, patches) {
+      chatRoom.onUpdate.add(function(state, patches) {
         console.log("Patches:", patches)
 
         var messages = (!patches)
@@ -72,7 +71,7 @@
         }
       })
 
-      chatRoom.on('data', function(data) {
+      chatRoom.onData.add(function(data) {
         console.log(client.id, "received on", chatRoom.name, data)
       })
 
