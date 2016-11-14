@@ -22,9 +22,9 @@ room.onJoin.add(function() {
   console.log(client.id, "joined", roomName)
 })
 
-// new state / patches comming from the server
-room.onUpdate.add(function(newState, patches) {
-  console.log(roomName, "new state:", newState, "changes applied:", patches)
+// patches comming from the server
+room.onUpdate.add(function(patches) {
+  console.log(roomName, "patches comming:", patches)
 })
 
 // patches comming from the server
