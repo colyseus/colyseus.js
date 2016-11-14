@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.5.0.beta.0",
+  "version": "0.5.0-beta.0",
   "description": "JavaScript client for Colyseus Multiplayer Game Server",
   "keywords": [
     "multiplayer",
