@@ -14,37 +14,31 @@ Game Server for Node.js.
 import * as Colyseus from "colyseus.js";
 
 var client = new Colyseus.Client('ws://localhost:2657');
-var roomName = "room_name"
-var room = client.join(roomName)
+var room = client.join("room_name")
 
 // successfully joined the room
 room.onJoin.add(function() {
-  console.log(client.id, "joined", roomName)
+  console.log(client.id, "joined", room.name)
 })
 
-// patches comming from the server
-room.onUpdate.add(function(patches) {
-  console.log(roomName, "patches comming:", patches)
-})
-
-// patches comming from the server
-room.onPatch.add(function(patches) {
-  console.log(roomName, "will apply these changes:", patches)
+// room has a new state
+room.onUpdate.add(function(state) {
+  console.log(room.name, "has new state:", state)
 })
 
 // the server sent data directly for this client
 room.onData.add(function(data) {
-  console.log(client.id, "received on", roomName, data)
+  console.log(client.id, "received on", room.name, data)
 })
 
 // oops, some error happened in the server!
 room.onError.add(function() {
-  console.log(client.id, "couldn't join", roomName)
+  console.log(client.id, "couldn't join", room.name)
 })
 
 // client left the room.
 room.onLeave.add(function() {
-  console.log(client.id, "left", roomName)
+  console.log(client.id, "left", room.name)
 })
 
 ```

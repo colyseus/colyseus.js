@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.5.2",
+  "version": "0.6.0-alpha.0",
   "description": "JavaScript client for Colyseus Multiplayer Game Server",
   "keywords": [
     "multiplayer",
@@ -27,12 +27,12 @@
   },
   "dependencies": {
     "clock.js": "^1.1.0",
-    "fast-json-patch": "^1.0.0",
+    "delta-listener": "^1.0.0-alpha.2",
     "fossil-delta": "^0.2.5",
     "msgpack-lite": "^0.1.20",
     "signals.js": "^1.0.0-alpha.8",
     "tiny-emitter": "^1.1.0",
-    "websocket.js": "^0.1.4"
+    "websocket.js": "^0.1.7"
   },
   "devDependencies": {
     "@types/chai": "^3.4.34",
@@ -45,7 +45,7 @@
     "mocha": "^3.1.0",
     "nodemon": "^1.7.1",
     "ts-loader": "^0.9.5",
-    "typescript": "^2.0.6",
+    "typescript": "^2.1.4",
     "uglify-js": "^2.6.1",
     "watchify": "^3.6.1",
     "webpack": "^2.1.0-beta.25"

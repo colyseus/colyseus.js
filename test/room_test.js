@@ -1,11 +1,11 @@
-var assert = require('chai').assert;
-var Room = require('../lib/Room').Room;
+const assert = require('chai').assert;
+const Room = require('../lib/Room').Room;
 
-var fossilDelta = require('fossil-delta');
-var msgpack = require('msgpack-lite');
+const fossilDelta = require('fossil-delta');
+const msgpack = require('msgpack-lite');
 
 describe("Room", function() {
-  var room = null;
+  let room = null;
 
   beforeEach(function() {
     room = new Room(null, "chat");
@@ -13,7 +13,7 @@ describe("Room", function() {
 
   it("should initialize room with empty state", function() {
     assert.equal(room.name, "chat")
-    assert.deepEqual(room.state, {})
+    assert.deepEqual(room.state.data, {})
   });
 
   it("should emit state change", function(done) {
@@ -26,7 +26,7 @@ describe("Room", function() {
   })
 
   it("should patch room state", function(done) {
-    var state = {
+    let state = {
       players: {
         'one': { hp: 100, lvl: 1, position: {x: 0, y: 0} },
         'two': { hp: 95, lvl: 2, position: {x: 0, y: 0} },
@@ -35,22 +35,36 @@ describe("Room", function() {
     room.setState(state, 0, 0);
 
     // get previous state encoded
-    var previousState = msgpack.encode(state);
+    let previousState = msgpack.encode(state);
     // change state and encode it
-    var nextState = msgpack.encode({
+    let nextState = msgpack.encode({
       players: {
         'one': { hp: 40, lvl: 1, position: {x: 0, y: 100} },
         'two': { hp: 95, lvl: 2, position: {x: 0, y: 0} },
       }
     });
-    var delta = fossilDelta.create(previousState, nextState);
+    let delta = fossilDelta.create(previousState, nextState);
 
-    room.onPatch.add(function(patches) {
-      assert.equal(patches.length, 2)
-      done();
+    let patchCount = 0;
+    room.state.listen("players/:id/:attribute", "replace", (id, attribute, value) => {
+      patchCount++
+      assert.equal(id, "one");
+      assert.equal(attribute, "hp");
+      assert.equal(value, 40);
+    })
+
+    room.state.listen("players/:id/position/:axis", "replace", (id, axis, value) => {
+      patchCount++
+      assert.equal(id, "one");
+      assert.equal(axis, "y");
+      assert.equal(value, 100);
     })
 
     room.patch(delta);
+
+    setTimeout(() => {
+      if (patchCount === 2) done();
+    }, 1);
   });
 
 });

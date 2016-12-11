@@ -1,7 +1,7 @@
 import { Signal } from "signals.js";
 import Clock = require("clock.js");
 
-import * as jsonpatch from "fast-json-patch";
+import { DeltaContainer } from "delta-listener";
 import * as msgpack from "msgpack-lite";
 import * as fossilDelta from "fossil-delta";
 
@@ -9,46 +9,38 @@ import { Protocol } from "./Protocol";
 import { Client } from "./Client";
 
 export class Room<T> {
-    id: number;
-    name: string;
+    public id: number;
+    public name: string;
 
-    client: Client;
-    state: T & any;
-    private _previousState: any;
+    public state: DeltaContainer<T & any> = new DeltaContainer<T & any>({});
 
-    lastPatchTime: number;
-    ping: number;
-
-    clock: Clock;
-    remoteClock: Clock;
+    public clock: Clock = new Clock();
+    public remoteClock: Clock = new Clock();
 
     // Public signals
-    onJoin: Signal = new Signal();
-    onPatch: Signal = new Signal();
-    onUpdate: Signal = new Signal();
-    onData: Signal = new Signal();
-    onError: Signal = new Signal();
-    onLeave: Signal = new Signal();
+    public onJoin: Signal = new Signal();
+    public onUpdate: Signal = new Signal();
+    public onData: Signal = new Signal();
+    public onError: Signal = new Signal();
+    public onLeave: Signal = new Signal();
+
+    public ping: number;
+    private lastPatchTime: number;
+
+    private client: Client;
+    private _previousState: any;
 
     constructor (client: Client, name: string) {
         this.id = null;
         this.client = client;
-
         this.name = name;
-        this.state = {};
-
-        this.clock = new Clock();
-        this.remoteClock = new Clock();
-
-        this.lastPatchTime = null;
-        this.ping = null;
 
         this.onLeave.add( this.removeAllListeners );
     }
 
-    setState ( state: T, remoteCurrentTime?: number, remoteElapsedTime?: number ) {
-        this.state = state
-        this._previousState = msgpack.encode( this.state )
+    setState ( state: T, remoteCurrentTime?: number, remoteElapsedTime?: number ): void {
+        this.state.set(state);
+        this._previousState = msgpack.encode( state )
 
         // set remote clock properties
         if (remoteCurrentTime && remoteElapsedTime) {
@@ -79,28 +71,25 @@ export class Room<T> {
         // apply patch
         //
         this._previousState = fossilDelta.apply( this._previousState, binaryPatch );
-        let newState = msgpack.decode( this._previousState );
 
-        let patches = jsonpatch.compare( this.state, newState );
-        this.onPatch.dispatch(patches);
+        // Set new state & trigger patch callbacks
+        this.state.set( msgpack.decode( this._previousState ) );
 
-        this.state = newState;
-        this.onUpdate.dispatch(this.state, patches);
+        this.onUpdate.dispatch(this.state.data);
     }
 
-    leave () {
+    public leave (): void {
         if (this.id >= 0) {
             this.client.send([ Protocol.LEAVE_ROOM, this.id ]);
         }
     }
 
-    send (data) {
+    public send (data): void {
         this.client.send([ Protocol.ROOM_DATA, this.id, data ]);
     }
 
-    removeAllListeners = () => {
+    public removeAllListeners = (): void => {
         this.onJoin.removeAll();
-        this.onPatch.removeAll();
         this.onUpdate.removeAll();
         this.onData.removeAll();
         this.onError.removeAll();
