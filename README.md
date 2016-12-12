@@ -7,6 +7,9 @@
 JavaScript/TypeScript client for
 [Colyseus](https://github.com/gamestdio/colyseus) Multiplayer Game Server.
 
+**The version 0.6.0 is still in beta. Expect some changes before the final
+release.**
+
 ## Usage
 
 ### Connecting to server:
