@@ -1,12 +1,11 @@
-Colyseus.js - Multiplayer Game Client for the Browser.
-===
+# ![colyseus.js](https://github.com/gamestdio/colyseus/blob/master/media/header.png?raw=true)
+> Colyseus.js - Multiplayer Game Client for the Browser.
 
 [![Join the chat at https://gitter.im/gamestdio/colyseus](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gamestdio/colyseus?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://secure.travis-ci.org/gamestdio/colyseus.js.png?branch=master)](http://travis-ci.org/gamestdio/colyseus.js)
 
 JavaScript/TypeScript client for
-[Colyseus](https://github.com/gamestdio/colyseus) - a Minimalist Multiplayer
-Game Server for Node.js.
+[Colyseus](https://github.com/gamestdio/colyseus) Multiplayer Game Server.
 
 ## Usage
 
@@ -27,17 +26,17 @@ room.onJoin.add(function() {
 });
 ```
 
-### Listening to state changes:
+### Listening to room state change:
 
 Here comes the most powerful feature of the client. You can listen to every state update in the server-side, and bind them into client-side functions.
 
 The first parameter is the path of the variable you want to listen to. When you provide placeholders (such as `:number`, `:id`, `:string`) to the path, they will populate the function with the value found on it. See examples below.
 
-Listening to entities being created in the room:
+Listening to entities being added in the room:
 
 ```
 room.state.listen("entities/:id", "add", (entityId: string, value: any) => {
-    console.log(`new entity ${entity}`, value);
+    console.log(`new entity ${entityId}`, value);
 });
 ```
 

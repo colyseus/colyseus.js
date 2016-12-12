@@ -67,12 +67,10 @@ export class Room<T> {
 
         this.clock.tick();
 
-        //
         // apply patch
-        //
         this._previousState = fossilDelta.apply( this._previousState, binaryPatch );
 
-        // Set new state & trigger patch callbacks
+        // trigger state callbacks
         this.state.set( msgpack.decode( this._previousState ) );
 
         this.onUpdate.dispatch(this.state.data);
@@ -94,6 +92,7 @@ export class Room<T> {
         this.onData.removeAll();
         this.onError.removeAll();
         this.onLeave.removeAll();
+        this.state.removeAllListeners();
     }
 
 }
