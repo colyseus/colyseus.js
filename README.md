@@ -11,7 +11,7 @@ JavaScript/TypeScript client for
 
 ### Connecting to server:
 
-```javascript
+```ts
 import * as Colyseus from "colyseus.js";
 
 var client = new Colyseus.Client('ws://localhost:2657');
@@ -19,7 +19,7 @@ var client = new Colyseus.Client('ws://localhost:2657');
 
 ### Joining to a room:
 
-```
+```ts
 var room = client.join("room_name");
 room.onJoin.add(function() {
     console.log(client.id, "joined", room.name);
@@ -34,7 +34,7 @@ The first parameter is the path of the variable you want to listen to. When you 
 
 Listening to entities being added in the room:
 
-```
+```ts
 room.state.listen("entities/:id", "add", (entityId: string, value: any) => {
     console.log(`new entity ${entityId}`, value);
 });
@@ -42,7 +42,7 @@ room.state.listen("entities/:id", "add", (entityId: string, value: any) => {
 
 Listening to entity attributes being replaced:
 
-```
+```ts
 room.state.listen("entities/:id/:attribute", "replace", (entityId: string, attribute: string, value: any) => {
     console.log(`entity ${entityId} changed attribute ${attribute} to ${value}`);
 });
@@ -50,7 +50,7 @@ room.state.listen("entities/:id/:attribute", "replace", (entityId: string, attri
 
 Listening to entities being removed:
 
-```
+```ts
 room.state.listen("entities/:id", "remove", (entityId: string, value: any) => {
     console.log(`entity ${entityId} has been removed`);
 });
@@ -60,7 +60,7 @@ room.state.listen("entities/:id", "remove", (entityId: string, value: any) => {
 
 Room state has been updated:
 
-```
+```ts
 room.onUpdate.add(function(state) {
   console.log(room.name, "has new state:", state)
 })
@@ -68,7 +68,7 @@ room.onUpdate.add(function(state) {
 
 Data coming from server directly to this client:
 
-```
+```ts
 room.onData.add(function(data) {
   console.log(client.id, "received on", room.name, data)
 });
@@ -76,7 +76,7 @@ room.onData.add(function(data) {
 
 Server error occurred:
 
-```
+```ts
 room.onError.add(function() {
   console.log(client.id, "couldn't join", room.name)
 });
@@ -84,7 +84,7 @@ room.onError.add(function() {
 
 The client left the room:
 
-```
+```ts
 room.onLeave.add(function() {
   console.log(client.id, "left", room.name)
 });
