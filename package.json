@@ -1,7 +1,7 @@
 {
   "name": "colyseus.js",
   "version": "0.6.0-alpha.0",
-  "description": "JavaScript client for Colyseus Multiplayer Game Server",
+  "description": "Multiplayer Game Client for the Browser",
   "keywords": [
     "multiplayer",
     "mmo",
