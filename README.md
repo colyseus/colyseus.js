@@ -54,7 +54,7 @@ room.state.listen("entities/:id/:attribute", "replace", (entityId: string, attri
 Listening to entities being removed:
 
 ```ts
-room.state.listen("entities/:id", "remove", (entityId: string, value: any) => {
+room.state.listen("entities/:id", "remove", (entityId: string) => {
     console.log(`entity ${entityId} has been removed`);
 });
 ```
