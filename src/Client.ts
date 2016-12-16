@@ -116,8 +116,11 @@ export class Client extends WebSocketClient {
             this.rooms[ roomId ].onData.dispatch(message[2]);
             this.onMessage.dispatch(message[2]);
 
+        } else {
+           this.onMessage.dispatch(message); 
         }
-
+        
+        
     }
 
 }
