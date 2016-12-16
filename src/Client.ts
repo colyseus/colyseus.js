@@ -117,7 +117,7 @@ export class Client extends WebSocketClient {
             this.onMessage.dispatch(message[2]);
 
         } else {
-           this.onMessage.dispatch(e); 
+           this.onMessage.dispatch(message); 
         }
         
         
