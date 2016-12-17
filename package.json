@@ -17,8 +17,8 @@
   "scripts": {
     "start": "npm run build && nodemon --harmony ./examples/server.js",
     "build-dist": "webpack --env.production",
-    "build": "tsc -d",
-    "watch": "tsc -d -w",
+    "build": "tsc && npm run build-dist",
+    "watch": "tsc -w",
     "prepublish": "npm run build",
     "test": "npm run build && mocha test/"
   },

@@ -5,8 +5,6 @@ class ChatRoom extends Room {
   constructor (options) {
     super(options)
 
-    // this.useTimeline()
-
     this.setPatchRate(1000 / 192);
 
     this.setState({ messages: [] })
@@ -28,8 +26,6 @@ class ChatRoom extends Room {
   }
 
   onMessage (client, data) {
-    // TODO
-    // - When sending messages, it would be good to flag which handler is interested in them.
     if (data.message == "kick") {
       this.clients.filter(c => c.id !== client.id).forEach(other => other.close())
 

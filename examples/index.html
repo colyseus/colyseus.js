@@ -57,19 +57,21 @@
         console.log(client.id, "left", chatRoom.name)
       })
 
-      chatRoom.onUpdate.add(function(state, patches) {
-        console.log("Patches:", patches)
-
-        var messages = (!patches)
-          ? state.messages
-          : patches.map(function(patch) { return patch.value })
+      chatRoom.onUpdate.addOnce(function(state, patches) {
+        var messages = state.messages;
 
         for (var i=0; i<messages.length; i++) {
           var node = document.createElement("p");
-          node.innerHTML = messages[i]
-          document.getElementById('messages').appendChild(node)
+          node.innerHTML = messages[i];
+          document.getElementById('messages').appendChild(node);
         }
       })
+
+      chatRoom.state.listen("messages/:number", "add", function(i, message) {
+        var node = document.createElement("p");
+        node.innerHTML = message;
+        document.getElementById('messages').appendChild(node);
+      });
 
       chatRoom.onData.add(function(data) {
         console.log(client.id, "received on", chatRoom.name, data)

@@ -6,6 +6,7 @@
         "allowSyntheticDefaultImports": true,
         "noImplicitAny": false,
         "sourceMap": false,
+        "declaration": true,
         "outDir": "lib"
     },
     "include": [
