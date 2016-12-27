@@ -93,6 +93,11 @@ room.onLeave.add(function() {
 });
 ```
 
+## Useful links
+
+- [Server documentation](https://github.com/gamestdio/colyseus/wiki)
+- [Official examples](https://github.com/gamestdio/colyseus-examples)
+
 ## License
 
 MIT
