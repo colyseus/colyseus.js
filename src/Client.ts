@@ -90,9 +90,18 @@ export class Client extends WebSocketClient {
 
         } else if (code == Protocol.JOIN_ERROR) {
             let room = this.rooms[ roomId ];
-            delete this.rooms[ roomId ];
 
-            room.onError.dispatch(message[2]);
+            console.error("server error:", message[2]);
+
+            if (room) {
+                // room-related error
+                room.onError.dispatch(message[2]);
+
+            } else {
+                // general error
+                this.onError.dispatch(message[2]);
+            }
+
 
         } else if (code == Protocol.LEAVE_ROOM) {
 
