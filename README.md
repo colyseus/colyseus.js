@@ -1,10 +1,10 @@
 # ![colyseus.js](https://github.com/gamestdio/colyseus/blob/master/media/header.png?raw=true)
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/gamestdio/colyseus.js.svg)](https://greenkeeper.io/)
 > Colyseus.js - Multiplayer Game Client for the Browser.
 
 [![Join the chat at https://gitter.im/gamestdio/colyseus](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gamestdio/colyseus?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://secure.travis-ci.org/gamestdio/colyseus.js.png?branch=master)](http://travis-ci.org/gamestdio/colyseus.js)
+[![Greenkeeper badge](https://badges.greenkeeper.io/gamestdio/colyseus.js.svg)](https://greenkeeper.io/)
 
 JavaScript/TypeScript client for
 [Colyseus](https://github.com/gamestdio/colyseus) Multiplayer Game Server.
