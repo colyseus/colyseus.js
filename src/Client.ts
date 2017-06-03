@@ -19,18 +19,15 @@ export class Client {
     onError: Signal = new Signal();
 
     constructor (url: string) {
+        let colyseusid = cookie.getItem('colyseusid');
+        if (colyseusid) {
+            this.id = colyseusid;
+        }
+
         this.connection = new Connection(url);
         this.connection.onmessage = this.onMessageCallback.bind(this);
-        this.connection.onclose = this.onCloseCallback.bind(this);
-        this.connection.onerror = this.onErrorCallback.bind(this);
-    }
-
-    onCloseCallback () {
-        this.onClose.dispatch();
-    }
-
-    onErrorCallback () {
-        this.onError.dispatch();
+        this.connection.onclose = (e) => this.onClose.dispatch();
+        this.connection.onerror = (e) => this.onError.dispatch();
     }
 
     join<T> (roomName: string, options: any = {}): Room<T> {

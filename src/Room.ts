@@ -40,11 +40,8 @@ export class Room<T=any> {
     connect (connection: Connection) {
         this.connection = connection;
         this.connection.onmessage = this.onMessageCallback.bind(this);
-        this.connection.onopen = this.onOpenCallback.bind(this);
-    }
-
-    protected onOpenCallback (event) {
-        this.onJoin.dispatch();
+        this.connection.onopen = (e) => this.onJoin.dispatch();
+        this.connection.onclose = (e) => this.onLeave.dispatch();
     }
 
     protected onMessageCallback (event) {
@@ -53,9 +50,6 @@ export class Room<T=any> {
 
         if (code == Protocol.JOIN_ERROR) {
             this.onError.dispatch(message[2]);
-
-        } else if (code == Protocol.LEAVE_ROOM) {
-            this.onLeave.dispatch();
 
         } else if (code == Protocol.ROOM_STATE) {
             let state = message[2];
@@ -69,9 +63,11 @@ export class Room<T=any> {
 
         } else if (code == Protocol.ROOM_DATA) {
             this.onData.dispatch(message[2]);
+
+        } else if (code == Protocol.LEAVE_ROOM) {
+            this.leave();
         }
     }
-
 
     setState ( state: T, remoteCurrentTime?: number, remoteElapsedTime?: number ): void {
         this.state.set(state);
@@ -112,14 +108,18 @@ export class Room<T=any> {
     }
 
     public leave (): void {
-        if (this.id >= 0) {
+        if (this.id) {
             this.connection.close();
             // this.connection.send([ Protocol.LEAVE_ROOM, this.id ]);
         }
     }
 
     public send (data): void {
-        this.connection.send([ Protocol.ROOM_DATA, this.id, data ]);
+        if (this.connection.readyState === WebSocket.OPEN) {
+            this.connection.send([ Protocol.ROOM_DATA, this.id, data ]);
+        } else {
+            console.warn("Room", this.id, "is not connected.");
+        }
     }
 
     public removeAllListeners = (): void => {
