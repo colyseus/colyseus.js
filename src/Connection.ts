@@ -1,0 +1,34 @@
+import WebSocketClient from "websocket.js";
+import * as msgpack from "msgpack-lite";
+
+export class Connection extends WebSocketClient {
+
+    private _enqueuedCalls: any[] = [];
+
+    constructor (url) {
+        super(url);
+        this.binaryType = "arraybuffer";
+    }
+
+    onOpenCallback (event) {
+        if (this._enqueuedCalls.length > 0) {
+            for (let i=0; i<this._enqueuedCalls.length; i++) {
+                let [ method, args ] = this._enqueuedCalls[i];
+                this[ method ].apply(this, args);
+            }
+        }
+    }
+
+    send (data: any): void {
+        if (this.ws.readyState == WebSocket.OPEN) {
+            return super.send( msgpack.encode(data) )
+
+        } else {
+
+            // WebSocket not connected.
+            // Enqueue data to be sent when readyState == OPEN
+            this._enqueuedCalls.push(['send', [data]])
+        }
+    }
+
+}

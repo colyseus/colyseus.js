@@ -30,11 +30,11 @@ module.exports = function(options) {
                         minimize: true,
                         debug: false
                     }),
-                    new webpack.optimize.UglifyJsPlugin({
-                        compress: {},
-                        output: { comments: false },
-                        sourceMap: false
-                    })
+                    // new webpack.optimize.UglifyJsPlugin({
+                    //     compress: {},
+                    //     output: { comments: false },
+                    //     sourceMap: false
+                    // })
                   ]
                 : []
         ),
