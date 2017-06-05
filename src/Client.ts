@@ -7,16 +7,17 @@ import { Room } from "./Room";
 import { Connection } from "./Connection";
 
 export class Client {
-    id?: string;
-
-    connection: Connection;
-    room: Room;
+    public id?: string;
 
     // signals
-    onOpen: Signal = new Signal();
-    onMessage: Signal = new Signal();
-    onClose: Signal = new Signal();
-    onError: Signal = new Signal();
+    public onOpen: Signal = new Signal();
+    public onMessage: Signal = new Signal();
+    public onClose: Signal = new Signal();
+    public onError: Signal = new Signal();
+
+    protected connection: Connection;
+    protected room: Room;
+    protected rooms: {[id: string]: Room} = {};
 
     constructor (url: string) {
         let colyseusid = cookie.getItem('colyseusid');
@@ -51,9 +52,12 @@ export class Client {
             this.onOpen.dispatch();
 
         } else if (code == Protocol.JOIN_ROOM) {
-            this.room.id = message[1];
-            this.room.connect(new Connection(`${ this.connection.url }/${ this.room.id }`));
-            // this.connection.close();
+            let room = this.room;
+            room.id = message[1];
+            room.connect(new Connection(`${ this.connection.url }/${ this.room.id }`));
+            room.onLeave.add(() => delete this.rooms[room.id]);
+
+            this.rooms[room.id] = room;
 
         } else if (code == Protocol.JOIN_ERROR) {
             console.error("server error:", message[2]);

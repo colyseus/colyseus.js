@@ -24,6 +24,7 @@ export class Connection extends WebSocketClient {
             return super.send( msgpack.encode(data) )
 
         } else {
+            console.warn(`colyseus.js: trying to send data while in ${ this.ws.readyState } state`);
 
             // WebSocket not connected.
             // Enqueue data to be sent when readyState == OPEN

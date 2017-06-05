@@ -12,6 +12,7 @@ import { Connection } from "./Connection";
 export class Room<T=any> {
     public id: number;
     public name: string;
+    public sessionId: string;
 
     public state: DeltaContainer<T & any> = new DeltaContainer<T & any>({});
 
@@ -40,7 +41,6 @@ export class Room<T=any> {
     connect (connection: Connection) {
         this.connection = connection;
         this.connection.onmessage = this.onMessageCallback.bind(this);
-        this.connection.onopen = (e) => this.onJoin.dispatch();
         this.connection.onclose = (e) => this.onLeave.dispatch();
     }
 
@@ -48,7 +48,11 @@ export class Room<T=any> {
         let message = msgpack.decode( new Uint8Array(event.data) );
         let code = message[0];
 
-        if (code == Protocol.JOIN_ERROR) {
+        if (code == Protocol.JOIN_ROOM) {
+            this.sessionId = message[1]
+            this.onJoin.dispatch();
+
+        } else if (code == Protocol.JOIN_ERROR) {
             this.onError.dispatch(message[2]);
 
         } else if (code == Protocol.ROOM_STATE) {
@@ -110,16 +114,11 @@ export class Room<T=any> {
     public leave (): void {
         if (this.id) {
             this.connection.close();
-            // this.connection.send([ Protocol.LEAVE_ROOM, this.id ]);
         }
     }
 
     public send (data): void {
-        if (this.connection.readyState === WebSocket.OPEN) {
-            this.connection.send([ Protocol.ROOM_DATA, this.id, data ]);
-        } else {
-            console.warn("Room", this.id, "is not connected.");
-        }
+        this.connection.send([ Protocol.ROOM_DATA, this.id, data ]);
     }
 
     public removeAllListeners = (): void => {
