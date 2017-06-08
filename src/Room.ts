@@ -9,15 +9,13 @@ import { Protocol } from "./Protocol";
 import { Client } from "./Client";
 import { Connection } from "./Connection";
 
-export class Room<T=any> {
+export class Room<T=any> extends DeltaContainer<T & any> {
     public id: number;
     public name: string;
     public sessionId: string;
 
-    public state: DeltaContainer<T & any> = new DeltaContainer<T & any>({});
-
-    public clock: Clock = new Clock();
-    public remoteClock: Clock = new Clock();
+    public clock: Clock = new Clock(); // experimental
+    public remoteClock: Clock = new Clock(); // experimental
 
     // Public signals
     public onJoin: Signal = new Signal();
@@ -26,16 +24,19 @@ export class Room<T=any> {
     public onError: Signal = new Signal();
     public onLeave: Signal = new Signal();
 
-    public ping: number;
+    public ping: number; // experimental
     private lastPatchTime: number;
 
     public connection: Connection;
     private _previousState: any;
 
     constructor (name: string) {
+        super({});
+
         this.id = null;
         this.name = name;
-        this.onLeave.add( this.removeAllListeners );
+
+        this.onLeave.add( () => this.removeAllListeners() );
     }
 
     connect (connection: Connection) {
@@ -74,7 +75,7 @@ export class Room<T=any> {
     }
 
     setState ( state: T, remoteCurrentTime?: number, remoteElapsedTime?: number ): void {
-        this.state.set(state);
+        this.set(state);
         this._previousState = msgpack.encode( state )
 
         // set remote clock properties
@@ -106,9 +107,9 @@ export class Room<T=any> {
         this._previousState = fossilDelta.apply( this._previousState, binaryPatch );
 
         // trigger state callbacks
-        this.state.set( msgpack.decode( this._previousState ) );
+        this.set( msgpack.decode( this._previousState ) );
 
-        this.onUpdate.dispatch(this.state.data);
+        this.onUpdate.dispatch(this.data);
     }
 
     public leave (): void {
@@ -121,13 +122,13 @@ export class Room<T=any> {
         this.connection.send([ Protocol.ROOM_DATA, this.id, data ]);
     }
 
-    public removeAllListeners = (): void => {
+    public removeAllListeners () {
+        super.removeAllListeners();
         this.onJoin.removeAll();
         this.onUpdate.removeAll();
         this.onData.removeAll();
         this.onError.removeAll();
         this.onLeave.removeAll();
-        this.state.removeAllListeners();
     }
 
 }
