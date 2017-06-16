@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.7.0-alpha.1",
+  "version": "0.7.0-alpha.2",
   "description": "Multiplayer Game Client for the Browser",
   "keywords": [
     "multiplayer",
@@ -32,7 +32,7 @@
     "msgpack-lite": "^0.1.20",
     "signals.js": "^1.0.0",
     "tiny-emitter": "^1.1.0",
-    "websocket.js": "^0.1.10"
+    "websocket.js": "^0.1.12"
   },
   "devDependencies": {
     "@types/chai": "^3.4.34",

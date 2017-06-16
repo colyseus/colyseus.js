@@ -11,6 +11,8 @@ export class Connection extends WebSocketClient {
     }
 
     onOpenCallback (event) {
+        super.onOpenCallback();
+
         if (this._enqueuedCalls.length > 0) {
             for (let i=0; i<this._enqueuedCalls.length; i++) {
                 let [ method, args ] = this._enqueuedCalls[i];
