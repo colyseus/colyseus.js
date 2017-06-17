@@ -41,7 +41,7 @@ The first parameter is the path of the variable you want to listen to. When you 
 Listening to entities being added in the room:
 
 ```ts
-room.state.listen("entities/:id", "add", (entityId: string, value: any) => {
+room.listen("entities/:id", "add", (entityId: string, value: any) => {
     console.log(`new entity ${entityId}`, value);
 });
 ```
@@ -49,7 +49,7 @@ room.state.listen("entities/:id", "add", (entityId: string, value: any) => {
 Listening to entity attributes being replaced:
 
 ```ts
-room.state.listen("entities/:id/:attribute", "replace", (entityId: string, attribute: string, value: any) => {
+room.listen("entities/:id/:attribute", "replace", (entityId: string, attribute: string, value: any) => {
     console.log(`entity ${entityId} changed attribute ${attribute} to ${value}`);
 });
 ```
@@ -57,7 +57,7 @@ room.state.listen("entities/:id/:attribute", "replace", (entityId: string, attri
 Listening to entities being removed:
 
 ```ts
-room.state.listen("entities/:id", "remove", (entityId: string) => {
+room.listen("entities/:id", "remove", (entityId: string) => {
     console.log(`entity ${entityId} has been removed`);
 });
 ```

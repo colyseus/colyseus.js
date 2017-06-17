@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body { font-family: Tahoma, Geneva, sans-serif; }
+    </style>
+    <script src="colyseus.js"></script>
+  </head>
+  <body>
+    <strong>Messages</strong><br>
+
+    <form id="form">
+      <input type="text" id="input" value="" />
+      <input type="submit" value="send" />
+    </form>
+
+    <div id="messages"></div>
+
+    <script>
+      var host = window.document.location.host.replace(/:.*/, '');
+      var client = new Colyseus.Client('ws://' + host + ':8080');
+      var room;
+
+      // client.onopen = function() {
+      //     console.log('onopen!');
+      //     client.send("hey");
+      // }
+      //
+      // client.onmessage = function(data) {
+      //     console.log("onmessage", data)
+      // }
+
+      client.onOpen.add(function() {
+          console.log("onOpen")
+
+          room = client.join('chat');
+          room.onJoin.add(function() {
+              console.log('joined!');
+          })
+
+          room.onUpdate.add(function(data) {
+              console.log("chat update: ", data)
+          });
+      });
+
+      document.getElementById('form').onsubmit = function(e) {
+        e.preventDefault()
+
+        client.send(document.getElementById('input').value);
+
+        // room.send(document.getElementById('input').value);
+        document.getElementById('input').value = null
+      }
+    </script>
+
+  </body>
+</html>

@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.6.0",
+  "version": "0.7.0-alpha.3",
   "description": "Multiplayer Game Client for the Browser",
   "keywords": [
     "multiplayer",
@@ -15,7 +15,7 @@
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "scripts": {
-    "start": "npm run build && nodemon --harmony ./examples/server.js",
+    "start": "npm run build && node --harmony ./examples/server.js",
     "build-dist": "webpack --env.production",
     "build": "tsc && npm run build-dist",
     "watch": "tsc -w",
@@ -32,7 +32,7 @@
     "msgpack-lite": "^0.1.20",
     "signals.js": "^1.0.0",
     "tiny-emitter": "^1.1.0",
-    "websocket.js": "^0.1.7"
+    "websocket.js": "^0.1.12"
   },
   "devDependencies": {
     "@types/chai": "^3.4.34",
@@ -45,7 +45,7 @@
     "mocha": "^3.1.0",
     "nodemon": "^1.7.1",
     "ts-loader": "^2.0.0",
-    "typescript": "^2.1.4",
+    "typescript": "^2.3.3",
     "uglify-js": "^2.6.1",
     "watchify": "^3.6.1",
     "webpack": "^2.1.0-beta.25"
