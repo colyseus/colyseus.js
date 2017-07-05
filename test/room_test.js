@@ -46,18 +46,18 @@ describe("Room", function() {
     let delta = fossilDelta.create(previousState, nextState);
 
     let patchCount = 0;
-    room.listen("players/:id/:attribute", "replace", (id, attribute, value) => {
+    room.listen("players/:id/:attribute", (change) => {
       patchCount++
-      assert.equal(id, "one");
-      assert.equal(attribute, "hp");
-      assert.equal(value, 40);
+      assert.equal(change.path.id, "one");
+      assert.equal(change.path.attribute, "hp");
+      assert.equal(change.value, 40);
     })
 
-    room.listen("players/:id/position/:axis", "replace", (id, axis, value) => {
+    room.listen("players/:id/position/:axis", (change) => {
       patchCount++
-      assert.equal(id, "one");
-      assert.equal(axis, "y");
-      assert.equal(value, 100);
+      assert.equal(change.path.id, "one");
+      assert.equal(change.path.axis, "y");
+      assert.equal(change.value, 100);
     })
 
     room.patch(delta);

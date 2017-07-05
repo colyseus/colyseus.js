@@ -18,7 +18,7 @@
 
     <script>
       var host = window.document.location.host.replace(/:.*/, '');
-      var client = new Colyseus.Client('ws://' + host + ':8080');
+      var client = new Colyseus.Client('ws://' + host + ':3553');
       var room;
 
       // client.onopen = function() {
@@ -29,6 +29,25 @@
       // client.onmessage = function(data) {
       //     console.log("onmessage", data)
       // }
+
+      function request () {
+          var http = new XMLHttpRequest();
+          var params = '{"lorem":"ipsum","name":"binny"}';
+          http.open("POST", "http://localhost:2657/something", true);
+
+          // Send the proper header information along with the request
+          // http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+          http.setRequestHeader("Content-type", "application/json");
+
+          // Call a function when the state changes.
+          http.onreadystatechange = function() {
+              if(http.readyState == 4 && http.status == 200) {
+                  alert(http.responseText);
+              }
+          }
+
+          http.send(params);
+      }
 
       client.onOpen.add(function() {
           console.log("onOpen")

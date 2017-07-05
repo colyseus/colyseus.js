@@ -718,9 +718,9 @@ delegates@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/delegates/-/delegates-1.0.0.tgz#84c6e159b81904fdca59a0ef44cd870d31250f9a"
 
-delta-listener@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/delta-listener/-/delta-listener-1.1.0.tgz#a54b8d098321693411e6592282e5b13511bad059"
+delta-listener@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/delta-listener/-/delta-listener-2.0.0.tgz#8a8550516eeb631492bea5981a7bdeb33ab254c3"
 
 depd@~1.1.0:
   version "1.1.0"

@@ -18,3 +18,21 @@ NEW
 room.listen(...);
 console.log( room.data.someDataFromServer );
 ```
+
+#### `room.listen()` signature has changed.
+
+OLD
+
+```typescript
+room.listen("entities/:id/:attribute", "replace", (id, attribute, value) => {
+    console.log(id, attribute, value);
+})
+```
+
+NEW
+
+```typescript
+room.listen("entities/:id/:attribute", (change) => {
+    console.log(change.path.id, change.path.attribute, change.value);
+})
+```
