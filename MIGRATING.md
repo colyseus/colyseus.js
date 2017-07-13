@@ -24,7 +24,7 @@ console.log( room.data.someDataFromServer );
 OLD
 
 ```typescript
-room.listen("entities/:id/:attribute", "replace", (id, attribute, value) => {
+room.state.listen("entities/:id/:attribute", "replace", (id, attribute, value) => {
     console.log(id, attribute, value);
 })
 ```
