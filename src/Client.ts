@@ -1,7 +1,6 @@
 import * as msgpack from "msgpack-lite";
 import { Signal } from "signals.js";
 
-import * as cookie from "./Cookie";
 import { Protocol } from "./Protocol";
 import { Room } from "./Room";
 import { Connection } from "./Connection";
@@ -19,18 +18,20 @@ export class Client {
     protected room: Room;
     protected rooms: {[id: string]: Room} = {};
 
+    protected hostname: string;
+
     constructor (url: string) {
-        this.connection = new Connection(url);
+        this.id = localStorage.getItem('colyseusid') || "";
+        this.hostname = url;
+
+        this.connection = new Connection(`${ this.hostname }/?colyseusid=${ this.id }`);
         this.connection.onmessage = this.onMessageCallback.bind(this);
         this.connection.onclose = (e) => this.onClose.dispatch();
         this.connection.onerror = (e) => this.onError.dispatch();
 
         // check for id on cookie
         this.connection.onopen = () => {
-            console.log("onopen!");
-            let colyseusid = cookie.getItem('colyseusid');
-            if (colyseusid) {
-                this.id = colyseusid;
+            if (this.id) {
                 this.onOpen.dispatch();
             }
         }
@@ -52,14 +53,15 @@ export class Client {
         let code = message[0];
 
         if (code == Protocol.USER_ID) {
-            cookie.setItem('colyseusid', message[1]);
+            localStorage.setItem('colyseusid', message[1]);
+
             this.id = message[1];
             this.onOpen.dispatch();
 
         } else if (code == Protocol.JOIN_ROOM) {
             let room = this.room;
             room.id = message[1];
-            room.connect(new Connection(`${ this.connection.url }/${ this.room.id }`));
+            room.connect(new Connection(`${ this.hostname }/${ this.room.id }?colyseusid=${ this.id }`));
             room.onLeave.add(() => delete this.rooms[room.id]);
 
             this.rooms[room.id] = room;

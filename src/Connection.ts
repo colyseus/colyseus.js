@@ -5,8 +5,9 @@ export class Connection extends WebSocketClient {
 
     private _enqueuedCalls: any[] = [];
 
-    constructor (url) {
+    constructor (url, query: any = {}) {
         super(url);
+
         this.binaryType = "arraybuffer";
     }
 
