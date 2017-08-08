@@ -38,27 +38,19 @@ Here comes the most powerful feature of the client. You can listen to every stat
 
 The first parameter is the path of the variable you want to listen to. When you provide placeholders (such as `:number`, `:id`, `:string`) to the path, they will populate the function with the value found on it. See examples below.
 
-Listening to entities being added in the room:
+Listening to entities being added/removed from the room:
 
 ```ts
-room.listen("entities/:id", "add", (entityId: string, value: any) => {
-    console.log(`new entity ${entityId}`, value);
+room.listen("entities/:id", (change) => {
+    console.log(`new entity ${change.path.id}`, change.value);
 });
 ```
 
-Listening to entity attributes being replaced:
+Listening to entity attributes being added/replaced/removed:
 
 ```ts
-room.listen("entities/:id/:attribute", "replace", (entityId: string, attribute: string, value: any) => {
-    console.log(`entity ${entityId} changed attribute ${attribute} to ${value}`);
-});
-```
-
-Listening to entities being removed:
-
-```ts
-room.listen("entities/:id", "remove", (entityId: string) => {
-    console.log(`entity ${entityId} has been removed`);
+room.listen("entities/:id/:attribute", (change) => {
+    console.log(`entity ${change.path.id} changed attribute ${change.path.attribute} to ${change.value}`);
 });
 ```
 
