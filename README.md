@@ -1,17 +1,25 @@
-# ![colyseus.js](https://github.com/gamestdio/colyseus/blob/master/media/header.png?raw=true)
-
-> Colyseus.js - Multiplayer Game Client for the Browser.
-
-[![Join the chat at https://gitter.im/gamestdio/colyseus](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gamestdio/colyseus?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=N9C36SSE9ZCTS)
-[![Build Status](https://secure.travis-ci.org/gamestdio/colyseus.js.png?branch=master)](http://travis-ci.org/gamestdio/colyseus.js)
-[![Greenkeeper badge](https://badges.greenkeeper.io/gamestdio/colyseus.js.svg)](https://greenkeeper.io/)
-
-JavaScript/TypeScript client for
-[Colyseus](https://github.com/gamestdio/colyseus) Multiplayer Game Server.
-
-**The version 0.6.0 is still in beta. Expect some changes before the final
-release.**
+<div align="center">
+  <a href="https://github.com/gamestdio/colyseus">
+    <img src="https://github.com/gamestdio/colyseus/blob/master/media/header.png?raw=true" />
+  </a>
+  <br>
+  <br>
+  <a href="https://npmjs.com/package/colyseus">
+    <img src="https://img.shields.io/npm/dm/colyseus.svg">
+  </a>
+  <a href="https://github.com/gamestdio/colyseus#sponsors">
+    <img src="https://opencollective.com/colyseus/sponsors/badge.svg">
+  </a>
+  <a href="https://github.com/gamestdio/colyseus#backers">
+    <img src="https://opencollective.com/colyseus/backers/badge.svg">
+  </a>
+  <a href="https://gitter.im/gamestdio/colyseus">
+    <img src="https://badges.gitter.im/gamestdio/colyseus.svg">
+  </a>
+  <h3>
+     Multiplayer Game Client for the Browser.
+  <h3>
+</div>
 
 ## Usage
 
@@ -34,9 +42,12 @@ room.onJoin.add(function() {
 
 ### Listening to room state change:
 
-Here comes the most powerful feature of the client. You can listen to every state update in the server-side, and bind them into client-side functions.
+Here comes the most powerful feature of the client. You can listen to every
+state update in the server-side, and bind them into client-side functions.
 
-The first parameter is the path of the variable you want to listen to. When you provide placeholders (such as `:number`, `:id`, `:string`) to the path, they will populate the function with the value found on it. See examples below.
+The first parameter is the path of the variable you want to listen to. When you
+provide placeholders (such as `:number`, `:id`, `:string`) to the path, they
+will populate the function with the value found on it. See examples below.
 
 Listening to entities being added/removed from the room:
 
