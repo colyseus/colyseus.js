@@ -1,5 +1,5 @@
 import { Signal } from "signals.js";
-import Clock = require("clock.js");
+import Clock = require("@gamestdio/clock");
 
 import { DeltaContainer } from "delta-listener";
 import * as msgpack from "msgpack-lite";

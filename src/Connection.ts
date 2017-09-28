@@ -1,4 +1,4 @@
-import WebSocketClient from "websocket.js";
+import WebSocketClient from "@gamestdio/websocket";
 import * as msgpack from "msgpack-lite";
 
 export class Connection extends WebSocketClient {
