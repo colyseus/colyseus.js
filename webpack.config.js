@@ -22,6 +22,10 @@ module.exports = function(options) {
             ],
         },
 
+        // hack: react-native is not used for the distribution build
+        externals: {
+            'react-native': "ReactNative"
+        },
 
         plugins: (
             (options.production)

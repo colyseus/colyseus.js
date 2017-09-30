@@ -104,6 +104,30 @@ room.onLeave.add(function() {
 - [Server documentation](https://github.com/gamestdio/colyseus/wiki)
 - [Official examples](https://github.com/gamestdio/colyseus-examples)
 
+## React Native compatibility
+
+This client works with React Native. You need to install an aditional dependency
+for compatibility.
+```
+npm install react-native-browser-polyfill
+```
+
+```
+// App.js
+require('react-native-browser-polyfill');
+```
+
+The only caveat inside React Native environment is that you can only join rooms
+after the first connection open.
+
+```
+var client = new Colyseus.Client('ws://localhost:2657');
+
+client.onOpen.add(() => {
+    let room = client.join("your_room");
+})
+```
+
 ## License
 
 MIT

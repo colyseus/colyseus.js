@@ -2,7 +2,7 @@
     "compilerOptions": {
         "target": "es5",
         "module": "commonjs",
-        "lib": ["dom", "es5"],
+        "lib": ["dom", "es6"],
         "allowSyntheticDefaultImports": true,
         "noImplicitAny": false,
         "sourceMap": false,

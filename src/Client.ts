@@ -5,6 +5,11 @@ import { Protocol } from "./Protocol";
 import { Room } from "./Room";
 import { Connection } from "./Connection";
 
+// compatibility with react-native
+let storage = (typeof(localStorage) === "undefined")
+    ? require('react-native').AsyncStorage
+    : window.localStorage;
+
 export class Client {
     public id?: string;
 
@@ -21,8 +26,21 @@ export class Client {
     protected hostname: string;
 
     constructor (url: string) {
-        this.id = localStorage.getItem('colyseusid') || "";
         this.hostname = url;
+        let colyseusid: any = storage.getItem('colyseusid');
+
+        if (!(colyseusid instanceof Promise)) {
+            // browser has synchronous return
+            this.createConnection(colyseusid);
+
+        } else {
+            // react-native is asynchronous
+            colyseusid.then(id => this.createConnection(id));
+        }
+    }
+
+    protected createConnection (colyseusid: string) {
+        this.id = colyseusid || "";
 
         this.connection = new Connection(`${ this.hostname }/?colyseusid=${ this.id }`);
         this.connection.onmessage = this.onMessageCallback.bind(this);
@@ -53,7 +71,7 @@ export class Client {
         let code = message[0];
 
         if (code == Protocol.USER_ID) {
-            localStorage.setItem('colyseusid', message[1]);
+            storage.setItem('colyseusid', message[1]);
 
             this.id = message[1];
             this.onOpen.dispatch();
