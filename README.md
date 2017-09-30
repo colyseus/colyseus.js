@@ -107,18 +107,20 @@ room.onLeave.add(function() {
 ## React Native compatibility
 
 This client works with React Native. You need to install an aditional dependency
-for compatibility.
+for compatibility and assign `window.localStorage` to `AsyncStorage`.
+
 ```
 npm install react-native-browser-polyfill
 ```
 
 ```
 // App.js
-require('react-native-browser-polyfill');
+import 'react-native-browser-polyfill';
+import { AsyncStorage } from 'react-native';
+window.localStorage = AsyncStorage;
 ```
 
-The only caveat inside React Native environment is that you can only join rooms
-after the first connection open.
+Another caveat is that you can only join rooms after the first connection open.
 
 ```
 var client = new Colyseus.Client('ws://localhost:2657');
