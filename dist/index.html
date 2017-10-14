@@ -21,15 +21,6 @@
       var client = new Colyseus.Client('ws://' + host + ':8080');
       var room;
 
-      // client.onopen = function() {
-      //     console.log('onopen!');
-      //     client.send("hey");
-      // }
-      //
-      // client.onmessage = function(data) {
-      //     console.log("onmessage", data)
-      // }
-
       function request () {
           var http = new XMLHttpRequest();
           var params = '{"lorem":"ipsum","name":"binny"}';
@@ -66,7 +57,7 @@
       document.getElementById('form').onsubmit = function(e) {
         e.preventDefault()
 
-        client.send(document.getElementById('input').value);
+        room.send(document.getElementById('input').value);
 
         // room.send(document.getElementById('input').value);
         document.getElementById('input').value = null

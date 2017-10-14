@@ -15,8 +15,10 @@ export class Client {
     public onError: Signal = new Signal();
 
     protected connection: Connection;
-    protected room: Room;
+
     protected rooms: {[id: string]: Room} = {};
+    protected connectingRooms: {[id: string]: Room} = {};
+    protected joinRequestId = 0;
 
     protected hostname: string;
     protected storage: Storage = window.localStorage;
@@ -52,11 +54,13 @@ export class Client {
     }
 
     join<T> (roomName: string, options: any = {}): Room<T> {
-        this.room = new Room<T>(roomName);
+        options.requestId = ++this.joinRequestId;
+
+        this.connectingRooms[ options.requestId ] = new Room<T>(roomName);
 
         this.connection.send([Protocol.JOIN_ROOM, roomName, options]);
 
-        return this.room;
+        return this.connectingRooms[ options.requestId ];
     }
 
     /**
@@ -73,12 +77,16 @@ export class Client {
             this.onOpen.dispatch();
 
         } else if (code == Protocol.JOIN_ROOM) {
-            let room = this.room;
-            room.id = message[1];
-            room.connect(new Connection(`${ this.hostname }/${ this.room.id }?colyseusid=${ this.id }`));
-            room.onLeave.add(() => delete this.rooms[room.id]);
+            let requestId = message[2];
+            let room = this.connectingRooms[ requestId ];
 
             this.rooms[room.id] = room;
+
+            room.id = message[1];
+            room.connect(new Connection(`${ this.hostname }/${ room.id }?colyseusid=${ this.id }`));
+            room.onLeave.add(() => delete this.rooms[room.id]);
+
+            delete this.connectingRooms[ requestId ];
 
         } else if (code == Protocol.JOIN_ERROR) {
             console.error("server error:", message[2]);
