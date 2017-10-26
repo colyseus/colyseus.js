@@ -104,7 +104,7 @@ export class Room<T=any> extends DeltaContainer<T & any> {
         this.clock.tick();
 
         // apply patch
-        this._previousState = fossilDelta.apply( this._previousState, binaryPatch );
+        this._previousState = (<any>fossilDelta).apply( this._previousState, binaryPatch, { verifyChecksum: false } );
 
         // trigger state callbacks
         this.set( msgpack.decode( this._previousState ) );
