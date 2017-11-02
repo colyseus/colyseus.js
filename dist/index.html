@@ -49,6 +49,11 @@
               console.log('joined!');
           })
 
+          room.onLeave.add(function() {
+              room.connection.reconnectEnabled = false;
+              console.log("LEFT ROOM", arguments);
+          });
+
           room.onUpdate.add(function(data) {
               console.log("chat update: ", data)
           });
