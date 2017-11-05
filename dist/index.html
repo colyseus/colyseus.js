@@ -50,7 +50,6 @@
           })
 
           room.onLeave.add(function() {
-              room.connection.reconnectEnabled = false;
               console.log("LEFT ROOM", arguments);
           });
 

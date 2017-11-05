@@ -1,11 +1,11 @@
-const assert = require('chai').assert;
-const Room = require('../lib/Room').Room;
+import { assert } from "chai";
+import { Room } from "../src/Room";
 
-const fossilDelta = require('fossil-delta');
-const msgpack = require('msgpack-lite');
+import * as fossilDelta from "fossil-delta";
+import * as msgpack from "notepack.io";
 
 describe("Room", function() {
-  let room = null;
+  let room: Room = null;
 
   beforeEach(function() {
     room = new Room("chat");
@@ -35,7 +35,8 @@ describe("Room", function() {
     room.setState(state, 0, 0);
 
     // get previous state encoded
-    let previousState = msgpack.encode(state);
+    let previousState = new Uint8Array(msgpack.encode(state));
+
     // change state and encode it
     let nextState = msgpack.encode({
       players: {

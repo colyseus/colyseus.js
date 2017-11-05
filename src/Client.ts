@@ -1,4 +1,4 @@
-import * as msgpack from "msgpack-lite";
+import * as msgpack from "notepack.io";
 import { Signal } from "signals.js";
 
 import { Protocol } from "./Protocol";

@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.7.6",
+  "version": "0.7.7-alpha.1",
   "description": "Multiplayer Game Client for the Browser",
   "keywords": [
     "multiplayer",
@@ -20,7 +20,7 @@
     "build": "tsc && npm run build-dist",
     "watch": "tsc -w",
     "prepublish": "npm run build",
-    "test": "npm run build && mocha test/",
+    "test": "mocha test/*.ts --require ts-node/register",
     "postinstall": "npm run -s donate",
     "donate": "echo \"\u001b[35m\u001b[1mLove Colyseus? Support its development by becoming a backer:\u001b[22m\u001b[39m\n > \u001b[34mhttps://www.patreon.com/endel\u001b[39m\""
   },
@@ -32,18 +32,22 @@
     "@gamestdio/websocket": "^0.2.2",
     "delta-listener": "^2.1.0",
     "fossil-delta": "^1.0.0",
-    "msgpack-lite": "^0.1.20",
+    "notepack.io": "^2.1.2",
     "signals.js": "^1.0.0"
   },
   "devDependencies": {
     "@types/chai": "^3.4.34",
     "@types/fast-json-patch": "^1.0.4",
     "@types/fossil-delta": "^1.0.0",
+    "@types/mocha": "^2.2.44",
     "@types/msgpack-lite": "^0.1.1",
+    "msgpack-lite": "^0.1.20",
+    "benchmark": "^2.1.4",
     "chai": "^3.5.0",
     "mocha": "^3.1.0",
     "nodemon": "^1.7.1",
     "ts-loader": "^2.3.7",
+    "ts-node": "^3.3.0",
     "typescript": "^2.5.3",
     "uglify-js": "^2.6.1",
     "watchify": "^3.6.1",

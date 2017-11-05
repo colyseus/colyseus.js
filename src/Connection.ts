@@ -1,5 +1,5 @@
 import WebSocketClient from "@gamestdio/websocket";
-import * as msgpack from "msgpack-lite";
+import * as msgpack from "notepack.io";
 
 export class Connection extends WebSocketClient {
 

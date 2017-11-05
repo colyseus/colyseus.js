@@ -2,7 +2,7 @@ import { Signal } from "signals.js";
 import Clock = require("@gamestdio/clock");
 
 import { DeltaContainer } from "delta-listener";
-import * as msgpack from "msgpack-lite";
+import * as msgpack from "notepack.io";
 import * as fossilDelta from "fossil-delta";
 
 import { Protocol } from "./Protocol";
@@ -76,7 +76,7 @@ export class Room<T=any> extends DeltaContainer<T & any> {
 
     setState ( state: T, remoteCurrentTime?: number, remoteElapsedTime?: number ): void {
         this.set(state);
-        this._previousState = msgpack.encode( state )
+        this._previousState = new Uint8Array( msgpack.encode(state) );
 
         // set remote clock properties
         if (remoteCurrentTime && remoteElapsedTime) {
@@ -104,7 +104,7 @@ export class Room<T=any> extends DeltaContainer<T & any> {
         this.clock.tick();
 
         // apply patch
-        this._previousState = (<any>fossilDelta).apply( this._previousState, binaryPatch, { verifyChecksum: false } );
+        this._previousState = new Uint8Array( fossilDelta.apply( this._previousState, binaryPatch, { verifyChecksum: false } ) );
 
         // trigger state callbacks
         this.set( msgpack.decode( this._previousState ) );
