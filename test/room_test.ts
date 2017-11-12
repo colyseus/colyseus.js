@@ -22,7 +22,7 @@ describe("Room", function() {
       done();
     });
 
-    room.setState({ messages: [] }, 0, 0);
+    room.setState(msgpack.encode({ messages: [] }), 0, 0);
   })
 
   it("should patch room state", function(done) {
@@ -32,10 +32,10 @@ describe("Room", function() {
         'two': { hp: 95, lvl: 2, position: {x: 0, y: 0} },
       }
     };
-    room.setState(state, 0, 0);
+    room.setState(msgpack.encode(state), 0, 0);
 
     // get previous state encoded
-    let previousState = new Uint8Array(msgpack.encode(state));
+    let previousState = msgpack.encode(state);
 
     // change state and encode it
     let nextState = msgpack.encode({

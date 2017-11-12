@@ -74,9 +74,11 @@ export class Room<T=any> extends DeltaContainer<T & any> {
         }
     }
 
-    setState ( state: T, remoteCurrentTime?: number, remoteElapsedTime?: number ): void {
+    setState ( encodedState: Buffer, remoteCurrentTime?: number, remoteElapsedTime?: number ): void {
+        let state = msgpack.decode(encodedState);
         this.set(state);
-        this._previousState = new Uint8Array( msgpack.encode(state) );
+
+        this._previousState = new Uint8Array( encodedState );
 
         // set remote clock properties
         if (remoteCurrentTime && remoteElapsedTime) {
@@ -104,7 +106,7 @@ export class Room<T=any> extends DeltaContainer<T & any> {
         this.clock.tick();
 
         // apply patch
-        this._previousState = new Uint8Array( fossilDelta.apply( this._previousState, binaryPatch, { verifyChecksum: false } ) );
+        this._previousState = Buffer.from(fossilDelta.apply( this._previousState, binaryPatch));
 
         // trigger state callbacks
         this.set( msgpack.decode( this._previousState ) );
