@@ -1,6 +1,6 @@
 import './util';
 import { assert } from "chai";
-import { Room, EntityMap, initializeSync, sync, key, room, syncMap, syncObject } from "../src";
+import { Room, DataChange, EntityMap, initializeSync, sync, key, room, syncMap, syncObject, listen } from "../src";
 
 class Entity {
     @key() id: string;
@@ -70,6 +70,24 @@ describe("Sync Tools", function() {
 
     it("#room", () => {
         assert.deepEqual(game.entities.one.room, room);
+    });
+
+    it("#listen", () => {
+        let room = new Room("dummy_room");
+        let list = [1,2,3,4,5];
+
+        let index = 0;
+        class Test {
+            @listen("list/:number")
+            onListChange (change: DataChange) {
+                index++;
+                assert.equal(change.value, list[ list.length - index ]);
+                assert.equal(change.path.number, list.length - index);
+            }
+        }
+
+        initializeSync(room, new Test());
+        room.set({ list });
     });
 
 });
