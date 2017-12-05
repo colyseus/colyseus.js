@@ -6,6 +6,7 @@
         "allowSyntheticDefaultImports": true,
         "noImplicitAny": false,
         "sourceMap": false,
+        "experimentalDecorators": true,
         "declaration": true,
         "outDir": "lib"
     },

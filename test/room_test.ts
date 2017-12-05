@@ -1,5 +1,6 @@
+import './util';
 import { assert } from "chai";
-import { Room } from "../src/Room";
+import { Room } from "../src";
 
 import * as fossilDelta from "fossil-delta";
 import * as msgpack from "notepack.io";

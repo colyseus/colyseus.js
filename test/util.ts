@@ -1,0 +1,1 @@
+(<any>global).WebSocket = {};

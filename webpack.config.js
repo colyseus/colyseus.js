@@ -14,7 +14,7 @@ module.exports = function(options) {
             library: "Colyseus"
         },
 
-        devtool: 'inline-source-map',
+        // devtool: 'inline-source-map',
 
         module: {
             rules: [
@@ -34,11 +34,11 @@ module.exports = function(options) {
                         minimize: true,
                         debug: false
                     }),
-                    // new webpack.optimize.UglifyJsPlugin({
-                    //     compress: {},
-                    //     output: { comments: false },
-                    //     sourceMap: false
-                    // })
+                    new webpack.optimize.UglifyJsPlugin({
+                        compress: {},
+                        output: { comments: false },
+                        sourceMap: false
+                    })
                   ]
                 : []
         ),
