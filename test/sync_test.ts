@@ -90,4 +90,22 @@ describe("Sync Tools", function() {
         room.set({ list });
     });
 
+    it("#listen for specific operation", () => {
+        let room = new Room("dummy_room");
+
+        let index = 0;
+        class Test {
+            @listen("player/x", "replace")
+            onListChange (change: DataChange) {
+                assert.equal(change.operation, "replace");
+                assert.equal(change.value, 10);
+            }
+        }
+
+        initializeSync(room, new Test());
+
+        room.set({ player: { x: 0, y: 0 } });
+        room.set({ player: { x: 10, y: 0 }});
+    });
+
 });

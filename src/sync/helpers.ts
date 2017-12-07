@@ -1,6 +1,9 @@
+import { DataChange } from "delta-listener";
+
 import { Room } from "../Room";
 import { Synchable, Property } from "./types";
 import * as listeners from "./listeners";
+
 
 export function initializeSync (room: Room, synchable: any & Synchable) {
     createBindings(room, synchable, synchable);
@@ -60,12 +63,12 @@ export function sync (type?: any, holderType: string = 'var', addCallback?: Func
     }
 }
 
-export function listen (path: string): MethodDecorator {
-    return function (target: any, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>) {
+export function listen (path: string, op?: string): MethodDecorator {
+    return function (target: any, methodName: string | symbol, descriptor: TypedPropertyDescriptor<any>) {
         if (!target.constructor.listeners) {
             target.constructor.listeners = {};
         }
-        target.constructor.listeners[ path ] = propertyKey;
+        target.constructor.listeners[ path ] = { methodName, op };
     }
 }
 
@@ -142,6 +145,15 @@ export function bindListeners (
     }
 
     for (let path in listeners) {
-        room.listen(path, synchable[ listeners[ path ] ].bind(synchable));
+        let listener = listeners[ path ];
+        let callback = (listener.op)
+            ? (function(change: DataChange) {
+                if (change.operation === listener.op) {
+                    synchable[listener.methodName](change);
+                }
+             })
+            : synchable[ listener.methodName ].bind(synchable)
+
+        room.listen(path, callback);
     }
 }
