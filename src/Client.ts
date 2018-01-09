@@ -56,11 +56,19 @@ export class Client {
     join<T> (roomName: string, options: any = {}): Room<T> {
         options.requestId = ++this.joinRequestId;
 
-        this.connectingRooms[ options.requestId ] = new Room<T>(roomName);
+        const room = new Room<T>(roomName);
+
+        // remove references on leaving
+        room.onLeave.addOnce(() => {
+            delete this.rooms[room.id];
+            delete this.connectingRooms[options.requestId];
+        });
+
+        this.connectingRooms[ options.requestId ] = room;
 
         this.connection.send([Protocol.JOIN_ROOM, roomName, options]);
 
-        return this.connectingRooms[ options.requestId ];
+        return room;
     }
 
     /**
@@ -80,16 +88,20 @@ export class Client {
             let requestId = message[2];
             let room = this.connectingRooms[ requestId ];
 
+            if (!room) {
+                console.warn("colyseus.js: client left room before receiving session id.");
+                return;
+            }
+
             this.rooms[room.id] = room;
 
             room.id = message[1];
             room.connect(new Connection(`${ this.hostname }/${ room.id }?colyseusid=${ this.id }`));
-            room.onLeave.add(() => delete this.rooms[room.id]);
 
             delete this.connectingRooms[ requestId ];
 
         } else if (code == Protocol.JOIN_ERROR) {
-            console.error("server error:", message[2]);
+            console.error("colyseus.js: server error:", message[2]);
 
             // general error
             this.onError.dispatch(message[2]);

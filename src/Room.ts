@@ -115,8 +115,11 @@ export class Room<T=any> extends DeltaContainer<T & any> {
     }
 
     public leave (): void {
-        if (this.id) {
+        if (this.connection) {
             this.connection.close();
+
+        } else {
+            this.onLeave.dispatch();
         }
     }
 
