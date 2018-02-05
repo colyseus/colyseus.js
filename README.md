@@ -116,6 +116,7 @@ dependencies for compatibility and assign `window.localStorage` to
 ```
 // App.js
 import 'react-native-browser-polyfill';
+import './shim';
 import { AsyncStorage } from 'react-native';
 window.localStorage = AsyncStorage;
 ```
