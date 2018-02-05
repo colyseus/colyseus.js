@@ -106,12 +106,12 @@ room.onLeave.add(function() {
 
 ## React Native compatibility
 
-This client works with React Native. You need to install an aditional dependency
-for compatibility and assign `window.localStorage` to `AsyncStorage`.
+This client works with React Native. You need to install some aditional
+dependencies for compatibility and assign `window.localStorage` to
+`AsyncStorage`.
 
-```
-npm install react-native-browser-polyfill
-```
+- Install `react-native-browser-polyfill` (`npm install react-native-browser-polyfill`)
+- Install and follow [`rn-nodeify`](https://github.com/tradle/rn-nodeify) installation instructions (`npm install rn-nodeify`)
 
 ```
 // App.js
