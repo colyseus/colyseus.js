@@ -1,6 +1,6 @@
 import './util';
 import { assert } from "chai";
-import { Room } from "../src";
+import { Room, DataChange } from "../src";
 
 import * as fossilDelta from "fossil-delta";
 import * as msgpack from "notepack.io";
@@ -23,7 +23,7 @@ describe("Room", function() {
       done();
     });
 
-    room.setState(msgpack.encode({ messages: [] }), 0, 0);
+    (<any>room).setState(msgpack.encode({ messages: [] }), 0, 0);
   })
 
   it("should patch room state", function(done) {
@@ -33,7 +33,7 @@ describe("Room", function() {
         'two': { hp: 95, lvl: 2, position: {x: 0, y: 0} },
       }
     };
-    room.setState(msgpack.encode(state), 0, 0);
+    (<any>room).setState(msgpack.encode(state), 0, 0);
 
     // get previous state encoded
     let previousState = msgpack.encode(state);
@@ -53,16 +53,16 @@ describe("Room", function() {
       assert.equal(change.path.id, "one");
       assert.equal(change.path.attribute, "hp");
       assert.equal(change.value, 40);
-    })
+    });
 
     room.listen("players/:id/position/:axis", (change) => {
       patchCount++
       assert.equal(change.path.id, "one");
       assert.equal(change.path.axis, "y");
       assert.equal(change.value, 100);
-    })
+    });
 
-    room.patch(delta);
+    (<any>room).patch(delta);
 
     setTimeout(() => {
       if (patchCount === 2) done();

@@ -10,7 +10,7 @@ import { Client } from "./Client";
 import { Connection } from "./Connection";
 
 export class Room<T=any> extends DeltaContainer<T & any> {
-    public id: number;
+    public id: string;
     public name: string;
     public sessionId: string;
 
@@ -74,7 +74,7 @@ export class Room<T=any> extends DeltaContainer<T & any> {
         }
     }
 
-    setState ( encodedState: Buffer, remoteCurrentTime?: number, remoteElapsedTime?: number ): void {
+    protected setState ( encodedState: Buffer, remoteCurrentTime?: number, remoteElapsedTime?: number ): void {
         let state = msgpack.decode(encodedState);
         this.set(state);
 
@@ -91,7 +91,7 @@ export class Room<T=any> extends DeltaContainer<T & any> {
         this.onUpdate.dispatch(state);
     }
 
-    patch ( binaryPatch ) {
+    protected patch ( binaryPatch ) {
         //
         // calculate client-side ping
         //
