@@ -1,3 +1,5 @@
+///<reference path="../typings/cocos-creator.d.ts" />
+
 import * as msgpack from "notepack.io";
 import { Signal } from "signals.js";
 
@@ -21,7 +23,9 @@ export class Client {
     protected joinRequestId = 0;
 
     protected hostname: string;
-    protected storage: Storage = window.localStorage;
+    protected storage: Storage = (cc && cc.sys && cc.sys.localStorage)
+        ? cc.sys.localStorage  // compatibility with cocos creator
+        : window.localStorage; // regular browser environment
 
     constructor (url: string) {
         this.hostname = url;

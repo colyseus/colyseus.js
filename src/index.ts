@@ -5,7 +5,9 @@ export { DataChange } from "delta-listener";
 
 export type EntityMap<T> = {[ entityId:string ]: T};
 
-// Sync tools
+/**
+ * Experimental sync helpers
+ */
 export {
     initializeSync,
     sync,
