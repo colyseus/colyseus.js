@@ -17,13 +17,13 @@
     <img src="https://badges.gitter.im/gamestdio/colyseus.svg">
   </a>
   <h3>
-     Multiplayer Game Client for JavaScript. <br /><a href="http://colyseus.io/docs/">View documentation</a>
+     Multiplayer Game Client for JavaScript/TypeScript. <br /><a href="http://colyseus.io/docs/">View documentation</a>
   <h3>
 </div>
 
 ## Platforms
 
-This client works on these platforms
+This client works on these platforms:
 
 - Major browsers environments ([Electron](https://github.com/electron/electron), Chrome, Firefox, Safari, Opera, etc)
 - [React Native](https://github.com/facebook/react-native) ([with some caveats](#react-native-compatibility))
