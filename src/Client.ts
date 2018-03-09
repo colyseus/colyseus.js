@@ -27,7 +27,10 @@ export class Client {
         this.hostname = url;
         let colyseusid: any = this.storage.getItem('colyseusid');
 
-        if (!(colyseusid instanceof Promise)) {
+        if (
+            typeof(Promise) === "undefined" || // old browsers
+            !(colyseusid instanceof Promise)
+        ) {
             // browser has synchronous return
             this.createConnection(colyseusid);
 
