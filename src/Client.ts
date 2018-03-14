@@ -32,18 +32,18 @@ export class Client {
             !(colyseusid instanceof Promise)
         ) {
             // browser has synchronous return
-            this.createConnection(colyseusid);
+            this.connect(colyseusid);
 
         } else {
             // react-native is asynchronous
-            colyseusid.then(id => this.createConnection(id));
+            colyseusid.then(id => this.connect(id));
         }
     }
 
-    protected createConnection (colyseusid: string) {
+    protected connect (colyseusid: string) {
         this.id = colyseusid || "";
 
-        this.connection = new Connection(`${ this.hostname }/?colyseusid=${ this.id }`);
+        this.connection = this.createConnection();
         this.connection.onmessage = this.onMessageCallback.bind(this);
         this.connection.onclose = (e) => this.onClose.dispatch();
         this.connection.onerror = (e) => this.onError.dispatch();
@@ -54,6 +54,13 @@ export class Client {
                 this.onOpen.dispatch();
             }
         }
+    }
+
+    protected createConnection (path: string = "", query: any = {}) {
+        // append colyseusid to connection string.
+        query.colyseusid = this.id;
+
+        return new Connection(`${this.hostname}/${path}?${JSON.stringify(query)}`);
     }
 
     join<T> (roomName: string, options: any = {}): Room<T> {
@@ -99,7 +106,7 @@ export class Client {
             this.rooms[room.id] = room;
 
             room.id = message[1];
-            room.connect(new Connection(`${ this.hostname }/${ room.id }?colyseusid=${ this.id }`));
+            room.connect(this.createConnection(room.id, { options: room.options }));
 
             delete this.connectingRooms[ requestId ];
 

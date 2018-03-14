@@ -11,8 +11,10 @@ import { Connection } from "./Connection";
 
 export class Room<T=any> extends DeltaContainer<T & any> {
     public id: string;
-    public name: string;
     public sessionId: string;
+
+    public name: string;
+    public options: any;
 
     public clock: Clock = new Clock(); // experimental
     public remoteClock: Clock = new Clock(); // experimental
@@ -30,18 +32,21 @@ export class Room<T=any> extends DeltaContainer<T & any> {
     public connection: Connection;
     private _previousState: any;
 
-    constructor (name: string) {
+    constructor (name: string, options?: any) {
         super({});
-
         this.id = null;
+
         this.name = name;
+        this.options = options;
 
         this.onLeave.add( () => this.removeAllListeners() );
     }
 
     connect (connection: Connection) {
         this.connection = connection;
+        this.connection.reconnectEnabled = false;
         this.connection.onmessage = this.onMessageCallback.bind(this);
+        this.connection.onopen = (e) => this.onJoin.dispatch(e);
         this.connection.onclose = (e) => this.onLeave.dispatch(e);
     }
 
@@ -49,25 +54,18 @@ export class Room<T=any> extends DeltaContainer<T & any> {
         let message = msgpack.decode( new Uint8Array(event.data) );
         let code = message[0];
 
-        if (code == Protocol.JOIN_ROOM) {
-            this.sessionId = message[1]
-            this.onJoin.dispatch();
-
-        } else if (code == Protocol.JOIN_ERROR) {
-            this.onError.dispatch(message[2]);
-
-        } else if (code == Protocol.ROOM_STATE) {
-            let state = message[2];
-            let remoteCurrentTime = message[3];
-            let remoteElapsedTime = message[4];
+        if (code == Protocol.ROOM_STATE) {
+            let state = message[1];
+            let remoteCurrentTime = message[2];
+            let remoteElapsedTime = message[3];
 
             this.setState( state, remoteCurrentTime, remoteElapsedTime );
 
         } else if (code == Protocol.ROOM_STATE_PATCH) {
-            this.patch( message[2] );
+            this.patch( message[1] );
 
         } else if (code == Protocol.ROOM_DATA) {
-            this.onData.dispatch(message[2]);
+            this.onData.dispatch(message[1]);
 
         } else if (code == Protocol.LEAVE_ROOM) {
             this.leave();

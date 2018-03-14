@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "description": "Multiplayer Game Client for the Browser",
   "keywords": [
     "multiplayer",
@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@gamestdio/clock": "^1.1.0",
-    "@gamestdio/websocket": "^0.2.2",
+    "@gamestdio/websocket": "^0.2.3",
     "delta-listener": "^2.1.2",
     "fossil-delta": "^1.0.0",
     "notepack.io": "^2.1.2",
