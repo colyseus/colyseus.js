@@ -41,6 +41,7 @@ export class Room<T=any> extends DeltaContainer<T & any> {
 
     connect (connection: Connection) {
         this.connection = connection;
+        this.connection.reconnectEnabled = false;
         this.connection.onmessage = this.onMessageCallback.bind(this);
         this.connection.onclose = (e) => this.onLeave.dispatch(e);
     }
