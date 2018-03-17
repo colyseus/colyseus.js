@@ -21,7 +21,7 @@ export class Room<T=any> extends DeltaContainer<T & any> {
 
     // Public signals
     public onJoin: Signal = new Signal();
-    public onUpdate: Signal = new Signal();
+    public onStateChange: Signal = new Signal();
     public onData: Signal = new Signal();
     public onError: Signal = new Signal();
     public onLeave: Signal = new Signal();
@@ -46,15 +46,26 @@ export class Room<T=any> extends DeltaContainer<T & any> {
         this.connection = connection;
         this.connection.reconnectEnabled = false;
         this.connection.onmessage = this.onMessageCallback.bind(this);
-        this.connection.onopen = (e) => this.onJoin.dispatch(e);
         this.connection.onclose = (e) => this.onLeave.dispatch(e);
+        this.connection.onerror = (e) => {
+            console.warn(`Possible causes: room's onAuth() failed or maxClients has been reached.`);
+            this.onError.dispatch(e);
+        };
     }
 
     protected onMessageCallback (event) {
         let message = msgpack.decode( new Uint8Array(event.data) );
         let code = message[0];
 
-        if (code == Protocol.ROOM_STATE) {
+        if (code == Protocol.JOIN_ROOM) {
+            this.sessionId = message[1];
+            this.onJoin.dispatch();
+
+        } else if (code == Protocol.JOIN_ERROR) {
+            console.error(`Error: ${message[1]}`);
+            this.onError.dispatch(message[1]);
+
+        } else if (code == Protocol.ROOM_STATE) {
             let state = message[1];
             let remoteCurrentTime = message[2];
             let remoteElapsedTime = message[3];
@@ -86,7 +97,7 @@ export class Room<T=any> extends DeltaContainer<T & any> {
 
         this.clock.start();
 
-        this.onUpdate.dispatch(state);
+        this.onStateChange.dispatch(state);
     }
 
     protected patch ( binaryPatch ) {
@@ -109,7 +120,7 @@ export class Room<T=any> extends DeltaContainer<T & any> {
         // trigger state callbacks
         this.set( msgpack.decode( this._previousState ) );
 
-        this.onUpdate.dispatch(this.data);
+        this.onStateChange.dispatch(this.data);
     }
 
     public leave (): void {
@@ -128,7 +139,7 @@ export class Room<T=any> extends DeltaContainer<T & any> {
     public removeAllListeners () {
         super.removeAllListeners();
         this.onJoin.removeAll();
-        this.onUpdate.removeAll();
+        this.onStateChange.removeAll();
         this.onData.removeAll();
         this.onError.removeAll();
         this.onLeave.removeAll();
