@@ -66,7 +66,7 @@ export class Client {
     join<T> (roomName: string, options: any = {}): Room<T> {
         options.requestId = ++this.joinRequestId;
 
-        const room = new Room<T>(roomName);
+        const room = new Room<T>(roomName, options);
 
         // remove references on leaving
         room.onLeave.addOnce(() => {
