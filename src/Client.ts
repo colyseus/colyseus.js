@@ -56,11 +56,14 @@ export class Client {
         }
     }
 
-    protected createConnection (path: string = "", query: any = {}) {
+    protected createConnection (path: string = "", options: any = {}) {
         // append colyseusid to connection string.
-        query.colyseusid = this.id;
+        options.colyseusid = this.id;
 
-        return new Connection(`${this.hostname}/${path}?${JSON.stringify(query)}`);
+        let params = [];
+        for (let name in options) { params.push(`${name}=${options[name]}`); }
+
+        return new Connection(`${this.hostname}/${path}?${params.join("&")}`);
     }
 
     join<T> (roomName: string, options: any = {}): Room<T> {
@@ -106,7 +109,7 @@ export class Client {
             this.rooms[room.id] = room;
 
             room.id = message[1];
-            room.connect(this.createConnection(room.id, { options: room.options }));
+            room.connect(this.createConnection(room.id, room.options));
 
             delete this.connectingRooms[ requestId ];
 
