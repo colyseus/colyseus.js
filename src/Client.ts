@@ -63,13 +63,18 @@ export class Client {
     public getAvailableRooms(roomName: string): Promise<RoomAvailable[]> {
         return new Promise((resolve, reject) => {
             // reject this promise after 10 seconds.
-            const rejectionTimeout = setTimeout(reject, 10000);
             const requestId = ++this.requestId;
+            const removeRequest = () => delete this.roomsAvailableRequests[requestId];
+            const rejectionTimeout = setTimeout(() => {
+                removeRequest();
+                reject();
+            }, 10000);
 
             // send the request to the server.
             this.connection.send([Protocol.ROOM_LIST, requestId, roomName]);
 
             this.roomsAvailableRequests[requestId] = (roomsAvailable) => {
+                removeRequest();
                 clearTimeout(rejectionTimeout);
                 resolve(roomsAvailable);
             };
@@ -142,7 +147,12 @@ export class Client {
             this.onError.dispatch(message[2]);
 
         } else if (code === Protocol.ROOM_LIST) {
-            this.roomsAvailableRequests[message[1]](message[2]);
+            if (this.roomsAvailableRequests[message[1]]) {
+                this.roomsAvailableRequests[message[1]](message[2]);
+
+            } else {
+                console.warn('receiving ROOM_LIST after timeout:', message[2]);
+            }
 
         } else {
             this.onMessage.dispatch(message);
