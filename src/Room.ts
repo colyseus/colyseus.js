@@ -9,6 +9,13 @@ import { Client } from './Client';
 import { Connection } from './Connection';
 import { Protocol } from './Protocol';
 
+export interface RoomAvailable {
+    roomId: string;
+    clients: number;
+    maxClients: number;
+    metadata?: any;
+}
+
 export class Room<T= any> extends DeltaContainer<T & any> {
     public id: string;
     public sessionId: string;

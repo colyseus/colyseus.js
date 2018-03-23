@@ -3,7 +3,7 @@ import { Signal } from 'signals.js';
 
 import { Connection } from './Connection';
 import { Protocol } from './Protocol';
-import { Room } from './Room';
+import { Room, RoomAvailable } from './Room';
 
 export class Client {
     public id?: string;
@@ -18,10 +18,12 @@ export class Client {
 
     protected rooms: {[id: string]: Room} = {};
     protected connectingRooms: {[id: string]: Room} = {};
-    protected joinRequestId = 0;
+    protected requestId = 0;
 
     protected hostname: string;
     protected storage: Storage = window.localStorage;
+
+    protected roomsAvailableRequests: {[requestId: number]: (value?: RoomAvailable[]) => void} = {};
 
     constructor(url: string) {
         this.hostname = url;
@@ -41,7 +43,7 @@ export class Client {
     }
 
     public join<T>(roomName: string, options: any = {}): Room<T> {
-        options.requestId = ++this.joinRequestId;
+        options.requestId = ++this.requestId;
 
         const room = new Room<T>(roomName, options);
 
@@ -56,6 +58,22 @@ export class Client {
         this.connection.send([Protocol.JOIN_ROOM, roomName, options]);
 
         return room;
+    }
+
+    public getAvailableRooms(roomName: string): Promise<RoomAvailable[]> {
+        return new Promise((resolve, reject) => {
+            // reject this promise after 10 seconds.
+            const rejectionTimeout = setTimeout(reject, 10000);
+            const requestId = ++this.requestId;
+
+            // send the request to the server.
+            this.connection.send([Protocol.ROOM_LIST, requestId, roomName]);
+
+            this.roomsAvailableRequests[requestId] = (roomsAvailable) => {
+                clearTimeout(rejectionTimeout);
+                resolve(roomsAvailable);
+            };
+        });
     }
 
     protected connect(colyseusid: string) {
@@ -122,6 +140,9 @@ export class Client {
 
             // general error
             this.onError.dispatch(message[2]);
+
+        } else if (code === Protocol.ROOM_LIST) {
+            this.roomsAvailableRequests[message[1]](message[2]);
 
         } else {
             this.onMessage.dispatch(message);
