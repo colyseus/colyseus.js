@@ -1,9 +1,9 @@
-import * as msgpack from "notepack.io";
-import { Signal } from "signals.js";
+import * as msgpack from 'notepack.io';
+import { Signal } from 'signals.js';
 
-import { Protocol } from "./Protocol";
-import { Room } from "./Room";
-import { Connection } from "./Connection";
+import { Connection } from './Connection';
+import { Protocol } from './Protocol';
+import { Room } from './Room';
 
 export class Client {
     public id?: string;
@@ -23,12 +23,12 @@ export class Client {
     protected hostname: string;
     protected storage: Storage = window.localStorage;
 
-    constructor (url: string) {
+    constructor(url: string) {
         this.hostname = url;
-        let colyseusid: any = this.storage.getItem('colyseusid');
+        const colyseusid: any = this.storage.getItem('colyseusid');
 
         if (
-            typeof(Promise) === "undefined" || // old browsers
+            typeof(Promise) === 'undefined' || // old browsers
             !(colyseusid instanceof Promise)
         ) {
             // browser has synchronous return
@@ -36,37 +36,11 @@ export class Client {
 
         } else {
             // react-native is asynchronous
-            colyseusid.then(id => this.connect(id));
+            colyseusid.then((id) => this.connect(id));
         }
     }
 
-    protected connect (colyseusid: string) {
-        this.id = colyseusid || "";
-
-        this.connection = this.createConnection();
-        this.connection.onmessage = this.onMessageCallback.bind(this);
-        this.connection.onclose = (e) => this.onClose.dispatch();
-        this.connection.onerror = (e) => this.onError.dispatch();
-
-        // check for id on cookie
-        this.connection.onopen = () => {
-            if (this.id) {
-                this.onOpen.dispatch();
-            }
-        }
-    }
-
-    protected createConnection (path: string = "", options: any = {}) {
-        // append colyseusid to connection string.
-        options.colyseusid = this.id;
-
-        let params = [];
-        for (let name in options) { params.push(`${name}=${options[name]}`); }
-
-        return new Connection(`${this.hostname}/${path}?${params.join("&")}`);
-    }
-
-    join<T> (roomName: string, options: any = {}): Room<T> {
+    public join<T>(roomName: string, options: any = {}): Room<T> {
         options.requestId = ++this.joinRequestId;
 
         const room = new Room<T>(roomName, options);
@@ -84,25 +58,55 @@ export class Client {
         return room;
     }
 
+    protected connect(colyseusid: string) {
+        this.id = colyseusid || '';
+
+        this.connection = this.createConnection();
+        this.connection.onmessage = this.onMessageCallback.bind(this);
+        this.connection.onclose = (e) => this.onClose.dispatch();
+        this.connection.onerror = (e) => this.onError.dispatch();
+
+        // check for id on cookie
+        this.connection.onopen = () => {
+            if (this.id) {
+                this.onOpen.dispatch();
+            }
+        };
+    }
+
+    protected createConnection(path: string = '', options: any = {}) {
+        // append colyseusid to connection string.
+        const params = [`colyseusid=${this.id}`];
+
+        for (const name in options) {
+            if (!options.hasOwnProperty(name)) {
+                continue;
+            }
+            params.push(`${name}=${options[name]}`);
+        }
+
+        return new Connection(`${this.hostname}/${path}?${params.join('&')}`);
+    }
+
     /**
      * @override
      */
-    protected onMessageCallback (event) {
-        let message = msgpack.decode( new Uint8Array(event.data) );
-        let code = message[0];
+    protected onMessageCallback(event) {
+        const message = msgpack.decode( new Uint8Array(event.data) );
+        const code = message[0];
 
-        if (code == Protocol.USER_ID) {
+        if (code === Protocol.USER_ID) {
             this.storage.setItem('colyseusid', message[1]);
 
             this.id = message[1];
             this.onOpen.dispatch();
 
-        } else if (code == Protocol.JOIN_ROOM) {
-            let requestId = message[2];
-            let room = this.connectingRooms[ requestId ];
+        } else if (code === Protocol.JOIN_ROOM) {
+            const requestId = message[2];
+            const room = this.connectingRooms[ requestId ];
 
             if (!room) {
-                console.warn("colyseus.js: client left room before receiving session id.");
+                console.warn('colyseus.js: client left room before receiving session id.');
                 return;
             }
 
@@ -113,8 +117,8 @@ export class Client {
 
             delete this.connectingRooms[ requestId ];
 
-        } else if (code == Protocol.JOIN_ERROR) {
-            console.error("colyseus.js: server error:", message[2]);
+        } else if (code === Protocol.JOIN_ERROR) {
+            console.error('colyseus.js: server error:', message[2]);
 
             // general error
             this.onError.dispatch(message[2]);

@@ -1,9 +1,11 @@
-export { Client } from "./Client";
-export { Protocol } from "./Protocol";
-export { Room } from "./Room";
-export { DataChange } from "delta-listener";
+export { Client } from './Client';
+export { Protocol } from './Protocol';
+export { Room } from './Room';
+export { DataChange } from 'delta-listener';
 
-export type EntityMap<T> = {[ entityId:string ]: T};
+export interface EntityMap<T> {
+    [entityId: string]: T;
+}
 
 // Sync tools
 export {
@@ -15,5 +17,5 @@ export {
     syncList,
     key,
     room,
-    listen
-} from "./sync/helpers";
+    listen,
+} from './sync/helpers';
