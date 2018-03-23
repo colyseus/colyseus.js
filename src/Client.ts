@@ -60,25 +60,23 @@ export class Client {
         return room;
     }
 
-    public getAvailableRooms(roomName: string): Promise<RoomAvailable[]> {
-        return new Promise((resolve, reject) => {
-            // reject this promise after 10 seconds.
-            const requestId = ++this.requestId;
-            const removeRequest = () => delete this.roomsAvailableRequests[requestId];
-            const rejectionTimeout = setTimeout(() => {
-                removeRequest();
-                reject();
-            }, 10000);
+    public getAvailableRooms(roomName: string, callback: (rooms: RoomAvailable[], err?: string) => void) {
+        // reject this promise after 10 seconds.
+        const requestId = ++this.requestId;
+        const removeRequest = () => delete this.roomsAvailableRequests[requestId];
+        const rejectionTimeout = setTimeout(() => {
+            removeRequest();
+            callback([], "timeout");
+        }, 10000);
 
-            // send the request to the server.
-            this.connection.send([Protocol.ROOM_LIST, requestId, roomName]);
+        // send the request to the server.
+        this.connection.send([Protocol.ROOM_LIST, requestId, roomName]);
 
-            this.roomsAvailableRequests[requestId] = (roomsAvailable) => {
-                removeRequest();
-                clearTimeout(rejectionTimeout);
-                resolve(roomsAvailable);
-            };
-        });
+        this.roomsAvailableRequests[requestId] = (roomsAvailable) => {
+            removeRequest();
+            clearTimeout(rejectionTimeout);
+            callback(roomsAvailable);
+        };
     }
 
     protected connect(colyseusid: string) {
