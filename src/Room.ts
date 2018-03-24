@@ -29,7 +29,7 @@ export class Room<T= any> extends DeltaContainer<T & any> {
     // Public signals
     public onJoin: Signal = new Signal();
     public onStateChange: Signal = new Signal();
-    public onData: Signal = new Signal();
+    public onMessage: Signal = new Signal();
     public onError: Signal = new Signal();
     public onLeave: Signal = new Signal();
 
@@ -74,7 +74,7 @@ export class Room<T= any> extends DeltaContainer<T & any> {
         super.removeAllListeners();
         this.onJoin.removeAll();
         this.onStateChange.removeAll();
-        this.onData.removeAll();
+        this.onMessage.removeAll();
         this.onError.removeAll();
         this.onLeave.removeAll();
     }
@@ -102,7 +102,7 @@ export class Room<T= any> extends DeltaContainer<T & any> {
             this.patch( message[1] );
 
         } else if (code === Protocol.ROOM_DATA) {
-            this.onData.dispatch(message[1]);
+            this.onMessage.dispatch(message[1]);
 
         } else if (code === Protocol.LEAVE_ROOM) {
             this.leave();
