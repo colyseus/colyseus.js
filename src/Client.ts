@@ -79,6 +79,10 @@ export class Client {
         };
     }
 
+    public close () {
+        this.connection.close();
+    }
+
     protected connect(colyseusid: string) {
         this.id = colyseusid || '';
 
