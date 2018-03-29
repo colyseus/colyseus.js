@@ -14,7 +14,7 @@ describe("Room", function() {
 
   it("should initialize room with empty state", function() {
     assert.equal(room.name, "chat")
-    assert.deepEqual(room.data, {})
+    assert.deepEqual(room.state, {})
   });
 
   it("should emit state change", function(done) {

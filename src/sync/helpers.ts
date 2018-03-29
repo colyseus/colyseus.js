@@ -1,4 +1,4 @@
-import { DataChange } from 'delta-listener';
+import { DataChange } from '@gamestdio/state-listener';
 
 import { Room } from '../Room';
 import { Property, Synchable } from './types';

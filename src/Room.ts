@@ -1,7 +1,7 @@
 import Clock = require('@gamestdio/clock');
 import { Signal } from 'signals.js';
 
-import { DeltaContainer } from 'delta-listener';
+import { StateContainer } from '@gamestdio/state-listener';
 import * as fossilDelta from 'fossil-delta';
 import * as msgpack from 'notepack.io';
 
@@ -16,7 +16,7 @@ export interface RoomAvailable {
     metadata?: any;
 }
 
-export class Room<T= any> extends DeltaContainer<T & any> {
+export class Room<T= any> extends StateContainer<T & any> {
     public id: string;
     public sessionId: string;
 
@@ -133,7 +133,7 @@ export class Room<T= any> extends DeltaContainer<T & any> {
         // trigger state callbacks
         this.set( msgpack.decode( this._previousState ) );
 
-        this.onStateChange.dispatch(this.data);
+        this.onStateChange.dispatch(this.state);
     }
 
 }
