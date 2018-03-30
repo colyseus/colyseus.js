@@ -80,9 +80,9 @@ describe("Sync Tools", function() {
         class Test {
             @listen("list/:number")
             onListChange (change: DataChange) {
+                assert.equal(change.value, list[ index ]);
+                assert.equal(change.path.number, index);
                 index++;
-                assert.equal(change.value, list[ list.length - index ]);
-                assert.equal(change.path.number, list.length - index);
             }
         }
 

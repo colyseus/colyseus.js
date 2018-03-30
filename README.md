@@ -70,7 +70,7 @@ room.listen("entities/:id/:attribute", (change) => {
 Room state has been updated:
 
 ```ts
-room.onUpdate.add(function(state) {
+room.onStateChange.add(function(state) {
   console.log(room.name, "has new state:", state)
 })
 ```

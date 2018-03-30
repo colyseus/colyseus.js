@@ -14,11 +14,11 @@ describe("Room", function() {
 
   it("should initialize room with empty state", function() {
     assert.equal(room.name, "chat")
-    assert.deepEqual(room.data, {})
+    assert.deepEqual(room.state, {})
   });
 
   it("should emit state change", function(done) {
-    room.onUpdate.add(function(data) {
+    room.onStateChange.add(function(data) {
       assert.deepEqual(data.messages, []);
       done();
     });

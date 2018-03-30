@@ -16,6 +16,11 @@
 
     <div id="messages"></div>
 
+    <button onclick="join()">Join</button>
+    <button onclick="create()">Create</button>
+    <button onclick="joinByLastId()">Join by last id</button>
+    <button onclick="getAvailableRooms()">List avaiable rooms</button>
+
     <script>
       var host = window.document.location.host.replace(/:.*/, '');
       var client = new Colyseus.Client('ws://' + host + ':8080');
@@ -43,7 +48,9 @@
       client.onOpen.add(function() {
           console.log("onOpen")
 
-          room = client.join('chat');
+      });
+
+      function addListeners (room) {
           room.onJoin.add(function() {
               console.log(room.id);
               console.log('joined!');
@@ -53,10 +60,32 @@
               console.log("LEFT ROOM", arguments);
           });
 
-          room.onUpdate.add(function(data) {
-              console.log("chat update: ", data)
+          room.onStateChange.add(function(state) {
+              console.log("chat update: ", state)
           });
-      });
+      }
+
+      function join () {
+          room = client.join('chat');
+          addListeners(room);
+      }
+
+      function create () {
+          room = client.join('chat', { create: true });
+          addListeners(room);
+      }
+
+      function joinByLastId () {
+          room = client.join(room.id);
+          addListeners(room);
+      }
+
+      function getAvailableRooms() {
+          client.getAvailableRooms('chat', function(rooms, err) {
+                console.log(rooms);
+          });
+      }
+
 
       document.getElementById('form').onsubmit = function(e) {
         e.preventDefault()
