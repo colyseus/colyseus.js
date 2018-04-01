@@ -30,7 +30,7 @@
   "dependencies": {
     "@gamestdio/clock": "^1.1.0",
     "@gamestdio/state-listener": "^3.0.0",
-    "@gamestdio/websocket": "^0.2.4",
+    "@gamestdio/websocket": "^0.2.5",
     "fossil-delta": "^1.0.0",
     "notepack.io": "^2.1.2",
     "signals.js": "^1.0.0"
