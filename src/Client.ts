@@ -21,7 +21,9 @@ export class Client {
     protected requestId = 0;
 
     protected hostname: string;
-    protected storage: Storage = window.localStorage;
+    protected storage: Storage = (cc && cc.sys && cc.sys.localStorage)
+        ? cc.sys.localStorage  // compatibility with cocos creator
+        : window.localStorage; // regular browser environment
 
     protected roomsAvailableRequests: {[requestId: number]: (value?: RoomAvailable[]) => void} = {};
 
@@ -66,7 +68,7 @@ export class Client {
         const removeRequest = () => delete this.roomsAvailableRequests[requestId];
         const rejectionTimeout = setTimeout(() => {
             removeRequest();
-            callback([], "timeout");
+            callback([], 'timeout');
         }, 10000);
 
         // send the request to the server.
@@ -79,7 +81,7 @@ export class Client {
         };
     }
 
-    public close () {
+    public close() {
         this.connection.close();
     }
 

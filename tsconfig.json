@@ -11,6 +11,7 @@
         "outDir": "lib"
     },
     "include": [
-        "src/**.ts"
+        "src/**.ts",
+        "typings/cocos-creator.d.ts"
     ]
 }
