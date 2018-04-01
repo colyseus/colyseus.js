@@ -21,7 +21,7 @@ export class Client {
     protected requestId = 0;
 
     protected hostname: string;
-    protected storage: Storage = (cc && cc.sys && cc.sys.localStorage)
+    protected storage: Storage = (typeof(cc) !== "undefined" && cc.sys && cc.sys.localStorage)
         ? cc.sys.localStorage  // compatibility with cocos creator
         : window.localStorage; // regular browser environment
 
