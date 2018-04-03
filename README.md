@@ -83,11 +83,11 @@ room.onStateChange.add(function(state) {
 })
 ```
 
-Data coming from server directly to this client:
+Message broadcasted from server or directly to this client:
 
 ```ts
-room.onData.add(function(data) {
-  console.log(client.id, "received on", room.name, data)
+room.onMessage.add(function(message) {
+  console.log(client.id, "received on", room.name, message)
 });
 ```
 
