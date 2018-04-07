@@ -90,8 +90,8 @@ export class Client {
 
         this.connection = this.createConnection();
         this.connection.onmessage = this.onMessageCallback.bind(this);
-        this.connection.onclose = (e) => this.onClose.dispatch();
-        this.connection.onerror = (e) => this.onError.dispatch();
+        this.connection.onclose = (e) => this.onClose.dispatch(e);
+        this.connection.onerror = (e) => this.onError.dispatch(e);
 
         // check for id on cookie
         this.connection.onopen = () => {
