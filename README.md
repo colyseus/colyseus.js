@@ -119,12 +119,10 @@ dependencies for compatibility and assign `window.localStorage` to
 `AsyncStorage`.
 
 - Install `react-native-browser-polyfill` (`npm install react-native-browser-polyfill`)
-- Install and follow [`rn-nodeify`](https://github.com/tradle/rn-nodeify) installation instructions (`npm install rn-nodeify`)
 
 ```
 // App.js
 import 'react-native-browser-polyfill';
-import './shim';
 import { AsyncStorage } from 'react-native';
 window.localStorage = AsyncStorage;
 ```

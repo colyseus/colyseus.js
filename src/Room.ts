@@ -1,5 +1,5 @@
 import Clock = require('@gamestdio/clock');
-import { Signal } from 'signals.js';
+import { Signal } from '@gamestdio/signals';
 
 import { StateContainer } from '@gamestdio/state-listener';
 import * as fossilDelta from 'fossil-delta';

@@ -23,7 +23,7 @@
 
     <script>
       var host = window.document.location.host.replace(/:.*/, '');
-      var client = new Colyseus.Client('ws://' + host + ':8080');
+      var client = new Colyseus.Client('ws://' + host + ':2567');
       var room;
 
       function request () {
@@ -55,6 +55,10 @@
               console.log(room.id);
               console.log('joined!');
           })
+
+		  room.onMessage.add(function(message) {
+			  console.log(room.sessionId, message);
+		  });
 
           room.onLeave.add(function() {
               console.log("LEFT ROOM", arguments);
