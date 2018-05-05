@@ -1,5 +1,5 @@
-import * as msgpack from 'notepack.io';
 import { Signal } from '@gamestdio/signals';
+import * as msgpack from 'notepack.io';
 
 import { Connection } from './Connection';
 import { Protocol } from './Protocol';
@@ -21,7 +21,7 @@ export class Client {
     protected requestId = 0;
 
     protected hostname: string;
-    protected storage: Storage = (typeof(cc) !== "undefined" && cc.sys && cc.sys.localStorage)
+    protected storage: Storage = (typeof(cc) !== 'undefined' && cc.sys && cc.sys.localStorage)
         ? cc.sys.localStorage  // compatibility with cocos creator
         : window.localStorage; // regular browser environment
 
@@ -137,11 +137,10 @@ export class Client {
                 return;
             }
 
+            room.id = message[1];
             this.rooms[room.id] = room;
 
-            room.id = message[1];
             room.connect(this.createConnection(room.id, room.options));
-
             delete this.connectingRooms[ requestId ];
 
         } else if (code === Protocol.JOIN_ERROR) {
