@@ -17,7 +17,4 @@ export enum Protocol {
 
     // Generic messages (50~60)
     BAD_REQUEST = 50,
-
-    // Utils (100~127)
-    PING = 100,
 }

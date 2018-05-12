@@ -69,7 +69,6 @@ declare namespace Colyseus {
         ROOM_STATE_PATCH = 15,
         ROOM_LIST = 20,
         BAD_REQUEST = 50,
-        PING = 100,
     }
 }
 /**
