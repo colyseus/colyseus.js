@@ -8,6 +8,7 @@ import * as msgpack from 'notepack.io';
 import { Client } from './Client';
 import { Connection } from './Connection';
 import { Protocol } from './Protocol';
+import { setItem } from './Storage';
 
 export interface RoomAvailable {
     roomId: string;
@@ -15,6 +16,8 @@ export interface RoomAvailable {
     maxClients: number;
     metadata?: any;
 }
+
+export const RECONNECTION_KEY = 'reconnection';
 
 export class Room<T= any> extends StateContainer<T & any> {
     public id: string;
@@ -34,6 +37,7 @@ export class Room<T= any> extends StateContainer<T & any> {
     public onLeave: Signal = new Signal();
 
     public connection: Connection;
+    protected allowReconnection: boolean;
     private _previousState: any;
 
     constructor(name: string, options?: any) {
@@ -43,7 +47,10 @@ export class Room<T= any> extends StateContainer<T & any> {
         this.name = name;
         this.options = options;
 
-        this.onLeave.add( () => this.removeAllListeners() );
+        this.onLeave.add(() => {
+            this.refreshAutoReconnection();
+            this.removeAllListeners();
+        });
     }
 
     public connect(connection: Connection) {
@@ -85,6 +92,8 @@ export class Room<T= any> extends StateContainer<T & any> {
 
         if (code === Protocol.JOIN_ROOM) {
             this.sessionId = message[1];
+            this.allowReconnection = message[2];
+            this.refreshAutoReconnection();
             this.onJoin.dispatch();
 
         } else if (code === Protocol.JOIN_ERROR) {
@@ -106,6 +115,12 @@ export class Room<T= any> extends StateContainer<T & any> {
 
         } else if (code === Protocol.LEAVE_ROOM) {
             this.leave();
+        }
+    }
+
+    protected refreshAutoReconnection() {
+        if (this.allowReconnection) {
+            setItem(RECONNECTION_KEY, this.sessionId);
         }
     }
 

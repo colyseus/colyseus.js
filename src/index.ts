@@ -1,4 +1,4 @@
-import "./legacy";
+import './legacy';
 
 export { Client } from './Client';
 export { Protocol } from './Protocol';

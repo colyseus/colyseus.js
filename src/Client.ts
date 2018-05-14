@@ -3,7 +3,8 @@ import * as msgpack from 'notepack.io';
 
 import { Connection } from './Connection';
 import { Protocol } from './Protocol';
-import { Room, RoomAvailable } from './Room';
+import { RECONNECTION_KEY, Room, RoomAvailable } from './Room';
+import { getItem, setItem } from './Storage';
 
 export class Client {
     public id?: string;
@@ -21,27 +22,11 @@ export class Client {
     protected requestId = 0;
 
     protected hostname: string;
-    protected storage: Storage = (typeof(cc) !== 'undefined' && cc.sys && cc.sys.localStorage)
-        ? cc.sys.localStorage  // compatibility with cocos creator
-        : window.localStorage; // regular browser environment
-
     protected roomsAvailableRequests: {[requestId: number]: (value?: RoomAvailable[]) => void} = {};
 
     constructor(url: string) {
         this.hostname = url;
-        const colyseusid: any = this.storage.getItem('colyseusid');
-
-        if (
-            typeof(Promise) === 'undefined' || // old browsers
-            !(colyseusid instanceof Promise)
-        ) {
-            // browser has synchronous return
-            this.connect(colyseusid);
-
-        } else {
-            // react-native is asynchronous
-            colyseusid.then((id) => this.connect(id));
-        }
+        getItem('colyseusid', (colyseusid) => this.connect(colyseusid));
     }
 
     public join<T>(roomName: string, options: any = {}): Room<T> {
@@ -57,7 +42,13 @@ export class Client {
 
         this.connectingRooms[ options.requestId ] = room;
 
-        this.connection.send([Protocol.JOIN_ROOM, roomName, options]);
+        getItem(RECONNECTION_KEY, (reconnectingSessionId) => {
+            if (reconnectingSessionId) {
+                options.sessionId = reconnectingSessionId;
+            }
+
+            this.connection.send([Protocol.JOIN_ROOM, roomName, options]);
+        });
 
         return room;
     }
@@ -123,7 +114,7 @@ export class Client {
         const code = message[0];
 
         if (code === Protocol.USER_ID) {
-            this.storage.setItem('colyseusid', message[1]);
+            setItem('colyseusid', message[1]);
 
             this.id = message[1];
             this.onOpen.dispatch();
