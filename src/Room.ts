@@ -37,7 +37,6 @@ export class Room<T= any> extends StateContainer<T & any> {
     public onLeave: Signal = new Signal();
 
     public connection: Connection;
-    protected allowReconnection: boolean;
     private _previousState: any;
 
     constructor(name: string, options?: any) {
@@ -92,7 +91,6 @@ export class Room<T= any> extends StateContainer<T & any> {
 
         if (code === Protocol.JOIN_ROOM) {
             this.sessionId = message[1];
-            this.allowReconnection = message[2];
             this.refreshAutoReconnection();
             this.onJoin.dispatch();
 
@@ -119,9 +117,7 @@ export class Room<T= any> extends StateContainer<T & any> {
     }
 
     protected refreshAutoReconnection() {
-        if (this.allowReconnection) {
-            setItem(RECONNECTION_KEY, this.sessionId);
-        }
+        setItem(RECONNECTION_KEY, this.sessionId);
     }
 
     protected setState( encodedState: Buffer, remoteCurrentTime?: number, remoteElapsedTime?: number ): void {
