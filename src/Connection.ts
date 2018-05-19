@@ -23,10 +23,6 @@ export class Connection extends WebSocketClient {
         }
     }
 
-    public onCloseCallback(event) {
-        super.onCloseCallback();
-    }
-
     public send(data: any): void {
         if (this.ws.readyState === WebSocket.OPEN) {
             return super.send( msgpack.encode(data) );
