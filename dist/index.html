@@ -23,7 +23,7 @@
     <button onclick="getAvailableRooms()">List avaiable rooms</button>
 
     <script>
-      var host = window.document.location.host.replace(/:.*/, '');
+      var host = (window.document.location.host || "localhost").replace(/:.*/, '');
       var client = new Colyseus.Client('ws://' + host + ':2657');
       var room;
 
