@@ -3,7 +3,7 @@ import { assert } from "chai";
 import { Room, DataChange } from "../src";
 
 import * as fossilDelta from "fossil-delta";
-import * as msgpack from "notepack.io";
+import * as msgpack from "../src/msgpack";
 
 describe("Room", function() {
   let room: Room = null;
@@ -33,18 +33,18 @@ describe("Room", function() {
         'two': { hp: 95, lvl: 2, position: {x: 0, y: 0} },
       }
     };
-    (<any>room).setState(msgpack.encode(state), 0, 0);
+    (<any>room).setState(new Uint8Array(msgpack.encode(state)), 0, 0);
 
     // get previous state encoded
-    let previousState = msgpack.encode(state);
+    let previousState = new Uint8Array(msgpack.encode(state));
 
     // change state and encode it
-    let nextState = msgpack.encode({
+    let nextState = new Uint8Array(msgpack.encode({
       players: {
         'one': { hp: 40, lvl: 1, position: {x: 0, y: 100} },
         'two': { hp: 95, lvl: 2, position: {x: 0, y: 0} },
       }
-    });
+    }));
     let delta = fossilDelta.create(previousState, nextState);
 
     let patchCount = 0;

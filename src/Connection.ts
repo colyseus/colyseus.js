@@ -1,5 +1,5 @@
 import WebSocketClient from '@gamestdio/websocket';
-import * as msgpack from 'notepack.io';
+import * as msgpack from './msgpack';
 
 import { Protocol } from './Protocol';
 

@@ -1,5 +1,5 @@
 import { Signal } from '@gamestdio/signals';
-import * as msgpack from 'notepack.io';
+import * as msgpack from './msgpack';
 
 import { Connection } from './Connection';
 import { Protocol } from './Protocol';

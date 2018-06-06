@@ -3,7 +3,7 @@ import { Signal } from '@gamestdio/signals';
 
 import { StateContainer } from '@gamestdio/state-listener';
 import * as fossilDelta from 'fossil-delta';
-import * as msgpack from 'notepack.io';
+import * as msgpack from './msgpack';
 
 import { Client } from './Client';
 import { Connection } from './Connection';
