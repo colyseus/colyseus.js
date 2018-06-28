@@ -7,7 +7,7 @@ export function setItem(key: string, value: string) {
 }
 
 export function getItem(key: string, callback: Function) {
-    const value: any = storage.getItem('colyseusid');
+    const value: any = storage.getItem(key);
 
     if (
         typeof (Promise) === 'undefined' || // old browsers
