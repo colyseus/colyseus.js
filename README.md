@@ -120,7 +120,7 @@ dependencies for compatibility and assign `window.localStorage` to
 
 - Install `react-native-browser-polyfill` (`npm install react-native-browser-polyfill`)
 
-```
+```js
 // App.js
 import 'react-native-browser-polyfill';
 import { AsyncStorage } from 'react-native';
@@ -129,7 +129,7 @@ window.localStorage = AsyncStorage;
 
 Another caveat is that you can only join rooms after the first connection open.
 
-```
+```js
 var client = new Colyseus.Client('ws://localhost:2657');
 
 client.onOpen.add(() => {
