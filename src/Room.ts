@@ -17,8 +17,6 @@ export interface RoomAvailable {
     metadata?: any;
 }
 
-export const RECONNECTION_KEY = 'reconnection';
-
 export class Room<T= any> extends StateContainer<T & any> {
     public id: string;
     public sessionId: string;
@@ -47,7 +45,6 @@ export class Room<T= any> extends StateContainer<T & any> {
         this.options = options;
 
         this.onLeave.add(() => {
-            this.refreshAutoReconnection();
             this.removeAllListeners();
         });
     }
@@ -91,7 +88,6 @@ export class Room<T= any> extends StateContainer<T & any> {
 
         if (code === Protocol.JOIN_ROOM) {
             this.sessionId = message[1];
-            this.refreshAutoReconnection();
             this.onJoin.dispatch();
 
         } else if (code === Protocol.JOIN_ERROR) {
@@ -114,10 +110,6 @@ export class Room<T= any> extends StateContainer<T & any> {
         } else if (code === Protocol.LEAVE_ROOM) {
             this.leave();
         }
-    }
-
-    protected refreshAutoReconnection() {
-        setItem(RECONNECTION_KEY, this.sessionId);
     }
 
     protected setState( encodedState: Buffer, remoteCurrentTime?: number, remoteElapsedTime?: number ): void {

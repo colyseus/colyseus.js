@@ -3,7 +3,7 @@ import * as msgpack from './msgpack';
 
 import { Connection } from './Connection';
 import { Protocol } from './Protocol';
-import { RECONNECTION_KEY, Room, RoomAvailable } from './Room';
+import { Room, RoomAvailable } from './Room';
 import { getItem, setItem } from './Storage';
 
 export class Client {
@@ -42,15 +42,13 @@ export class Client {
 
         this.connectingRooms[ options.requestId ] = room;
 
-        getItem(RECONNECTION_KEY, (reconnectingSessionId) => {
-            if (reconnectingSessionId) {
-                options.sessionId = reconnectingSessionId;
-            }
-
-            this.connection.send([Protocol.JOIN_ROOM, roomName, options]);
-        });
+        this.connection.send([Protocol.JOIN_ROOM, roomName, options]);
 
         return room;
+    }
+
+    public rejoin<T>(roomName: string, sessionId: string) {
+        return this.join(roomName, { sessionId });
     }
 
     public getAvailableRooms(roomName: string, callback: (rooms: RoomAvailable[], err?: string) => void) {
