@@ -62,7 +62,7 @@ export class Room<T= any> extends StateContainer<T & any> {
 
     public leave(): void {
         if (this.connection) {
-            this.connection.close();
+            this.connection.send([Protocol.LEAVE_ROOM]);
 
         } else {
             this.onLeave.dispatch();
