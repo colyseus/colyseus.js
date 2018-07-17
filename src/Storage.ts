@@ -1,13 +1,21 @@
-const storage: Storage = (typeof (cc) !== 'undefined' && cc.sys && cc.sys.localStorage)
-    ? cc.sys.localStorage  // compatibility with cocos creator
-    : window.localStorage; // regular browser environment
+/**
+ * We do not assign 'storage' to window.localStorage immediatelly for React
+ * Native compatibility. window.localStorage is not present when this module is
+ * loaded.
+ */
+
+function getStorage () {
+    return (typeof (cc) !== 'undefined' && cc.sys && cc.sys.localStorage)
+        ? cc.sys.localStorage  // compatibility with cocos creator
+        : window.localStorage; // regular browser environment
+}
 
 export function setItem(key: string, value: string) {
-    storage.setItem(key, value);
+    getStorage().setItem(key, value);
 }
 
 export function getItem(key: string, callback: Function) {
-    const value: any = storage.getItem(key);
+    const value: any = getStorage().getItem(key);
 
     if (
         typeof (Promise) === 'undefined' || // old browsers
