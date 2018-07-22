@@ -1,25 +1,26 @@
 import WebSocketClient from '@gamestdio/websocket';
 import * as msgpack from './msgpack';
 
-import { Protocol } from './Protocol';
-
 export class Connection extends WebSocketClient {
 
     private _enqueuedCalls: any[] = [];
 
-    constructor(url, query: any = {}) {
-        super(url);
-
-        this.binaryType = 'arraybuffer';
+    constructor(url, autoConnect: boolean = true) {
+        super(url, undefined, { connect: autoConnect });
     }
 
     public onOpenCallback(event) {
         super.onOpenCallback();
 
+        this.binaryType = 'arraybuffer';
+
         if (this._enqueuedCalls.length > 0) {
             for (const [method, args] of this._enqueuedCalls) {
                 this[method].apply(this, args);
             }
+
+            // clear enqueued calls.
+            this._enqueuedCalls = [];
         }
     }
 
@@ -28,8 +29,6 @@ export class Connection extends WebSocketClient {
             return super.send( msgpack.encode(data) );
 
         } else {
-            console.warn(`colyseus.js: trying to send data while in ${ this.ws.readyState } state`);
-
             // WebSocket not connected.
             // Enqueue data to be sent when readyState == OPEN
             this._enqueuedCalls.push(['send', [data]]);

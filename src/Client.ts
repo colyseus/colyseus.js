@@ -77,7 +77,7 @@ export class Client {
     protected connect(colyseusid: string) {
         this.id = colyseusid || '';
 
-        this.connection = this.createConnection();
+        this.connection = new Connection(this.buildEndpoint());
         this.connection.onmessage = this.onMessageCallback.bind(this);
         this.connection.onclose = (e) => this.onClose.dispatch(e);
         this.connection.onerror = (e) => this.onError.dispatch(e);
@@ -90,7 +90,7 @@ export class Client {
         };
     }
 
-    protected createConnection(path: string = '', options: any = {}) {
+    protected buildEndpoint(path: string = '', options: any = {}) {
         // append colyseusid to connection string.
         const params = [`colyseusid=${this.id}`];
 
@@ -101,7 +101,7 @@ export class Client {
             params.push(`${name}=${options[name]}`);
         }
 
-        return new Connection(`${this.hostname}/${path}?${params.join('&')}`);
+        return `${this.hostname}/${path}?${params.join('&')}`;
     }
 
     /**
@@ -129,7 +129,7 @@ export class Client {
             room.id = message[1];
             this.rooms[room.id] = room;
 
-            room.connect(this.createConnection(room.id, room.options));
+            room.connect(this.buildEndpoint(room.id, room.options));
             delete this.connectingRooms[ requestId ];
 
         } else if (code === Protocol.JOIN_ERROR) {

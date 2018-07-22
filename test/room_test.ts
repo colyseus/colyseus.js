@@ -18,7 +18,7 @@ describe("Room", function() {
   });
 
   it("should emit state change", function(done) {
-    room.onStateChange.add(function(data) {
+    room.onStateChange.add(function(data, previousState) {
       assert.deepEqual(data.messages, []);
       done();
     });

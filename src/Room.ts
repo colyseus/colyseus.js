@@ -5,10 +5,8 @@ import { StateContainer } from '@gamestdio/state-listener';
 import * as fossilDelta from 'fossil-delta';
 import * as msgpack from './msgpack';
 
-import { Client } from './Client';
 import { Connection } from './Connection';
 import { Protocol } from './Protocol';
-import { setItem } from './Storage';
 
 export interface RoomAvailable {
     roomId: string;
@@ -43,14 +41,13 @@ export class Room<T= any> extends StateContainer<T & any> {
 
         this.name = name;
         this.options = options;
+        this.connection = new Connection(undefined, false);
 
-        this.onLeave.add(() => {
-            this.removeAllListeners();
-        });
+        this.onLeave.add(() => this.removeAllListeners());
     }
 
-    public connect(connection: Connection) {
-        this.connection = connection;
+    public connect(endpoint: string) {
+        this.connection.url = endpoint;
         this.connection.reconnectEnabled = false;
         this.connection.onmessage = this.onMessageCallback.bind(this);
         this.connection.onclose = (e) => this.onLeave.dispatch(e);
@@ -58,6 +55,7 @@ export class Room<T= any> extends StateContainer<T & any> {
             console.warn(`Possible causes: room's onAuth() failed or maxClients has been reached.`);
             this.onError.dispatch(e);
         };
+        this.connection.open();
     }
 
     public leave(): void {
