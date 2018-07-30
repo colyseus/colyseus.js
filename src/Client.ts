@@ -32,7 +32,7 @@ export class Client {
     public join<T>(roomName: string, options: any = {}): Room<T> {
         options.requestId = ++this.requestId;
 
-        const room = new Room<T>(roomName, options);
+        const room = this.createRoom<T>(roomName, options);
 
         // remove references on leaving
         room.onLeave.addOnce(() => {
@@ -72,6 +72,10 @@ export class Client {
 
     public close() {
         this.connection.close();
+    }
+
+    protected createRoom<T>(roomName: string, options: any = {}): Room<T> {
+        return new Room<T>(roomName, options);
     }
 
     protected connect(colyseusid: string) {
