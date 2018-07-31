@@ -15,7 +15,7 @@ export interface RoomAvailable {
     metadata?: any;
 }
 
-export class Room<T= any> extends StateContainer<T> {
+export class Room<T = any> extends StateContainer<T | {}> {
     public id: string;
     public sessionId: string;
 
