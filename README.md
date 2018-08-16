@@ -124,7 +124,9 @@ dependencies for compatibility and assign `window.localStorage` to
 // App.js
 import 'react-native-browser-polyfill';
 import { AsyncStorage } from 'react-native';
+import { Buffer } from "buffer";
 window.localStorage = AsyncStorage;
+global.Buffer = Buffer;
 ```
 
 Another caveat is that you can only join rooms after the first connection open.
