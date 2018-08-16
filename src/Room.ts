@@ -71,6 +71,10 @@ export class Room<T= any> extends StateContainer<T & any> {
         this.connection.send([ Protocol.ROOM_DATA, this.id, data ]);
     }
 
+    public get hasJoined () {
+        return this.sessionId !== undefined;
+    }
+
     public removeAllListeners() {
         super.removeAllListeners();
         this.onJoin.removeAll();

@@ -6,6 +6,8 @@ import { Protocol } from './Protocol';
 import { Room, RoomAvailable } from './Room';
 import { getItem, setItem } from './Storage';
 
+export type JoinOptions = { retryTimes: number, requestId: number } & any;
+
 export class Client {
     public id?: string;
 
@@ -29,22 +31,8 @@ export class Client {
         getItem('colyseusid', (colyseusid) => this.connect(colyseusid));
     }
 
-    public join<T>(roomName: string, options: any = {}): Room<T> {
-        options.requestId = ++this.requestId;
-
-        const room = this.createRoom<T>(roomName, options);
-
-        // remove references on leaving
-        room.onLeave.addOnce(() => {
-            delete this.rooms[room.id];
-            delete this.connectingRooms[options.requestId];
-        });
-
-        this.connectingRooms[ options.requestId ] = room;
-
-        this.connection.send([Protocol.JOIN_ROOM, roomName, options]);
-
-        return room;
+    public join<T>(roomName: string, options: JoinOptions = {}): Room<T> {
+        return this.createRoomRequest<T>(roomName, options);
     }
 
     public rejoin<T>(roomName: string, sessionId: string) {
@@ -76,6 +64,40 @@ export class Client {
 
     protected createRoom<T>(roomName: string, options: any = {}): Room<T> {
         return new Room<T>(roomName, options);
+    }
+
+    protected createRoomRequest<T> (roomName: string, options: JoinOptions, reuseRoomInstance?: Room<T>, retryCount?: number) {
+        options.requestId = ++this.requestId;
+
+        const room = reuseRoomInstance || this.createRoom<T>(roomName, options);
+
+        // remove references on leaving
+        room.onLeave.addOnce(() => {
+            delete this.rooms[room.id];
+            delete this.connectingRooms[options.requestId];
+        });
+
+        //
+        // retry joining the room in case the server couldn't matchmake into it
+        //
+        // TODO: improve match-making routine https://github.com/gamestdio/colyseus/issues/176
+        //
+        if (options.retryTimes) {
+            room.onError.addOnce(() => {
+                retryCount = retryCount || 0;
+                if (!room.hasJoined && retryCount <= options.retryTimes) {
+                    retryCount++;
+                    this.createRoomRequest(roomName, options, room, retryCount);
+                }
+            });
+        }
+
+        this.connectingRooms[ options.requestId ] = room;
+
+        this.connection.send([Protocol.JOIN_ROOM, roomName, options]);
+
+        return room;
+
     }
 
     protected connect(colyseusid: string) {
