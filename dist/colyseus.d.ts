@@ -22,7 +22,7 @@ declare namespace Colyseus {
             [requestId: number]: (value?: RoomAvailable[]) => void;
         };
         constructor(url: string);
-        join<T>(roomName: string, options?: any): void;
+        join<T>(roomName: string, options?: any): Room<T>;
         getAvailableRooms(roomName: string, callback: (rooms: RoomAvailable[], err?: string) => void): void;
         close(colyseusId: string): void;
     }
