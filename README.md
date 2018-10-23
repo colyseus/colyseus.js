@@ -29,6 +29,10 @@ This client works on these platforms:
 - [React Native](https://github.com/facebook/react-native) ([with some caveats](#react-native-compatibility))
 - [Cocos Creator](http://www.cocos2d-x.org/creator)
 
+Browser support tested with:
+
+<a href="https://www.browserstack.com/"><img src="media/browserstack-logo.png?raw=true" width="300" /></a>
+
 ## Usage
 
 ### Connecting to server:
