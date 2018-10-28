@@ -71,7 +71,7 @@ export class Room<T= any> extends StateContainer<T & any> {
         this.connection.send([ Protocol.ROOM_DATA, this.id, data ]);
     }
 
-    public get hasJoined () {
+    public get hasJoined() {
         return this.sessionId !== undefined;
     }
 
@@ -133,7 +133,7 @@ export class Room<T= any> extends StateContainer<T & any> {
 
     protected patch( binaryPatch ) {
         // apply patch
-        this._previousState = Buffer.from(fossilDelta.apply( this._previousState, binaryPatch));
+        this._previousState = Buffer.from(fossilDelta.apply(this._previousState, binaryPatch));
 
         // trigger state callbacks
         this.set( msgpack.decode( this._previousState ) );

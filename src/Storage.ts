@@ -4,7 +4,7 @@
  * loaded.
  */
 
-function getStorage () {
+function getStorage() {
     return (typeof (cc) !== 'undefined' && cc.sys && cc.sys.localStorage)
         ? cc.sys.localStorage  // compatibility with cocos creator
         : window.localStorage; // regular browser environment

@@ -66,7 +66,12 @@ export class Client {
         return new Room<T>(roomName, options);
     }
 
-    protected createRoomRequest<T> (roomName: string, options: JoinOptions, reuseRoomInstance?: Room<T>, retryCount?: number) {
+    protected createRoomRequest<T>(
+        roomName: string,
+        options: JoinOptions,
+        reuseRoomInstance?: Room<T>,
+        retryCount?: number,
+    ) {
         options.requestId = ++this.requestId;
 
         const room = reuseRoomInstance || this.createRoom<T>(roomName, options);
