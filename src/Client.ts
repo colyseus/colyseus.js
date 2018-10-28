@@ -26,7 +26,7 @@ export class Client {
     protected hostname: string;
     protected roomsAvailableRequests: {[requestId: number]: (value?: RoomAvailable[]) => void} = {};
 
-    constructor(url: string, options:any = {}) {
+    constructor(url: string, options: any = {}) {
         this.hostname = url;
         getItem('colyseusid', (colyseusid) => this.connect(colyseusid, options));
     }
@@ -100,7 +100,7 @@ export class Client {
 
     }
 
-    protected connect(colyseusid: string,options: any = {}) {
+    protected connect(colyseusid: string, options: any = {}) {
         this.id = colyseusid || '';
 
         this.connection = new Connection(this.buildEndpoint('', options));
