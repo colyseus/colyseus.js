@@ -21,7 +21,7 @@ declare namespace Colyseus {
         protected roomsAvailableRequests: {
             [requestId: number]: (value?: RoomAvailable[]) => void;
         };
-        constructor(url: string);
+        constructor(url: string, options?: any);
         join<T>(roomName: string, options?: any): Room<T>;
         getAvailableRooms(roomName: string, callback: (rooms: RoomAvailable[], err?: string) => void): void;
         close(colyseusId: string): void;

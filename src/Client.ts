@@ -26,9 +26,9 @@ export class Client {
     protected hostname: string;
     protected roomsAvailableRequests: {[requestId: number]: (value?: RoomAvailable[]) => void} = {};
 
-    constructor(url: string) {
+    constructor(url: string, options: any = {}) {
         this.hostname = url;
-        getItem('colyseusid', (colyseusid) => this.connect(colyseusid));
+        getItem('colyseusid', (colyseusid) => this.connect(colyseusid, options));
     }
 
     public join<T>(roomName: string, options: JoinOptions = {}): Room<T> {
@@ -100,10 +100,10 @@ export class Client {
 
     }
 
-    protected connect(colyseusid: string) {
+    protected connect(colyseusid: string, options: any = {}) {
         this.id = colyseusid || '';
 
-        this.connection = new Connection(this.buildEndpoint());
+        this.connection = new Connection(this.buildEndpoint('', options));
         this.connection.onmessage = this.onMessageCallback.bind(this);
         this.connection.onclose = (e) => this.onClose.dispatch(e);
         this.connection.onerror = (e) => this.onError.dispatch(e);
