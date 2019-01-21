@@ -122,11 +122,10 @@ This client works with React Native. You need to install some aditional
 dependencies for compatibility and assign `window.localStorage` to
 `AsyncStorage`.
 
-- Install `react-native-browser-polyfill` (`npm install react-native-browser-polyfill`)
+- `npm install buffer`
 
 ```js
 // App.js
-import 'react-native-browser-polyfill';
 import { AsyncStorage } from 'react-native';
 import { Buffer } from "buffer";
 window.localStorage = AsyncStorage;
