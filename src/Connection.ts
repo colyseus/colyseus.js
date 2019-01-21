@@ -2,10 +2,9 @@ import WebSocketClient from '@gamestdio/websocket';
 import * as msgpack from './msgpack';
 
 export class Connection extends WebSocketClient {
-
     private _enqueuedCalls: any[] = [];
 
-    constructor(url, autoConnect: boolean = true) {
+    constructor(url: string, autoConnect: boolean = true) {
         super(url, undefined, { connect: autoConnect });
     }
 

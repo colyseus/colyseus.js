@@ -8,7 +8,7 @@ describe("Client", function () {
         const client = new Client("ws://localhost:2546");
         const room = client.join("chat");
         assert.equal(room.name, "chat")
-        assert.deepEqual(room.state, {})
+        assert.deepEqual(room.state.state, {})
     });
 
 });

@@ -1,12 +1,10 @@
-import Clock = require('@gamestdio/clock');
 import { Signal } from '@gamestdio/signals';
-
-import { StateContainer } from '@gamestdio/state-listener';
-import * as fossilDelta from 'fossil-delta';
 import * as msgpack from './msgpack';
 
 import { Connection } from './Connection';
+import { Serializer } from './serializer/Serializer';
 import { Protocol } from './Protocol';
+import { FossilDeltaSerializer } from './serializer/FossilDeltaSerializer';
 
 export interface RoomAvailable {
     roomId: string;
@@ -15,15 +13,12 @@ export interface RoomAvailable {
     metadata?: any;
 }
 
-export class Room<T= any> extends StateContainer<T & any> {
+export class Room<State= any, S extends Serializer<State> = FossilDeltaSerializer<State>> {
     public id: string;
     public sessionId: string;
 
     public name: string;
     public options: any;
-
-    public clock: Clock = new Clock(); // experimental
-    public remoteClock: Clock = new Clock(); // experimental
 
     // Public signals
     public onJoin: Signal = new Signal();
@@ -33,21 +28,19 @@ export class Room<T= any> extends StateContainer<T & any> {
     public onLeave: Signal = new Signal();
 
     public connection: Connection;
-    private _previousState: any;
+    public serializer: S; 
 
     constructor(name: string, options?: any) {
-        super({});
         this.id = null;
 
         this.name = name;
         this.options = options;
-        this.connection = new Connection(undefined, false);
 
         this.onLeave.add(() => this.removeAllListeners());
     }
 
     public connect(endpoint: string) {
-        this.connection.url = endpoint;
+        this.connection = new Connection(endpoint, false);
         this.connection.reconnectEnabled = false;
         this.connection.onmessage = this.onMessageCallback.bind(this);
         this.connection.onclose = (e) => this.onLeave.dispatch(e);
@@ -71,12 +64,18 @@ export class Room<T= any> extends StateContainer<T & any> {
         this.connection.send([ Protocol.ROOM_DATA, this.id, data ]);
     }
 
+    public get state (): S['api'] {
+        return this.serializer.api;
+    }
+
     public get hasJoined() {
         return this.sessionId !== undefined;
     }
 
     public removeAllListeners() {
-        super.removeAllListeners();
+        if (this.serializer.removeAllListeners) {
+            this.serializer.removeAllListeners();
+        }
         this.onJoin.removeAll();
         this.onStateChange.removeAll();
         this.onMessage.removeAll();
@@ -85,7 +84,7 @@ export class Room<T= any> extends StateContainer<T & any> {
     }
 
     protected onMessageCallback(event) {
-        const message = msgpack.decode( new Uint8Array(event.data) );
+        const message = msgpack.decode(new Uint8Array(event.data));
         const code = message[0];
 
         if (code === Protocol.JOIN_ROOM) {
@@ -101,10 +100,10 @@ export class Room<T= any> extends StateContainer<T & any> {
             const remoteCurrentTime = message[2];
             const remoteElapsedTime = message[3];
 
-            this.setState( state, remoteCurrentTime, remoteElapsedTime );
+            this.setState(state, remoteCurrentTime, remoteElapsedTime);
 
         } else if (code === Protocol.ROOM_STATE_PATCH) {
-            this.patch( message[1] );
+            this.patch(message[1]);
 
         } else if (code === Protocol.ROOM_DATA) {
             this.onMessage.dispatch(message[1]);
@@ -114,31 +113,14 @@ export class Room<T= any> extends StateContainer<T & any> {
         }
     }
 
-    protected setState( encodedState: Buffer, remoteCurrentTime?: number, remoteElapsedTime?: number ): void {
-        const state = msgpack.decode(encodedState);
-        this.set(state);
-
-        this._previousState = new Uint8Array( encodedState );
-
-        // set remote clock properties
-        if (remoteCurrentTime && remoteElapsedTime) {
-            this.remoteClock.currentTime = remoteCurrentTime;
-            this.remoteClock.elapsedTime = remoteElapsedTime;
-        }
-
-        this.clock.start();
-
-        this.onStateChange.dispatch(state);
+    protected setState(encodedState: Buffer, remoteCurrentTime?: number, remoteElapsedTime?: number): void {
+        this.serializer.setState(encodedState);
+        this.onStateChange.dispatch(this.serializer.getState());
     }
 
-    protected patch( binaryPatch ) {
-        // apply patch
-        this._previousState = Buffer.from(fossilDelta.apply(this._previousState, binaryPatch));
-
-        // trigger state callbacks
-        this.set( msgpack.decode( this._previousState ) );
-
-        this.onStateChange.dispatch(this.state);
+    protected patch(binaryPatch) {
+        this.serializer.patch(binaryPatch);
+        this.onStateChange.dispatch(this.serializer.getState());
     }
 
 }

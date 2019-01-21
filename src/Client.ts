@@ -5,6 +5,8 @@ import { Connection } from './Connection';
 import { Protocol } from './Protocol';
 import { Room, RoomAvailable } from './Room';
 import { getItem, setItem } from './Storage';
+import { FossilDeltaSerializer } from './serializer/FossilDeltaSerializer';
+import { Serializer } from './serializer/Serializer';
 
 export type JoinOptions = { retryTimes: number, requestId: number } & any;
 
@@ -31,8 +33,8 @@ export class Client {
         getItem('colyseusid', (colyseusid) => this.connect(colyseusid, options));
     }
 
-    public join<T>(roomName: string, options: JoinOptions = {}): Room<T> {
-        return this.createRoomRequest<T>(roomName, options);
+    public join<T, S extends Serializer<T>>(roomName: string, options: JoinOptions = {}) {
+        return this.createRoomRequest<T, S>(roomName, options);
     }
 
     public rejoin<T>(roomName: string, sessionId: string) {
@@ -62,19 +64,21 @@ export class Client {
         this.connection.close();
     }
 
-    protected createRoom<T>(roomName: string, options: any = {}): Room<T> {
-        return new Room<T>(roomName, options);
+    protected createRoom<T, S extends Serializer<T> = any>(roomName: string, options: any = {}) {
+        const room = new Room<T, S>(roomName, options);
+        room.serializer = new FossilDeltaSerializer<T>() as any;
+        return room;
     }
 
-    protected createRoomRequest<T>(
+    protected createRoomRequest<T, S extends Serializer<T>>(
         roomName: string,
         options: JoinOptions,
-        reuseRoomInstance?: Room<T>,
+        reuseRoomInstance?: Room<T, S>,
         retryCount?: number,
     ) {
         options.requestId = ++this.requestId;
 
-        const room = reuseRoomInstance || this.createRoom<T>(roomName, options);
+        const room = reuseRoomInstance || this.createRoom<T, S>(roomName, options);
 
         // remove references on leaving
         room.onLeave.addOnce(() => {
@@ -97,7 +101,7 @@ export class Client {
             });
         }
 
-        this.connectingRooms[ options.requestId ] = room;
+        this.connectingRooms[ options.requestId ] = room as any;
 
         this.connection.send([Protocol.JOIN_ROOM, roomName, options]);
 

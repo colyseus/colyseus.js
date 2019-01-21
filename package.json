@@ -31,6 +31,7 @@
     "@gamestdio/signals": "^1.0.0",
     "@gamestdio/state-listener": "^3.1.0",
     "@gamestdio/websocket": "^0.2.8",
+    "fast-json-patch": "^2.0.7",
     "fossil-delta": "^1.0.0",
     "notepack.io": "^2.1.3"
   },
