@@ -25,7 +25,7 @@ export class Connection extends WebSocketClient {
     }
 
     public send(data: any): void {
-        if (this.ws.readyState === WebSocket.OPEN) {
+        if (this.ws.readyState === WebSocketClient.OPEN) {
             return super.send( msgpack.encode(data) );
 
         } else {
