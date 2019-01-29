@@ -36,6 +36,7 @@
     "notepack.io": "^2.1.3"
   },
   "devDependencies": {
+    "@colyseus/schema": "^0.1.5",
     "@types/chai": "^3.4.34",
     "@types/fast-json-patch": "^1.0.4",
     "@types/fossil-delta": "^1.0.0",

@@ -6,6 +6,7 @@ import { Protocol } from './Protocol';
 import { Room, RoomAvailable } from './Room';
 import { getItem, setItem } from './Storage';
 import { FossilDeltaSerializer } from './serializer/FossilDeltaSerializer';
+import { SchemaSerializer } from './serializer/SchemaSerializer';
 import { Serializer } from './serializer/Serializer';
 
 export type JoinOptions = { retryTimes: number, requestId: number } & any;
@@ -33,12 +34,17 @@ export class Client {
         getItem('colyseusid', (colyseusid) => this.connect(colyseusid, options));
     }
 
-    public join<T, S extends Serializer<T>>(roomName: string, options: JoinOptions = {}) {
-        return this.createRoomRequest<T, S>(roomName, options);
+    public join<T, S extends Serializer<T>>(roomName: string, options: JoinOptions = {}, serializer?: S) {
+        const room = this.createRoomRequest<T, S>(roomName, options);
+        room.serializer = serializer || (new FossilDeltaSerializer<T>() as any);
+        return room;
     }
 
-    public rejoin<T>(roomName: string, sessionId: string) {
-        return this.join(roomName, { sessionId });
+    public rejoin<T, S extends Serializer<T>>(roomName: string, options: JoinOptions, serializer?: S) {
+        if (!options.sessionId) {
+            throw new Error("'sessionId' options is required for 'rejoin'.");
+        }
+        return this.join(roomName, options, serializer);
     }
 
     public getAvailableRooms(roomName: string, callback: (rooms: RoomAvailable[], err?: string) => void) {
@@ -65,9 +71,7 @@ export class Client {
     }
 
     protected createRoom<T, S extends Serializer<T> = any>(roomName: string, options: any = {}) {
-        const room = new Room<T, S>(roomName, options);
-        room.serializer = new FossilDeltaSerializer<T>() as any;
-        return room;
+        return new Room<T, S>(roomName, options);
     }
 
     protected createRoomRequest<T, S extends Serializer<T>>(
@@ -106,7 +110,6 @@ export class Client {
         this.connection.send([Protocol.JOIN_ROOM, roomName, options]);
 
         return room;
-
     }
 
     protected connect(colyseusid: string, options: any = {}) {
