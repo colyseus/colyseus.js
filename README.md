@@ -17,7 +17,7 @@
     <img src="https://img.shields.io/discord/525739117951320081.svg?style=for-the-badge">
   </a>
   <h3>
-     Multiplayer Game Client for JavaScript/TypeScript. <br /><a href="http://colyseus.io/docs/">View documentation</a>
+     Multiplayer Game Client for JavaScript/TypeScript. <br /><a href="https://docs.colyseus.io/client-overview/">View documentation</a>
   <h3>
 </div>
 
@@ -110,11 +110,6 @@ room.onLeave.add(function() {
   console.log(client.id, "left", room.name)
 });
 ```
-
-## Useful links
-
-- [Server documentation](https://github.com/gamestdio/colyseus/wiki)
-- [Official examples](https://github.com/gamestdio/colyseus-examples)
 
 ## React Native compatibility
 
