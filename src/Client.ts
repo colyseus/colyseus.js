@@ -34,7 +34,10 @@ export class Client {
         getItem('colyseusid', (colyseusid) => this.connect(colyseusid, options));
     }
 
-    public join<T, S extends Serializer<T>>(roomName: string, options: JoinOptions = {}, serializer?: S) {
+    public join<
+        T,
+        S extends Serializer<T> = FossilDeltaSerializer<T>
+    >(roomName: string, options: JoinOptions = {}, serializer?: S) {
         const room = this.createRoomRequest<T, S>(roomName, options);
         room.serializer = serializer || (new FossilDeltaSerializer<T>() as any);
         return room;
@@ -145,18 +148,18 @@ export class Client {
     /**
      * @override
      */
-    protected onMessageCallback(event) {
-        const message = msgpack.decode( new Uint8Array(event.data) );
-        const code = message[0];
+    protected onMessageCallback(event: MessageEvent) {
+        const code = new Uint8Array(event.data.slice(0, 1))[0];
+        const message = msgpack.decode( new Uint8Array(event.data.slice(1)) );
 
         if (code === Protocol.USER_ID) {
             setItem('colyseusid', message[1]);
 
-            this.id = message[1];
+            this.id = message[0];
             this.onOpen.dispatch();
 
         } else if (code === Protocol.JOIN_ROOM) {
-            const requestId = message[2];
+            const requestId = message[1];
             const room = this.connectingRooms[ requestId ];
 
             if (!room) {
@@ -164,24 +167,24 @@ export class Client {
                 return;
             }
 
-            room.id = message[1];
+            room.id = message[0];
             this.rooms[room.id] = room;
 
             room.connect(this.buildEndpoint(room.id, room.options));
             delete this.connectingRooms[ requestId ];
 
         } else if (code === Protocol.JOIN_ERROR) {
-            console.error('colyseus.js: server error:', message[2]);
+            console.error('colyseus.js: server error:', message[1]);
 
             // general error
-            this.onError.dispatch(message[2]);
+            this.onError.dispatch(message[1]);
 
         } else if (code === Protocol.ROOM_LIST) {
-            if (this.roomsAvailableRequests[message[1]]) {
-                this.roomsAvailableRequests[message[1]](message[2]);
+            if (this.roomsAvailableRequests[message[0]]) {
+                this.roomsAvailableRequests[message[0]](message[1]);
 
             } else {
-                console.warn('receiving ROOM_LIST after timeout:', message[2]);
+                console.warn('receiving ROOM_LIST after timeout:', message[1]);
             }
 
         } else {

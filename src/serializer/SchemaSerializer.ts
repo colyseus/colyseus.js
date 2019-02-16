@@ -1,17 +1,15 @@
 import { Serializer } from "./Serializer";
-import { Sync } from "@colyseus/schema"
+import { Schema } from "@colyseus/schema"
 
 export class SchemaSerializer<T> implements Serializer<T> {
-    klass: any;
-    api: T & Sync;
+    api: T;
 
-    constructor (t: T & Sync) {
-        this.klass = t;
+    constructor (t: T) {
+        this.api = t;
     }
 
     setState(rawState: any): void {
-        this.api = new (this.klass)();
-        this.api.decode(rawState);
+        (this.api as any).decode(rawState);
     }
 
     getState() {
@@ -19,7 +17,7 @@ export class SchemaSerializer<T> implements Serializer<T> {
     }
 
     patch(patches) {
-        this.api.decode(patches);
+        (this.api as any).decode(patches);
     }
 
     removeAllListeners() {

@@ -1,5 +1,4 @@
 import './legacy';
-import { Sync, sync } from "@colyseus/schema";
 
 export { Client, JoinOptions } from './Client';
 export { Protocol } from './Protocol';
@@ -10,11 +9,7 @@ export { DataChange } from '@gamestdio/state-listener';
  * Serializers
  */
 export { SchemaSerializer } from "./serializer/SchemaSerializer";
-
-export class State extends Sync {
-    @sync("string")
-    lastMessage: string = "";
-}
+export { Schema, type } from "@colyseus/schema";
 
 export interface EntityMap<T> {
     [entityId: string]: T;

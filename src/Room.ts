@@ -84,36 +84,31 @@ export class Room<State= any, S extends Serializer<State> = FossilDeltaSerialize
     }
 
     protected onMessageCallback(event) {
-        const message = msgpack.decode(new Uint8Array(event.data));
-        const code = message[0];
+        const code = new Uint8Array(event.data.slice(0, 1))[0];
+        const buffer = event.data.slice(1);
 
         if (code === Protocol.JOIN_ROOM) {
-            this.sessionId = message[1];
+            this.sessionId = msgpack.decode(new Uint8Array(buffer));
             this.onJoin.dispatch();
 
         } else if (code === Protocol.JOIN_ERROR) {
-            console.error(`Error: ${message[1]}`);
-            this.onError.dispatch(message[1]);
+            this.onError.dispatch(msgpack.decode(new Uint8Array(buffer)));
 
         } else if (code === Protocol.ROOM_STATE) {
-            const state = message[1];
-            const remoteCurrentTime = message[2];
-            const remoteElapsedTime = message[3];
-
-            this.setState(state, remoteCurrentTime, remoteElapsedTime);
+            this.setState(buffer);
 
         } else if (code === Protocol.ROOM_STATE_PATCH) {
-            this.patch(message[1]);
+            this.patch(buffer);
 
         } else if (code === Protocol.ROOM_DATA) {
-            this.onMessage.dispatch(message[1]);
+            this.onMessage.dispatch(msgpack.decode(new Uint8Array(buffer)));
 
         } else if (code === Protocol.LEAVE_ROOM) {
             this.leave();
         }
     }
 
-    protected setState(encodedState: Buffer, remoteCurrentTime?: number, remoteElapsedTime?: number): void {
+    protected setState(encodedState: Buffer): void {
         this.serializer.setState(encodedState);
         this.onStateChange.dispatch(this.serializer.getState());
     }
