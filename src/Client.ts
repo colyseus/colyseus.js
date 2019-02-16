@@ -2,7 +2,7 @@ import { Signal } from '@gamestdio/signals';
 import * as msgpack from './msgpack';
 
 import { Connection } from './Connection';
-import { Protocol } from './Protocol';
+import { Protocol, utf8Read } from './Protocol';
 import { Room, RoomAvailable } from './Room';
 import { getItem, setItem } from './Storage';
 import { FossilDeltaSerializer } from './serializer/FossilDeltaSerializer';
@@ -16,7 +16,6 @@ export class Client {
 
     // signals
     public onOpen: Signal = new Signal();
-    public onMessage: Signal = new Signal();
     public onClose: Signal = new Signal();
     public onError: Signal = new Signal();
 
@@ -110,7 +109,7 @@ export class Client {
 
         this.connectingRooms[ options.requestId ] = room as any;
 
-        this.connection.send([Protocol.JOIN_ROOM, roomName, options]);
+        this.connection.send([Protocol.JOIN_REQUEST, roomName, options]);
 
         return room;
     }
@@ -149,17 +148,17 @@ export class Client {
      * @override
      */
     protected onMessageCallback(event: MessageEvent) {
-        const code = new Uint8Array(event.data.slice(0, 1))[0];
-        const message = msgpack.decode( new Uint8Array(event.data.slice(1)) );
+        const view = new DataView(event.data)
+        const code = view.getUint8(0);
 
         if (code === Protocol.USER_ID) {
-            setItem('colyseusid', message[1]);
+            this.id = utf8Read(view, 1);
+            setItem('colyseusid', this.id);
 
-            this.id = message[0];
             this.onOpen.dispatch();
 
-        } else if (code === Protocol.JOIN_ROOM) {
-            const requestId = message[1];
+        } else if (code === Protocol.JOIN_REQUEST) {
+            const requestId = view.getUint8(1);
             const room = this.connectingRooms[ requestId ];
 
             if (!room) {
@@ -167,28 +166,29 @@ export class Client {
                 return;
             }
 
-            room.id = message[0];
+            room.id = utf8Read(view, 2);
             this.rooms[room.id] = room;
 
             room.connect(this.buildEndpoint(room.id, room.options));
             delete this.connectingRooms[ requestId ];
 
         } else if (code === Protocol.JOIN_ERROR) {
-            console.error('colyseus.js: server error:', message[1]);
+            const err = utf8Read(view, 1);
+            console.error('colyseus.js: server error:', err);
 
             // general error
-            this.onError.dispatch(message[1]);
+            this.onError.dispatch(err);
 
         } else if (code === Protocol.ROOM_LIST) {
-            if (this.roomsAvailableRequests[message[0]]) {
-                this.roomsAvailableRequests[message[0]](message[1]);
+            /**
+             * TODO: decode `ROOM_LIST` message.
+             */
+            // if (this.roomsAvailableRequests[message[0]]) {
+            //     this.roomsAvailableRequests[message[0]](message[1]);
 
-            } else {
-                console.warn('receiving ROOM_LIST after timeout:', message[1]);
-            }
-
-        } else {
-            this.onMessage.dispatch(message);
+            // } else {
+            //     console.warn('receiving ROOM_LIST after timeout:', message[1]);
+            // }
         }
 
     }

@@ -3,7 +3,7 @@ import * as msgpack from './msgpack';
 
 import { Connection } from './Connection';
 import { Serializer } from './serializer/Serializer';
-import { Protocol } from './Protocol';
+import { Protocol, utf8Read } from './Protocol';
 import { FossilDeltaSerializer } from './serializer/FossilDeltaSerializer';
 
 export interface RoomAvailable {
@@ -29,6 +29,8 @@ export class Room<State= any, S extends Serializer<State> = FossilDeltaSerialize
 
     public connection: Connection;
     public serializer: S; 
+
+    private previousCode: Protocol;
 
     constructor(name: string, options?: any) {
         this.id = null;
@@ -83,32 +85,43 @@ export class Room<State= any, S extends Serializer<State> = FossilDeltaSerialize
         this.onLeave.removeAll();
     }
 
-    protected onMessageCallback(event) {
-        const code = new Uint8Array(event.data.slice(0, 1))[0];
-        const buffer = event.data.slice(1);
+    protected onMessageCallback(event: MessageEvent) {
+        if (!this.previousCode) {
+            const view = new DataView(event.data);
+            const code = view.getUint8(0);
 
-        if (code === Protocol.JOIN_ROOM) {
-            this.sessionId = msgpack.decode(new Uint8Array(buffer));
-            this.onJoin.dispatch();
+            if (code === Protocol.JOIN_ROOM) {
+                this.sessionId = utf8Read(view, 1);
+                this.onJoin.dispatch();
 
-        } else if (code === Protocol.JOIN_ERROR) {
-            this.onError.dispatch(msgpack.decode(new Uint8Array(buffer)));
+            } else if (code === Protocol.JOIN_ERROR) {
+                this.onError.dispatch(utf8Read(view, 1));
 
-        } else if (code === Protocol.ROOM_STATE) {
-            this.setState(buffer);
+            } else if (code === Protocol.LEAVE_ROOM) {
+                this.leave();
 
-        } else if (code === Protocol.ROOM_STATE_PATCH) {
-            this.patch(buffer);
+            } else {
+                this.previousCode = code;
+            }
 
-        } else if (code === Protocol.ROOM_DATA) {
-            this.onMessage.dispatch(msgpack.decode(new Uint8Array(buffer)));
+        } else {
+            if (this.previousCode === Protocol.ROOM_STATE) {
+                // TODO: improve here!
+                this.setState(Array.from(new Uint8Array(event.data)));
 
-        } else if (code === Protocol.LEAVE_ROOM) {
-            this.leave();
+            } else if (this.previousCode === Protocol.ROOM_STATE_PATCH) {
+                this.patch(Array.from(new Uint8Array(event.data)));
+
+            } else if (this.previousCode === Protocol.ROOM_DATA) {
+                this.onMessage.dispatch(msgpack.decode(event.data));
+            }
+
+            this.previousCode = undefined;
         }
+
     }
 
-    protected setState(encodedState: Buffer): void {
+    protected setState(encodedState): void {
         this.serializer.setState(encodedState);
         this.onStateChange.dispatch(this.serializer.getState());
     }
