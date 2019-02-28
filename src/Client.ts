@@ -1,13 +1,9 @@
 import { Signal } from '@gamestdio/signals';
-import * as msgpack from './msgpack';
 
 import { Connection } from './Connection';
 import { Protocol, utf8Read } from './Protocol';
 import { Room, RoomAvailable } from './Room';
 import { getItem, setItem } from './Storage';
-import { FossilDeltaSerializer } from './serializer/FossilDeltaSerializer';
-import { SchemaSerializer } from './serializer/SchemaSerializer';
-import { Serializer } from './serializer/Serializer';
 
 export type JoinOptions = { retryTimes: number, requestId: number } & any;
 
@@ -33,20 +29,16 @@ export class Client {
         getItem('colyseusid', (colyseusid) => this.connect(colyseusid, options));
     }
 
-    public join<
-        T,
-        S extends Serializer<T> = FossilDeltaSerializer<T>
-    >(roomName: string, options: JoinOptions = {}, serializer?: S) {
-        const room = this.createRoomRequest<T, S>(roomName, options);
-        room.serializer = serializer || (new FossilDeltaSerializer<T>() as any);
+    public join<T>(roomName: string, options: JoinOptions = {}) {
+        const room = this.createRoomRequest<T>(roomName, options);
         return room;
     }
 
-    public rejoin<T, S extends Serializer<T>>(roomName: string, options: JoinOptions, serializer?: S) {
+    public rejoin<T>(roomName: string, options: JoinOptions) {
         if (!options.sessionId) {
             throw new Error("'sessionId' options is required for 'rejoin'.");
         }
-        return this.join(roomName, options, serializer);
+        return this.join<T>(roomName, options);
     }
 
     public getAvailableRooms(roomName: string, callback: (rooms: RoomAvailable[], err?: string) => void) {
@@ -72,19 +64,19 @@ export class Client {
         this.connection.close();
     }
 
-    protected createRoom<T, S extends Serializer<T> = any>(roomName: string, options: any = {}) {
-        return new Room<T, S>(roomName, options);
+    protected createRoom<T>(roomName: string, options: any = {}) {
+        return new Room<T>(roomName, options);
     }
 
-    protected createRoomRequest<T, S extends Serializer<T>>(
+    protected createRoomRequest<T>(
         roomName: string,
         options: JoinOptions,
-        reuseRoomInstance?: Room<T, S>,
+        reuseRoomInstance?: Room<T>,
         retryCount?: number,
     ) {
         options.requestId = ++this.requestId;
 
-        const room = reuseRoomInstance || this.createRoom<T, S>(roomName, options);
+        const room = reuseRoomInstance || this.createRoom<T>(roomName, options);
 
         // remove references on leaving
         room.onLeave.addOnce(() => {

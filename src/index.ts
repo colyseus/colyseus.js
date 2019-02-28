@@ -8,12 +8,17 @@ export { DataChange } from '@gamestdio/state-listener';
 /*
  * Serializers
  */
-export { SchemaSerializer } from "./serializer/SchemaSerializer";
-export { Schema, type } from "@colyseus/schema";
 
-export interface EntityMap<T> {
-    [entityId: string]: T;
-}
+import { FossilDeltaSerializer } from './serializer/FossilDeltaSerializer';
+import { SchemaSerializer } from "./serializer/SchemaSerializer";
+import { JSONPatchSerializer } from "./serializer/JSONPatchSerializer";
+import { registerSerializer } from './serializer/Serializer';
+
+export { Schema, type } from "@colyseus/schema";
+export { registerSerializer, FossilDeltaSerializer, JSONPatchSerializer, SchemaSerializer };
+registerSerializer('fossil-delta', FossilDeltaSerializer);
+registerSerializer('json-patch', JSONPatchSerializer);
+registerSerializer('schema', SchemaSerializer);
 
 /**
  * Experimental sync helpers

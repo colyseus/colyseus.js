@@ -2,8 +2,8 @@ import { Signal } from '@gamestdio/signals';
 import * as msgpack from './msgpack';
 
 import { Connection } from './Connection';
-import { Serializer } from './serializer/Serializer';
-import { Protocol, utf8Read } from './Protocol';
+import { Serializer, getSerializer } from './serializer/Serializer';
+import { Protocol, utf8Read, utf8Length } from './Protocol';
 import { FossilDeltaSerializer } from './serializer/FossilDeltaSerializer';
 
 export interface RoomAvailable {
@@ -13,7 +13,7 @@ export interface RoomAvailable {
     metadata?: any;
 }
 
-export class Room<State= any, S extends Serializer<State> = FossilDeltaSerializer<State>> {
+export class Room<State= any> {
     public id: string;
     public sessionId: string;
 
@@ -28,7 +28,7 @@ export class Room<State= any, S extends Serializer<State> = FossilDeltaSerialize
     public onLeave: Signal = new Signal();
 
     public connection: Connection;
-    public serializer: S; 
+    public serializer: Serializer<State>; 
 
     private previousCode: Protocol;
 
@@ -66,8 +66,8 @@ export class Room<State= any, S extends Serializer<State> = FossilDeltaSerialize
         this.connection.send([ Protocol.ROOM_DATA, this.id, data ]);
     }
 
-    public get state (): S['api'] {
-        return this.serializer.api;
+    public get state (): State {
+        return this.serializer.getState();
     }
 
     public get hasJoined() {
@@ -91,7 +91,25 @@ export class Room<State= any, S extends Serializer<State> = FossilDeltaSerialize
             const code = view.getUint8(0);
 
             if (code === Protocol.JOIN_ROOM) {
-                this.sessionId = utf8Read(view, 1);
+                let offset = 1;
+
+                this.sessionId = utf8Read(view, offset);
+                offset += utf8Length(this.sessionId);
+
+                const serializerId = utf8Read(view, offset);
+                offset += utf8Length(serializerId);
+
+                const serializer = getSerializer(serializerId);
+                if (!serializer) {
+                    throw new Error("missing serializer: " + serializerId);
+                }
+                this.serializer = new serializer();
+
+                if (this.serializer.handshake) {
+                    const bytes = Array.from(new Uint8Array(view.buffer.slice(offset)));
+                    this.serializer.handshake(bytes);
+                }
+
                 this.onJoin.dispatch();
 
             } else if (code === Protocol.JOIN_ERROR) {

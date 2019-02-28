@@ -1,12 +1,8 @@
 import { Serializer } from "./Serializer";
-import { Schema } from "@colyseus/schema"
+import { Schema, Reflection } from "@colyseus/schema";
 
-export class SchemaSerializer<T> implements Serializer<T> {
+export class SchemaSerializer<T extends Schema> implements Serializer<T> {
     api: T;
-
-    constructor (t: T) {
-        this.api = t;
-    }
 
     setState(rawState: any): void {
         (this.api as any).decode(rawState);
@@ -22,5 +18,9 @@ export class SchemaSerializer<T> implements Serializer<T> {
 
     removeAllListeners() {
         // this.api.onRemove
+    }
+
+    handshake(bytes: number[]) {
+        this.api = Reflection.decode(bytes);
     }
 }

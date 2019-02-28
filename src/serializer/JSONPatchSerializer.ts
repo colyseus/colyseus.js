@@ -3,7 +3,7 @@ import { Serializer } from "./Serializer";
 import { StateContainer } from '@gamestdio/state-listener';
 import * as jsonPatch from "fast-json-patch";
 
-export class JSONPatchSerializer<T> implements Serializer<T, StateContainer> {
+export class JSONPatchSerializer<T> implements Serializer<T> {
     api: StateContainer<T> = new StateContainer<T>({} as any);
     protected rawState: any;
 
