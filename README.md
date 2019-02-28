@@ -17,8 +17,8 @@
     <img src="https://img.shields.io/discord/525739117951320081.svg?style=for-the-badge&colorB=7581dc&logo=discord&logoColor=white">
   </a>
   <h3>
-     Multiplayer Game Client for JavaScript/TypeScript. <br /><a href="http://colyseus.io/docs/">View documentation</a>
-  </h3>
+     Multiplayer Game Client for JavaScript/TypeScript. <br /><a href="https://docs.colyseus.io/client-overview/">View documentation</a>
+  <h3>
 </div>
 
 ## Platforms
@@ -111,22 +111,16 @@ room.onLeave.add(function() {
 });
 ```
 
-## Useful links
-
-- [Server documentation](https://github.com/gamestdio/colyseus/wiki)
-- [Official examples](https://github.com/gamestdio/colyseus-examples)
-
 ## React Native compatibility
 
 This client works with React Native. You need to install some aditional
 dependencies for compatibility and assign `window.localStorage` to
 `AsyncStorage`.
 
-- Install `react-native-browser-polyfill` (`npm install react-native-browser-polyfill`)
+- `npm install buffer`
 
 ```js
 // App.js
-import 'react-native-browser-polyfill';
 import { AsyncStorage } from 'react-native';
 import { Buffer } from "buffer";
 window.localStorage = AsyncStorage;

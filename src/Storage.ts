@@ -4,10 +4,22 @@
  * loaded.
  */
 
+let storage: any;
+
 function getStorage() {
-    return (typeof (cc) !== 'undefined' && cc.sys && cc.sys.localStorage)
-        ? cc.sys.localStorage  // compatibility with cocos creator
-        : window.localStorage; // regular browser environment
+    if (!storage)  {
+        storage = (typeof (cc) !== 'undefined' && cc.sys && cc.sys.localStorage)
+            ? cc.sys.localStorage  // compatibility with cocos creator
+            : typeof (window) !== "undefined"
+                ? window.localStorage // regular browser environment
+                : { // mock localStorage for Node.js environment
+                    cache: {},
+                    setItem: function(key, value) { this.cache[key] = value; },
+                    getItem: function(key) { this.cache[key]; },
+                };
+
+    }
+    return storage;
 }
 
 export function setItem(key: string, value: string) {
