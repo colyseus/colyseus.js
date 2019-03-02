@@ -1,6 +1,6 @@
 import './util';
 import { assert } from "chai";
-import { Room, DataChange, EntityMap, initializeSync, sync, key, room, syncMap, syncObject, listen } from "../src";
+import { Room, DataChange, initializeSync, sync, key, room, syncMap, syncObject, listen } from "../src";
 import { FossilDeltaSerializer } from '../src/serializer/FossilDeltaSerializer';
 
 class Entity {
@@ -17,7 +17,7 @@ class Settings {
 
 class Game {
     @syncMap(Entity)
-    entities: EntityMap<Entity> = {};
+    entities: {[id: string]: Entity} = {};
 
     @syncObject(Settings)
     settings: Settings;
@@ -35,7 +35,7 @@ describe("Sync Tools", function() {
 
         initializeSync(room, game);
 
-        room.state.set({
+        (room.serializer as FossilDeltaSerializer).api.set({
             entities: {
                 one: { x: 10, y: 20, lvl: 1 },
                 two: { x: 30, y: 40, lvl: 5 },
@@ -92,7 +92,8 @@ describe("Sync Tools", function() {
         }
 
         initializeSync(room, new Test());
-        room.state.set({ list });
+
+        (room.serializer as FossilDeltaSerializer).api.set({ list });
     });
 
     it("#listen for specific operation", () => {
@@ -110,8 +111,8 @@ describe("Sync Tools", function() {
 
         initializeSync(room, new Test());
 
-        room.state.set({ player: { x: 0, y: 0 } });
-        room.state.set({ player: { x: 10, y: 0 }});
+        (room.serializer as FossilDeltaSerializer).api.set({ player: { x: 0, y: 0 } });
+        (room.serializer as FossilDeltaSerializer).api.set({ player: { x: 10, y: 0 }});
     });
 
 });

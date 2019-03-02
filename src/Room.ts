@@ -75,7 +75,7 @@ export class Room<State= any> {
         return this.sessionId !== undefined;
     }
 
-    public listen(segments: string, callback: Function, immediate: boolean) {
+    public listen(segments: string, callback: Function, immediate?: boolean) {
         if (this.serializerId === "schema") {
             console.error(`'${this.serializerId}' serializer doesn't support .listen() method.`);
             return;

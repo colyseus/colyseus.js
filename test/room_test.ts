@@ -16,7 +16,7 @@ describe("Room", function() {
 
   it("should initialize room with empty state", function() {
     assert.equal(room.name, "chat")
-    assert.deepEqual(room.state.state, {})
+    assert.deepEqual(room.state, {})
   });
 
   it("should emit state change", function(done) {
@@ -50,14 +50,14 @@ describe("Room", function() {
     let delta = fossilDelta.create(previousState, nextState);
 
     let patchCount = 0;
-    room.state.listen("players/:id/:attribute", (change) => {
+    room.listen("players/:id/:attribute", (change) => {
       patchCount++
       assert.equal(change.path.id, "one");
       assert.equal(change.path.attribute, "hp");
       assert.equal(change.value, 40);
     });
 
-    room.state.listen("players/:id/position/:axis", (change) => {
+    room.listen("players/:id/position/:axis", (change) => {
       patchCount++
       assert.equal(change.path.id, "one");
       assert.equal(change.path.axis, "y");

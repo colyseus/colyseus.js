@@ -140,7 +140,7 @@ function bindProperties(
 
         const listener = listeners[ `${ property.holderType }Listener` ];
         if (listener) {
-            roomInstance.state.listen(path, listener(roomInstance, property, synchable, synchableRoot, path));
+            roomInstance.listen(path, listener(roomInstance, property, synchable, synchableRoot, path));
 
             if (property.type) {
                 createBindings(roomInstance, property.type, synchable, path);
@@ -172,6 +172,6 @@ export function bindListeners(
              })
             : synchable[ listener.methodName ].bind(synchable);
 
-        roomInstance.state.listen(path, callback);
+        roomInstance.listen(path, callback);
     }
 }

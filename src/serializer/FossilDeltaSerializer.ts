@@ -4,7 +4,7 @@ import { StateContainer } from '@gamestdio/state-listener';
 import * as fossilDelta from 'fossil-delta';
 import * as msgpack from '../msgpack';
 
-export class FossilDeltaSerializer<State> implements Serializer<State> {
+export class FossilDeltaSerializer<State= any> implements Serializer<State> {
     api: StateContainer<State> = new StateContainer<State>({} as State);
     protected previousState: any;
 
