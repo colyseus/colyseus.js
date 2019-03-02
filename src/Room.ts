@@ -28,9 +28,10 @@ export class Room<State= any> {
     public onLeave: Signal = new Signal();
 
     public connection: Connection;
-    public serializer: Serializer<State>; 
 
-    protected serializerId: string;
+    public serializerId: string;
+    protected serializer: Serializer<State>; 
+
     protected previousCode: Protocol;
 
     constructor(name: string, options?: any) {
