@@ -11,7 +11,7 @@ describe("Room", function() {
 
   beforeEach(function() {
     room = new Room("chat");
-    room.serializer = new FossilDeltaSerializer();
+    (room as any).serializer = new FossilDeltaSerializer();
   });
 
   it("should initialize room with empty state", function() {

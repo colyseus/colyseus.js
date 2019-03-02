@@ -29,13 +29,13 @@ describe("Sync Tools", function() {
 
     // beforeEach(() => {
         room = new Room("sync");
-        room.serializer = new FossilDeltaSerializer();
+        (room as any).serializer = new FossilDeltaSerializer();
 
         game = new Game();
 
         initializeSync(room, game);
 
-        (room.serializer as FossilDeltaSerializer).api.set({
+        ((room as any).serializer as FossilDeltaSerializer).api.set({
             entities: {
                 one: { x: 10, y: 20, lvl: 1 },
                 two: { x: 30, y: 40, lvl: 5 },
@@ -77,7 +77,7 @@ describe("Sync Tools", function() {
 
     it("#listen", () => {
         let room = new Room("dummy_room");
-        room.serializer = new FossilDeltaSerializer();
+        (room as any).serializer = new FossilDeltaSerializer();
 
         let list = [1,2,3,4,5];
 
@@ -93,12 +93,12 @@ describe("Sync Tools", function() {
 
         initializeSync(room, new Test());
 
-        (room.serializer as FossilDeltaSerializer).api.set({ list });
+        ((room as any).serializer as FossilDeltaSerializer).api.set({ list });
     });
 
     it("#listen for specific operation", () => {
         let room = new Room("dummy_room");
-        room.serializer = new FossilDeltaSerializer();
+        (room as any).serializer = new FossilDeltaSerializer();
 
         let index = 0;
         class Test {
@@ -111,8 +111,8 @@ describe("Sync Tools", function() {
 
         initializeSync(room, new Test());
 
-        (room.serializer as FossilDeltaSerializer).api.set({ player: { x: 0, y: 0 } });
-        (room.serializer as FossilDeltaSerializer).api.set({ player: { x: 10, y: 0 }});
+        ((room as any).serializer as FossilDeltaSerializer).api.set({ player: { x: 0, y: 0 } });
+        ((room as any).serializer as FossilDeltaSerializer).api.set({ player: { x: 10, y: 0 }});
     });
 
 });
