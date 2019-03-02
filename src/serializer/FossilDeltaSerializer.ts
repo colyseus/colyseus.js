@@ -5,7 +5,7 @@ import * as fossilDelta from 'fossil-delta';
 import * as msgpack from '../msgpack';
 
 export class FossilDeltaSerializer<State> implements Serializer<State> {
-    api: StateContainer = new StateContainer({});
+    api: StateContainer<State> = new StateContainer<State>({} as State);
     protected previousState: any;
 
     getStateAPI() {

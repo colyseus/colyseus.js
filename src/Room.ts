@@ -30,7 +30,8 @@ export class Room<State= any> {
     public connection: Connection;
     public serializer: Serializer<State>; 
 
-    private previousCode: Protocol;
+    protected serializerId: string;
+    protected previousCode: Protocol;
 
     constructor(name: string, options?: any) {
         this.id = null;
@@ -74,6 +75,15 @@ export class Room<State= any> {
         return this.sessionId !== undefined;
     }
 
+    public listen(segments: string, callback: Function, immediate: boolean) {
+        if (this.serializerId === "schema") {
+            console.error(`'${this.serializerId}' serializer doesn't support .listen() method.`);
+            return;
+        }
+
+        return (this.serializer as FossilDeltaSerializer<State>).api.listen(segments, callback, immediate);
+    }
+
     public removeAllListeners() {
         if (this.serializer.removeAllListeners) {
             this.serializer.removeAllListeners();
@@ -96,13 +106,15 @@ export class Room<State= any> {
                 this.sessionId = utf8Read(view, offset);
                 offset += utf8Length(this.sessionId);
 
-                const serializerId = utf8Read(view, offset);
-                offset += utf8Length(serializerId);
+                this.serializerId = utf8Read(view, offset);
+                offset += utf8Length(this.serializerId);
 
-                const serializer = getSerializer(serializerId);
+                // get serializer implementation
+                const serializer = getSerializer(this.serializerId);
                 if (!serializer) {
-                    throw new Error("missing serializer: " + serializerId);
+                    throw new Error("missing serializer: " + this.serializerId);
                 }
+
                 this.serializer = new serializer();
 
                 if (this.serializer.handshake) {

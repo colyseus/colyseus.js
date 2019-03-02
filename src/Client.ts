@@ -30,8 +30,7 @@ export class Client {
     }
 
     public join<T>(roomName: string, options: JoinOptions = {}) {
-        const room = this.createRoomRequest<T>(roomName, options);
-        return room;
+        return this.createRoomRequest<T>(roomName, options);
     }
 
     public rejoin<T>(roomName: string, options: JoinOptions) {
