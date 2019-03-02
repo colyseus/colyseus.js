@@ -17,16 +17,13 @@ export class FossilDeltaSerializer<State= any> implements Serializer<State> {
     }
 
     setState(encodedState: any): void {
-        const state = msgpack.decode(encodedState);
-
-        this.api.set(state);
-
         this.previousState = new Uint8Array(encodedState);
+        this.api.set(msgpack.decode(this.previousState));
     }
 
     patch(binaryPatch) {
         // apply patch
-        this.previousState = Buffer.from(fossilDelta.apply(this.previousState, binaryPatch));
+        this.previousState = new Uint8Array(fossilDelta.apply(this.previousState, binaryPatch));
 
         // trigger update callbacks
         this.api.set(msgpack.decode(this.previousState));

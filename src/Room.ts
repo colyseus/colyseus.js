@@ -4,7 +4,9 @@ import * as msgpack from './msgpack';
 import { Connection } from './Connection';
 import { Serializer, getSerializer } from './serializer/Serializer';
 import { Protocol, utf8Read, utf8Length } from './Protocol';
+
 import { FossilDeltaSerializer } from './serializer/FossilDeltaSerializer';
+import { Listener } from '@gamestdio/state-listener';
 
 export interface RoomAvailable {
     roomId: string;
@@ -76,6 +78,8 @@ export class Room<State= any> {
         return this.sessionId !== undefined;
     }
 
+    // TODO: deprecate / move somewhere else
+    // this method is useful only for FossilDeltaSerializer
     public listen(segments: string, callback: Function, immediate?: boolean) {
         if (this.serializerId === "schema") {
             console.error(`'${this.serializerId}' serializer doesn't support .listen() method.`);
@@ -83,6 +87,12 @@ export class Room<State= any> {
         }
 
         return (this.serializer as FossilDeltaSerializer<State>).api.listen(segments, callback, immediate);
+    }
+
+    // TODO: deprecate / move somewhere else
+    // this method is useful only for FossilDeltaSerializer
+    public removeListener(listener: Listener) {
+        return (this.serializer as FossilDeltaSerializer<State>).api.removeListener(listener)
     }
 
     public removeAllListeners() {

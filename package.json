@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.10.0-alpha.1",
+  "version": "0.10.0-alpha-6",
   "description": "Multiplayer Game Client for the Browser",
   "keywords": [
     "colyseus",
