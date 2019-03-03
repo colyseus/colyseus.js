@@ -159,7 +159,6 @@ export class Room<State= any> {
 
             this.previousCode = undefined;
         }
-
     }
 
     protected setState(encodedState): void {
