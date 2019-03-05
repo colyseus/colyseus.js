@@ -8,10 +8,6 @@ export class FossilDeltaSerializer<State= any> implements Serializer<State> {
     api: StateContainer<State> = new StateContainer<State>({} as State);
     protected previousState: any;
 
-    getStateAPI() {
-        return this.api;
-    }
-
     getState(): State {
         return this.api.state;
     }
@@ -29,7 +25,7 @@ export class FossilDeltaSerializer<State= any> implements Serializer<State> {
         this.api.set(msgpack.decode(this.previousState));
     }
 
-    removeAllListeners() {
+    teardown() {
         this.api.removeAllListeners();
     }
 }

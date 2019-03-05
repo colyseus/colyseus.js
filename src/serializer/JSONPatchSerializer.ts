@@ -36,7 +36,7 @@ export class JSONPatchSerializer<T> implements Serializer<T> {
     }
 
 
-    removeAllListeners() {
+    teardown() {
         this.api.removeAllListeners();
     }
 }

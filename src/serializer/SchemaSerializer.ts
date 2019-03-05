@@ -16,7 +16,7 @@ export class SchemaSerializer<T extends Schema> implements Serializer<T> {
         (this.api as any).decode(patches);
     }
 
-    removeAllListeners() {
+    teardown() {
         // this.api.onRemove
     }
 

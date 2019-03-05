@@ -100,8 +100,8 @@ export class Room<State= any> {
     }
 
     public removeAllListeners() {
-        if (this.serializer.removeAllListeners) {
-            this.serializer.removeAllListeners();
+        if (this.serializer) {
+            this.serializer.teardown();
         }
         this.onJoin.removeAll();
         this.onStateChange.removeAll();

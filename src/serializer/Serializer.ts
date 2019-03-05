@@ -3,7 +3,7 @@ export interface Serializer<State> {
     getState(): State;
 
     patch(data: any): void;
-    removeAllListeners?(): void;
+    teardown(): void;
 
     handshake?(bytes: number[]): void;
 }
