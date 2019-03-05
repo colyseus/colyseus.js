@@ -57,10 +57,14 @@ export class Room<State= any> {
         this.connection.open();
     }
 
-    public leave(): void {
+    public leave(consented: boolean = true): void {
         if (this.connection) {
-            this.connection.send([Protocol.LEAVE_ROOM]);
+            if (consented) {
+                this.connection.send([Protocol.LEAVE_ROOM]);
 
+            } else {
+                this.connection.close();
+            }
         } else {
             this.onLeave.dispatch();
         }
