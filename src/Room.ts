@@ -42,6 +42,9 @@ export class Room<State= any> {
         this.name = name;
         this.options = options;
 
+        // TODO: remove default serializer. it should arrive only after JOIN_ROOM.
+        this.serializer = new FossilDeltaSerializer<State>();
+
         this.onLeave.add(() => this.removeAllListeners());
     }
 
@@ -88,6 +91,9 @@ export class Room<State= any> {
         if (this.serializerId === "schema") {
             console.error(`'${this.serializerId}' serializer doesn't support .listen() method.`);
             return;
+
+        } else if (!this.serializerId) {
+            console.warn("room.Listen() should be called after room.onJoin has been called (DEPRECATION WARNING)");
         }
 
         return (this.serializer as FossilDeltaSerializer<State>).api.listen(segments, callback, immediate);
@@ -130,7 +136,10 @@ export class Room<State= any> {
                     throw new Error("missing serializer: " + this.serializerId);
                 }
 
-                this.serializer = new serializer();
+                // TODO: remove this check
+                if (this.serializerId !== "fossil-delta") {
+                    this.serializer = new serializer();
+                }
 
                 if (this.serializer.handshake) {
                     const bytes = Array.from(new Uint8Array(view.buffer.slice(offset)));
