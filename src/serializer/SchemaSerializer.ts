@@ -2,25 +2,25 @@ import { Serializer } from "./Serializer";
 import { Schema, Reflection } from "@colyseus/schema";
 
 export class SchemaSerializer<T extends Schema> implements Serializer<T> {
-    api: T;
+    state: T;
 
     setState(rawState: any): void {
-        (this.api as any).decode(rawState);
+        (this.state as any).decode(rawState);
     }
 
     getState() {
-        return this.api;
+        return this.state;
     }
 
     patch(patches) {
-        (this.api as any).decode(patches);
+        (this.state as any).decode(patches);
     }
 
     teardown() {
-        // this.api.onRemove
+        // this.state.onRemove
     }
 
     handshake(bytes: number[]) {
-        this.api = Reflection.decode(bytes);
+        this.state = Reflection.decode(bytes);
     }
 }
