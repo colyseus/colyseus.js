@@ -21,6 +21,6 @@ export class SchemaSerializer<T extends Schema> implements Serializer<T> {
     }
 
     handshake(bytes: number[]) {
-        this.state = Reflection.decode(bytes);
+        this.state = Reflection.decode(bytes) as any;
     }
 }
