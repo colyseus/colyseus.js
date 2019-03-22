@@ -11,7 +11,7 @@ module.exports = function(options) {
             path: path.join(__dirname, "dist"),
             filename: "colyseus.js",
 
-            libraryTarget: "var",
+            libraryTarget: "umd",
             library: "Colyseus"
         },
 
