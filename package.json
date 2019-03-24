@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "Multiplayer Game Client for the Browser",
   "keywords": [
     "colyseus",
@@ -34,7 +34,7 @@
     "node": ">= 5.x"
   },
   "dependencies": {
-    "@colyseus/schema": "^0.3.0",
+    "@colyseus/schema": "^0.4.0",
     "@gamestdio/signals": "^1.0.0",
     "@gamestdio/state-listener": "^3.1.0",
     "@gamestdio/websocket": "^0.3.2",
