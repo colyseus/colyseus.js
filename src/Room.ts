@@ -141,7 +141,7 @@ export class Room<State= any> {
                     this.serializer = new serializer();
                 }
 
-                if (this.serializer.handshake) {
+                if (view.buffer.byteLength > offset && this.serializer.handshake) {
                     const bytes = Array.from(new Uint8Array(view.buffer.slice(offset)));
                     this.serializer.handshake(bytes);
                 }
