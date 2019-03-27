@@ -1,4 +1,4 @@
-import * as msgpack from "notepack.io";
+import * as msgpack from './msgpack';
 import { Signal } from '@gamestdio/signals';
 
 import { Connection } from './Connection';
