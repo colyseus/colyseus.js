@@ -155,6 +155,7 @@ export class Client {
             } else if (code === Protocol.JOIN_REQUEST) {
                 const requestId = view.getUint8(1);
                 const room = this.connectingRooms[requestId];
+                let processPath: string = '';
 
                 if (!room) {
                     console.warn('colyseus.js: client left room before receiving session id.');
@@ -164,7 +165,12 @@ export class Client {
                 room.id = utf8Read(view, 2);
                 this.rooms[room.id] = room;
 
-                room.connect(this.buildEndpoint(room.id, room.options));
+                const nextIndex = 3 + room.id.length;
+                if (view.byteLength > nextIndex) {
+                    processPath = utf8Read(view, nextIndex) +  "/";
+                }
+
+                room.connect(this.buildEndpoint(processPath + room.id, room.options));
                 delete this.connectingRooms[requestId];
 
             } else if (code === Protocol.JOIN_ERROR) {
