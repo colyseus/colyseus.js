@@ -10,9 +10,9 @@ function getStorage() {
     if (!storage)  {
         storage = (typeof (cc) !== 'undefined' && cc.sys && cc.sys.localStorage)
             ? cc.sys.localStorage  // compatibility with cocos creator
-            : typeof (window) !== "undefined"
+            : typeof (window) !== "undefined" && window.localStorage //RN does have window object at this point, but localStorage is not defined
                 ? window.localStorage // regular browser environment
-                : { // mock localStorage for Node.js environment
+                : { // mock localStorage for Node.js or RN environment
                     cache: {},
                     setItem: function(key, value) { this.cache[key] = value; },
                     getItem: function(key) { this.cache[key]; },
