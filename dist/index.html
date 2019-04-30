@@ -24,13 +24,13 @@
 
     <script>
       var host = (window.document.location.host || "localhost").replace(/:.*/, '');
-      var client = new Colyseus.Client('ws://' + host + ':2657');
+      var client = new Colyseus.Client('ws://' + host + ':2567');
       var room;
 
       function request () {
           var http = new XMLHttpRequest();
           var params = '{"lorem":"ipsum","name":"binny"}';
-          http.open("POST", "http://localhost:2657/something", true);
+          http.open("POST", "http://localhost:2567/something", true);
 
           // Send the proper header information along with the request
           // http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
