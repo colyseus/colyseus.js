@@ -45,7 +45,7 @@ export class Client {
 
     public getAvailableRooms(roomName: string, callback: (rooms: RoomAvailable[], err?: string) => void) {
         // reject this promise after 15 seconds.
-        const requestId = ++this.requestId;
+        const requestId = this.getNextRequestId();
         const removeRequest = () => delete this.roomsAvailableRequests[requestId];
         const rejectionTimeout = setTimeout(() => {
             removeRequest();
@@ -76,7 +76,7 @@ export class Client {
         reuseRoomInstance?: Room<T>,
         retryCount?: number,
     ) {
-        options.requestId = ++this.requestId;
+        options.requestId = this.getNextRequestId();
 
         const room = reuseRoomInstance || this.createRoom<T>(roomName, options);
 
@@ -199,6 +199,10 @@ export class Client {
             this.previousCode = undefined;
         }
 
+    }
+
+    protected getNextRequestId() {
+        return (++this.requestId % 255);
     }
 
 }
