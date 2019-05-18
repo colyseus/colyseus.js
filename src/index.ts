@@ -17,18 +17,3 @@ export { Schema, type } from "@colyseus/schema";
 export { registerSerializer, FossilDeltaSerializer, SchemaSerializer };
 registerSerializer('fossil-delta', FossilDeltaSerializer);
 registerSerializer('schema', SchemaSerializer);
-
-/**
- * Experimental sync helpers
- */
-export {
-    initializeSync,
-    sync,
-    syncMap,
-    syncObject,
-    syncVar,
-    syncList,
-    key,
-    room,
-    listen,
-} from './sync/helpers';
