@@ -6,6 +6,7 @@ import { Protocol, utf8Read } from './Protocol';
 import { Room, RoomAvailable } from './Room';
 import { getItem, setItem } from './Storage';
 import { Auth } from './Auth';
+import { Push } from './Push';
 import { RootSchemaConstructor } from './serializer/SchemaSerializer';
 
 export type JoinOptions = { retryTimes: number, requestId: number } & any;
@@ -13,6 +14,7 @@ export type JoinOptions = { retryTimes: number, requestId: number } & any;
 export class Client {
     public id?: string;
     public auth: Auth;
+    public push = new Push();
 
     // signals
     public onOpen: Signal = new Signal();
