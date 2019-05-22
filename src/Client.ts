@@ -5,11 +5,14 @@ import { Connection } from './Connection';
 import { Protocol, utf8Read } from './Protocol';
 import { Room, RoomAvailable } from './Room';
 import { getItem, setItem } from './Storage';
+import { Auth } from './Auth';
+import { RootSchemaConstructor } from './serializer/SchemaSerializer';
 
 export type JoinOptions = { retryTimes: number, requestId: number } & any;
 
 export class Client {
     public id?: string;
+    public auth: Auth;
 
     // signals
     public onOpen: Signal = new Signal();
@@ -29,18 +32,19 @@ export class Client {
 
     constructor(url: string, options: any = {}) {
         this.hostname = url;
+        this.auth = new Auth(this.hostname);
         getItem('colyseusid', (colyseusid) => this.connect(colyseusid, options));
     }
 
-    public join<T>(roomName: string, options: JoinOptions = {}) {
-        return this.createRoomRequest<T>(roomName, options);
+    public join<T>(roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
+        return this.createRoomRequest<T>(roomName, options, rootSchema);
     }
 
-    public rejoin<T>(roomName: string, options: JoinOptions) {
+    public rejoin<T>(roomName: string, options: JoinOptions, rootSchema?: RootSchemaConstructor) {
         if (!options.sessionId) {
             throw new Error("'sessionId' options is required for 'rejoin'.");
         }
-        return this.join<T>(roomName, options);
+        return this.join<T>(roomName, options, rootSchema);
     }
 
     public getAvailableRooms(roomName: string, callback: (rooms: RoomAvailable[], err?: string) => void) {
@@ -66,19 +70,25 @@ export class Client {
         this.connection.close();
     }
 
-    protected createRoom<T>(roomName: string, options: any = {}) {
-        return new Room<T>(roomName, options);
+    protected createRoom<T>(roomName: string, options: any = {}, rootSchema?: RootSchemaConstructor) {
+        return new Room<T>(roomName, options, rootSchema);
     }
 
     protected createRoomRequest<T>(
         roomName: string,
         options: JoinOptions,
+        rootSchema?: RootSchemaConstructor,
         reuseRoomInstance?: Room<T>,
         retryCount?: number,
     ) {
         options.requestId = this.getNextRequestId();
 
-        const room = reuseRoomInstance || this.createRoom<T>(roomName, options);
+        // automatically forward auth token, if present
+        if (this.auth.hasToken) {
+            options.token = this.auth.token;
+        }
+
+        const room = reuseRoomInstance || this.createRoom<T>(roomName, options, rootSchema);
 
         // remove references on leaving
         room.onLeave.addOnce(() => {
@@ -96,7 +106,7 @@ export class Client {
                 retryCount = retryCount || 0;
                 if (!room.hasJoined && retryCount <= options.retryTimes) {
                     retryCount++;
-                    this.createRoomRequest(roomName, options, room, retryCount);
+                    this.createRoomRequest(roomName, options, rootSchema, room, retryCount);
                 }
             });
         }

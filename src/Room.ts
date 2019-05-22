@@ -1,5 +1,6 @@
 import { Signal } from '@gamestdio/signals';
 import * as msgpack from './msgpack';
+import { Schema } from '@colyseus/schema';
 
 import { Connection } from './Connection';
 import { Serializer, getSerializer } from './serializer/Serializer';
@@ -7,6 +8,8 @@ import { Protocol, utf8Read, utf8Length } from './Protocol';
 
 import { FossilDeltaSerializer } from './serializer/FossilDeltaSerializer';
 import { Listener } from '@gamestdio/state-listener';
+import { SchemaSerializer } from '.';
+import { RootSchemaConstructor } from './serializer/SchemaSerializer';
 
 export interface RoomAvailable {
     roomId: string;
@@ -32,18 +35,24 @@ export class Room<State= any> {
     public connection: Connection;
 
     public serializerId: string;
-    protected serializer: Serializer<State>; 
+    protected serializer: Serializer<State>;
 
     protected previousCode: Protocol;
 
-    constructor(name: string, options?: any) {
+    constructor(name: string, options?: any, rootSchema?: RootSchemaConstructor) {
         this.id = null;
 
         this.name = name;
         this.options = options;
 
-        // TODO: remove default serializer. it should arrive only after JOIN_ROOM.
-        this.serializer = new FossilDeltaSerializer<State>();
+        if (rootSchema) {
+            this.serializer = new (getSerializer("schema"));
+            (this.serializer as SchemaSerializer).state = new (rootSchema)();
+
+        } else {
+            // TODO: remove default serializer. it should arrive only after JOIN_ROOM.
+            this.serializer = new (getSerializer("fossil-delta"));
+        }
 
         this.onLeave.add(() => this.removeAllListeners());
     }
@@ -137,7 +146,7 @@ export class Room<State= any> {
                 }
 
                 // TODO: remove this check
-                if (this.serializerId !== "fossil-delta") {
+                if (this.serializerId !== "fossil-delta" && !this.serializer) {
                     this.serializer = new serializer();
                 }
 

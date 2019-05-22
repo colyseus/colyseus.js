@@ -1,7 +1,9 @@
 import { Serializer } from "./Serializer";
 import { Schema, Reflection } from "@colyseus/schema";
 
-export class SchemaSerializer<T extends Schema> implements Serializer<T> {
+export type RootSchemaConstructor = new (...args: any[]) => Schema;
+
+export class SchemaSerializer<T extends Schema= any> implements Serializer<T> {
     state: T;
 
     setState(rawState: any): void {
@@ -21,6 +23,14 @@ export class SchemaSerializer<T extends Schema> implements Serializer<T> {
     }
 
     handshake(bytes: number[]) {
-        this.state = Reflection.decode(bytes) as any;
+        if (this.state) {
+            // validate client/server definitinos
+            const reflection = new Reflection();
+            reflection.decode(bytes);
+
+        } else {
+            // initialize reflected state from server
+            this.state = Reflection.decode(bytes) as any;
+        }
     }
 }
