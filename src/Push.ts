@@ -1,13 +1,18 @@
 export class Push {
+    endpoint: string;
+
+    constructor (endpoint: string) {
+        this.endpoint = endpoint.replace("ws", "http");
+    }
+
     public async register() {
         this.check();
-        const swRegistration = await this.registerServiceWorker();
-        const permission = await this.requestNotificationPermission();
+        await this.registerServiceWorker();
+        await this.requestNotificationPermission();
     };
 
     protected async registerServiceWorker() {
-        const swRegistration = await navigator.serviceWorker.register("webpush_service.js");
-        return swRegistration;
+        return await navigator.serviceWorker.register(`${this.endpoint}/push`);
     }
 
     protected async requestNotificationPermission() {

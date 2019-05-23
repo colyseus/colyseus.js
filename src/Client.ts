@@ -14,7 +14,7 @@ export type JoinOptions = { retryTimes: number, requestId: number } & any;
 export class Client {
     public id?: string;
     public auth: Auth;
-    public push = new Push();
+    public push: Push;
 
     // signals
     public onOpen: Signal = new Signal();
@@ -35,6 +35,7 @@ export class Client {
     constructor(url: string, options: any = {}) {
         this.hostname = url;
         this.auth = new Auth(this.hostname);
+        this.push = new Push(this.hostname);
         getItem('colyseusid', (colyseusid) => this.connect(colyseusid, options));
     }
 
