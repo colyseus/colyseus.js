@@ -44,6 +44,7 @@ export class Auth {
     token: string = undefined;
 
     protected endpoint: string;
+    protected keepOnlineInterval: any;
 
     constructor(endpoint: string) {
         this.endpoint = endpoint.replace("ws", "http");
@@ -84,7 +85,23 @@ export class Auth {
             if (this.hasOwnProperty(attr)) { this[attr] = data[attr]; }
         }
 
+        this.registerPingService();
+
         return this;
+    }
+
+    async save() {
+        return (await put(`${this.endpoint}/auth`, {
+            headers: { 'Accept': 'application/json' , 'Authorization': 'Bearer ' + this.token },
+            body: {
+                username: this.username,
+                displayName: this.displayName,
+                avatarUrl: this.avatarUrl,
+                lang: this.lang,
+                location: this.location,
+                timezone: this.timezone,
+            }
+        })).data;
     }
 
     async getFriends() {
@@ -138,6 +155,21 @@ export class Auth {
     logout() {
         this.token = undefined;
         localStorage.removeItem(TOKEN_STORAGE);
+        this.unregisterPingService();
+    }
+
+    registerPingService(timeout: number = 15000) {
+        this.unregisterPingService();
+
+        this.keepOnlineInterval = setInterval(() => {
+            get(`${this.endpoint}/auth`, {
+                headers: { 'Accept': 'application/json' , 'Authorization': 'Bearer ' + this.token },
+            });
+        }, timeout);
+    }
+
+    unregisterPingService() {
+        clearInterval(this.keepOnlineInterval);
     }
 
 }
