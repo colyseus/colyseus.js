@@ -91,7 +91,7 @@ export class Auth {
     }
 
     async save() {
-        return (await put(`${this.endpoint}/auth`, {
+        await put(`${this.endpoint}/auth`, {
             headers: { 'Accept': 'application/json' , 'Authorization': 'Bearer ' + this.token },
             body: {
                 username: this.username,
@@ -101,7 +101,9 @@ export class Auth {
                 location: this.location,
                 timezone: this.timezone,
             }
-        })).data;
+        });
+
+        return this;
     }
 
     async getFriends() {
