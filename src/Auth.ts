@@ -12,7 +12,40 @@ export interface Device {
     platform: Platform
 }
 
-export class Auth {
+export interface IStatus {
+    status: boolean;
+}
+
+export interface IUser {
+    _id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string;
+
+    isAnonymous: boolean;
+    email: string;
+
+    lang: string;
+    location: string;
+    timezone: string;
+    metadata: any;
+
+    devices: Device[];
+
+    facebookId: string;
+    twitterId: string;
+    googleId: string;
+    gameCenterId: string;
+    steamId: string;
+
+    friendIds: string[];
+    blockedUserIds: string[];
+
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export class Auth implements IUser {
     _id: string = undefined;
     username: string = undefined;
     displayName: string = undefined;
@@ -109,49 +142,49 @@ export class Auth {
     async getFriends() {
         return (await get(`${this.endpoint}/friends/all`, {
             headers: { 'Accept': 'application/json' , 'Authorization': 'Bearer ' + this.token }
-        })).data;
+        })).data as IUser[];
     }
 
     async getOnlineFriends() {
         return (await get(`${this.endpoint}/friends/online`, {
             headers: { 'Accept': 'application/json' , 'Authorization': 'Bearer ' + this.token }
-        })).data;
+        })).data as IUser[];
     }
 
     async getFriendRequests(friendId: string) {
         return (await get(`${this.endpoint}/friends/requests`, {
             headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token }
-        })).data;
+        })).data as IUser[];
     }
 
     async sendFriendRequest(friendId: string) {
         return (await post(`${this.endpoint}/friends/requests?userId=${friendId}`, {
             headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token }
-        })).data;
+        })).data as IStatus;
     }
 
     async acceptFriendRequest(friendId: string) {
         return (await put(`${this.endpoint}/friends/requests?userId=${friendId}`, {
             headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token }
-        })).data;
+        })).data as IStatus;
     }
 
     async declineFriendRequest(friendId: string) {
         return (await del(`${this.endpoint}/friends/requests?userId=${friendId}`, {
             headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token }
-        })).data;
+        })).data as IStatus;
     }
 
     async blockUser(friendId: string) {
         return (await post(`${this.endpoint}/friends/block?userId=${friendId}`, {
             headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token }
-        })).data;
+        })).data as IStatus;
     }
 
     async unblockUser(friendId: string) {
         return (await put(`${this.endpoint}/friends/block?userId=${friendId}`, {
             headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token }
-        })).data;
+        })).data as IStatus;
     }
 
     logout() {
