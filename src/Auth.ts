@@ -1,4 +1,5 @@
 import { get, post, put, del } from "httpie";
+import { getItem, setItem, removeItem } from "./Storage";
 
 const TOKEN_STORAGE = "colyseus-auth-token";
 
@@ -81,7 +82,7 @@ export class Auth implements IUser {
 
     constructor(endpoint: string) {
         this.endpoint = endpoint.replace("ws", "http");
-        this.token = localStorage.getItem(TOKEN_STORAGE);
+        getItem(TOKEN_STORAGE, (token) => this.token = token);
     }
 
     get hasToken() {
@@ -112,7 +113,7 @@ export class Auth implements IUser {
 
         // set & cache token
         this.token = data.token;
-        localStorage.setItem(TOKEN_STORAGE, this.token);
+        setItem(TOKEN_STORAGE, this.token);
 
         for (let attr in data) {
             if (this.hasOwnProperty(attr)) { this[attr] = data[attr]; }
@@ -189,7 +190,7 @@ export class Auth implements IUser {
 
     logout() {
         this.token = undefined;
-        localStorage.removeItem(TOKEN_STORAGE);
+        removeItem(TOKEN_STORAGE);
         this.unregisterPingService();
     }
 

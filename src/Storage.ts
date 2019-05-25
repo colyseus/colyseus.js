@@ -6,7 +6,7 @@
 
 let storage: any;
 
-function getStorage() {
+function getStorage(): Storage {
     if (!storage)  {
         storage = (typeof (cc) !== 'undefined' && cc.sys && cc.sys.localStorage)
             ? cc.sys.localStorage  // compatibility with cocos creator
@@ -16,6 +16,7 @@ function getStorage() {
                     cache: {},
                     setItem: function(key, value) { this.cache[key] = value; },
                     getItem: function(key) { this.cache[key]; },
+                    removeItem: function(key) { delete this.cache[key]; },
                 };
 
     }
@@ -24,6 +25,10 @@ function getStorage() {
 
 export function setItem(key: string, value: string) {
     getStorage().setItem(key, value);
+}
+
+export function removeItem(key: string) {
+    getStorage().removeItem(key);
 }
 
 export function getItem(key: string, callback: Function) {
