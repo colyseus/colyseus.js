@@ -39,6 +39,9 @@ export class Room<State= any> {
 
     protected previousCode: Protocol;
 
+    // TODO: remove me on 1.0.0
+    protected rootSchema: RootSchemaConstructor;
+
     constructor(name: string, options?: any, rootSchema?: RootSchemaConstructor) {
         this.id = null;
 
@@ -47,6 +50,7 @@ export class Room<State= any> {
 
         if (rootSchema) {
             this.serializer = new (getSerializer("schema"));
+            this.rootSchema = rootSchema;
             (this.serializer as SchemaSerializer).state = new (rootSchema)();
 
         } else {
@@ -146,7 +150,7 @@ export class Room<State= any> {
                 }
 
                 // TODO: remove this check
-                if (this.serializerId !== "fossil-delta" && !this.serializer) {
+                if (this.serializerId !== "fossil-delta" && !this.rootSchema) {
                     this.serializer = new serializer();
                 }
 
