@@ -2,3 +2,4 @@ dist/lib
 out.log
 node_modules
 npm-debug.log
+.DS_Store

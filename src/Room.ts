@@ -1,6 +1,5 @@
-import { Signal } from '@gamestdio/signals';
 import * as msgpack from './msgpack';
-import { Schema } from '@colyseus/schema';
+import { createSignal } from 'strong-events';
 
 import { Connection } from './Connection';
 import { Serializer, getSerializer } from './serializer/Serializer';
@@ -23,14 +22,13 @@ export class Room<State= any> {
     public sessionId: string;
 
     public name: string;
-    public options: any;
 
     // Public signals
-    public onJoin: Signal = new Signal();
-    public onStateChange: Signal = new Signal();
-    public onMessage: Signal = new Signal();
-    public onError: Signal = new Signal();
-    public onLeave: Signal = new Signal();
+    public onJoin = createSignal();
+    public onStateChange = createSignal<(state: State) => void>();
+    public onMessage = createSignal<(data: any) => void>();
+    public onError = createSignal<(message: string) => void>();
+    public onLeave = createSignal<(code: number) => void>();
 
     public connection: Connection;
 
@@ -42,11 +40,9 @@ export class Room<State= any> {
     // TODO: remove me on 1.0.0
     protected rootSchema: RootSchemaConstructor;
 
-    constructor(name: string, options?: any, rootSchema?: RootSchemaConstructor) {
+    constructor(name: string, rootSchema?: RootSchemaConstructor) {
         this.id = null;
-
         this.name = name;
-        this.options = options;
 
         if (rootSchema) {
             this.serializer = new (getSerializer("schema"));
@@ -58,17 +54,17 @@ export class Room<State= any> {
             this.serializer = new (getSerializer("fossil-delta"));
         }
 
-        this.onLeave.add(() => this.removeAllListeners());
+        this.onLeave(() => this.removeAllListeners());
     }
 
     public connect(endpoint: string) {
         this.connection = new Connection(endpoint, false);
         this.connection.reconnectEnabled = false;
         this.connection.onmessage = this.onMessageCallback.bind(this);
-        this.connection.onclose = (e) => this.onLeave.dispatch(e);
-        this.connection.onerror = (e) => {
-            console.warn(`Possible causes: room's onAuth() failed or maxClients has been reached.`);
-            this.onError.dispatch(e);
+        this.connection.onclose = (e: CloseEvent) => this.onLeave.invoke(e.code);
+        this.connection.onerror = (e: CloseEvent) => {
+            console.warn(`Room, onError (${e.code}): ${e.reason}`);
+            this.onError.invoke(e.reason);
         };
         this.connection.open();
     }
@@ -82,7 +78,7 @@ export class Room<State= any> {
                 this.connection.close();
             }
         } else {
-            this.onLeave.dispatch();
+            this.onLeave.invoke(4000); // "consented" code
         }
     }
 
@@ -122,11 +118,11 @@ export class Room<State= any> {
         if (this.serializer) {
             this.serializer.teardown();
         }
-        this.onJoin.removeAll();
-        this.onStateChange.removeAll();
-        this.onMessage.removeAll();
-        this.onError.removeAll();
-        this.onLeave.removeAll();
+        this.onJoin.clear();
+        this.onStateChange.clear();
+        this.onMessage.clear();
+        this.onError.clear();
+        this.onLeave.clear();
     }
 
     protected onMessageCallback(event: MessageEvent) {
@@ -159,10 +155,10 @@ export class Room<State= any> {
                     this.serializer.handshake(bytes);
                 }
 
-                this.onJoin.dispatch();
+                this.onJoin.invoke();
 
             } else if (code === Protocol.JOIN_ERROR) {
-                this.onError.dispatch(utf8Read(view, 1));
+                this.onError.invoke(utf8Read(view, 1));
 
             } else if (code === Protocol.LEAVE_ROOM) {
                 this.leave();
@@ -180,7 +176,7 @@ export class Room<State= any> {
                 this.patch(Array.from(new Uint8Array(event.data)));
 
             } else if (this.previousCode === Protocol.ROOM_DATA) {
-                this.onMessage.dispatch(msgpack.decode(event.data));
+                this.onMessage.invoke(msgpack.decode(event.data));
             }
 
             this.previousCode = undefined;
@@ -189,12 +185,12 @@ export class Room<State= any> {
 
     protected setState(encodedState): void {
         this.serializer.setState(encodedState);
-        this.onStateChange.dispatch(this.serializer.getState());
+        this.onStateChange.invoke(this.serializer.getState());
     }
 
     protected patch(binaryPatch) {
         this.serializer.patch(binaryPatch);
-        this.onStateChange.dispatch(this.serializer.getState());
+        this.onStateChange.invoke(this.serializer.getState());
     }
 
 }
