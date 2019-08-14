@@ -19,6 +19,7 @@
   "scripts": {
     "test": "mocha test/*.ts --require ts-node/register",
     "build": "webpack --env.production",
+    "build": "webpack --env.development",
     "watch": "tsc -w",
     "prepublish": "tsc && npm run build",
     "tslint": "tslint --project .",
@@ -41,7 +42,7 @@
     "fossil-delta": "^1.0.0",
     "httpie": "^2.0.0-next.2",
     "notepack.io": "^2.1.3",
-    "strong-events": "^1.0.4"
+    "strong-events": "^1.0.5"
   },
   "devDependencies": {
     "@types/chai": "^3.4.34",

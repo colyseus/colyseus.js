@@ -20,7 +20,6 @@ export class MatchMakeError extends Error {
 }
 
 export class Client {
-    public id?: string;
     public auth: Auth;
     public push: Push;
 
@@ -48,6 +47,10 @@ export class Client {
         return await this.createMatchMakeRequest<T>('joinById', roomId, options, rootSchema);
     }
 
+    public async reconnect<T>(roomId: string, sessionId: string, rootSchema?: RootSchemaConstructor) {
+        return await this.createMatchMakeRequest<T>('joinById', roomId, { sessionId }, rootSchema);
+    }
+
     public async getAvailableRooms(roomName?: string): Promise<RoomAvailable[]> {
         const url = `${this.endpoint.replace("ws", "http")}/matchmake/${roomName}`;
         return (await get(url, { headers: { 'Accept': 'application/json' } })).data;
@@ -58,7 +61,10 @@ export class Client {
 
         const response = (
             await post(url, {
-                headers: { 'Accept': 'application/json' },
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(options)
             })
         ).data;
@@ -68,9 +74,19 @@ export class Client {
         }
 
         const room = this.createRoom<T>(roomName, rootSchema);
+        room.id = response.room.roomId;
+
         room.connect(this.buildEndpoint(response.room, { sessionId: response.sessionId }));
 
-        return room;
+        return new Promise((resolve, reject) => {
+            const onError = (message) => reject(message);
+            room.onError.once(onError);
+
+            room.onJoin.once(() => {
+                room.onError.remove(onError);
+                resolve(room);
+            });
+        });
     }
 
     protected createRoom<T>(roomName: string, rootSchema?: RootSchemaConstructor) {

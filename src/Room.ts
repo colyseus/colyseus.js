@@ -54,6 +54,7 @@ export class Room<State= any> {
             this.serializer = new (getSerializer("fossil-delta"));
         }
 
+        this.onError((message) => console.error(message));
         this.onLeave(() => this.removeAllListeners());
     }
 
@@ -61,7 +62,9 @@ export class Room<State= any> {
         this.connection = new Connection(endpoint, false);
         this.connection.reconnectEnabled = false;
         this.connection.onmessage = this.onMessageCallback.bind(this);
-        this.connection.onclose = (e: CloseEvent) => this.onLeave.invoke(e.code);
+        this.connection.onclose = (e: CloseEvent) => {
+            this.onLeave.invoke(e.code)
+        };
         this.connection.onerror = (e: CloseEvent) => {
             console.warn(`Room, onError (${e.code}): ${e.reason}`);
             this.onError.invoke(e.reason);
@@ -139,6 +142,8 @@ export class Room<State= any> {
                 this.serializerId = utf8Read(view, offset);
                 offset += utf8Length(this.serializerId);
 
+                console.log("JOIN ROOM! serializerId =>", this.serializerId);
+
                 // get serializer implementation
                 const serializer = getSerializer(this.serializerId);
                 if (!serializer) {
@@ -169,13 +174,16 @@ export class Room<State= any> {
 
         } else {
             if (this.previousCode === Protocol.ROOM_STATE) {
+                console.log("RECEIVED Protocol.ROOM_STATE");
                 // TODO: improve here!
                 this.setState(Array.from(new Uint8Array(event.data)));
 
             } else if (this.previousCode === Protocol.ROOM_STATE_PATCH) {
+                console.log("RECEIVED Protocol.ROOM_STATE_PATCH");
                 this.patch(Array.from(new Uint8Array(event.data)));
 
             } else if (this.previousCode === Protocol.ROOM_DATA) {
+                console.log("RECEIVED Protocol.ROOM_DATA");
                 this.onMessage.invoke(msgpack.decode(event.data));
             }
 
