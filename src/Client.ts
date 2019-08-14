@@ -1,9 +1,6 @@
-import * as msgpack from './msgpack';
 import { post, get } from "httpie";
 
-import { Protocol, utf8Read } from './Protocol';
 import { Room, RoomAvailable } from './Room';
-import { getItem, setItem } from './Storage';
 import { Auth } from './Auth';
 import { Push } from './Push';
 import { RootSchemaConstructor } from './serializer/SchemaSerializer';
@@ -56,7 +53,12 @@ export class Client {
         return (await get(url, { headers: { 'Accept': 'application/json' } })).data;
     }
 
-    protected async createMatchMakeRequest<T>(method: string, roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
+    protected async createMatchMakeRequest<T>(
+        method: string,
+        roomName: string,
+        options: JoinOptions = {},
+        rootSchema?: RootSchemaConstructor
+    ): Promise<Room<T>> {
         const url = `${this.endpoint.replace("ws", "http")}/matchmake/${method}/${roomName}`;
 
         const response = (
@@ -75,8 +77,9 @@ export class Client {
 
         const room = this.createRoom<T>(roomName, rootSchema);
         room.id = response.room.roomId;
+        room.sessionId = response.sessionId;
 
-        room.connect(this.buildEndpoint(response.room, { sessionId: response.sessionId }));
+        room.connect(this.buildEndpoint(response.room, { sessionId: room.sessionId }));
 
         return new Promise((resolve, reject) => {
             const onError = (message) => reject(message);
