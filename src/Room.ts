@@ -135,8 +135,6 @@ export class Room<State= any> {
                 this.serializerId = utf8Read(view, offset);
                 offset += utf8Length(this.serializerId);
 
-                console.log("JOIN ROOM! serializerId =>", this.serializerId);
-
                 // get serializer implementation
                 const serializer = getSerializer(this.serializerId);
                 if (!serializer) {
@@ -167,16 +165,13 @@ export class Room<State= any> {
 
         } else {
             if (this.previousCode === Protocol.ROOM_STATE) {
-                console.log("RECEIVED Protocol.ROOM_STATE");
                 // TODO: improve here!
                 this.setState(Array.from(new Uint8Array(event.data)));
 
             } else if (this.previousCode === Protocol.ROOM_STATE_PATCH) {
-                console.log("RECEIVED Protocol.ROOM_STATE_PATCH");
                 this.patch(Array.from(new Uint8Array(event.data)));
 
             } else if (this.previousCode === Protocol.ROOM_DATA) {
-                console.log("RECEIVED Protocol.ROOM_DATA");
                 this.onMessage.invoke(msgpack.decode(event.data));
             }
 
