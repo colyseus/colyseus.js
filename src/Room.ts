@@ -86,7 +86,7 @@ export class Room<State= any> {
     }
 
     public send(data): void {
-        this.connection.send([ Protocol.ROOM_DATA, this.id, data ]);
+        this.connection.send([Protocol.ROOM_DATA, data]);
     }
 
     public get state (): State {
