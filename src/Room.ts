@@ -132,9 +132,6 @@ export class Room<State= any> {
             if (code === Protocol.JOIN_ROOM) {
                 let offset = 1;
 
-                this.sessionId = utf8Read(view, offset);
-                offset += utf8Length(this.sessionId);
-
                 this.serializerId = utf8Read(view, offset);
                 offset += utf8Length(this.serializerId);
 
