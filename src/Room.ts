@@ -93,10 +93,6 @@ export class Room<State= any> {
         return this.serializer.getState();
     }
 
-    public get hasJoined() {
-        return this.sessionId !== undefined;
-    }
-
     // TODO: deprecate / move somewhere else
     // this method is useful only for FossilDeltaSerializer
     public listen(segments: string, callback: Function, immediate?: boolean) {
