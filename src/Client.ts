@@ -28,23 +28,23 @@ export class Client {
         this.push = new Push(this.endpoint);
     }
 
-    public async joinOrCreate<T>(roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
+    public async joinOrCreate<T = any>(roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
         return await this.createMatchMakeRequest<T>('joinOrCreate', roomName, options, rootSchema);
     }
 
-    public async create<T>(roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
+    public async create<T = any>(roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
         return await this.createMatchMakeRequest<T>('create', roomName, options, rootSchema);
     }
 
-    public async join<T>(roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
+    public async join<T = any>(roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
         return await this.createMatchMakeRequest<T>('join', roomName, options, rootSchema);
     }
 
-    public async joinById<T>(roomId: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
+    public async joinById<T = any>(roomId: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
         return await this.createMatchMakeRequest<T>('joinById', roomId, options, rootSchema);
     }
 
-    public async reconnect<T>(roomId: string, sessionId: string, rootSchema?: RootSchemaConstructor) {
+    public async reconnect<T = any>(roomId: string, sessionId: string, rootSchema?: RootSchemaConstructor) {
         return await this.createMatchMakeRequest<T>('joinById', roomId, { sessionId }, rootSchema);
     }
 
