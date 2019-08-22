@@ -61,6 +61,11 @@ export class Client {
     ): Promise<Room<T>> {
         const url = `${this.endpoint.replace("ws", "http")}/matchmake/${method}/${roomName}`;
 
+        // automatically forward auth token, if present
+        if (this.auth.hasToken) {
+            options.token = this.auth.token;
+        }
+
         const response = (
             await post(url, {
                 headers: {
@@ -98,11 +103,6 @@ export class Client {
 
     protected buildEndpoint(room: any, options: any = {}) {
         const params = [];
-
-        // automatically forward auth token, if present
-        if (this.auth.hasToken) {
-            options.token = this.auth.token;
-        }
 
         for (const name in options) {
             if (!options.hasOwnProperty(name)) {
