@@ -1,35 +1,19 @@
 /**
  ** Created by Alexander Kolarov, on 6.5.2018 г.
  **/
+
 declare namespace Colyseus {
     class Client {
-        id?: string;
-        onOpen: Signal;
-        onMessage: Signal;
-        onClose: Signal;
-        onError: Signal;
-        protected connection: Connection;
-        protected rooms: {
-            [id: string]: Room;
-        };
-        protected connectingRooms: {
-            [id: string]: Room;
-        };
-        protected requestId: number;
-        protected hostname: string;
-        protected storage: Storage;
-        protected roomsAvailableRequests: {
-            [requestId: number]: (value?: RoomAvailable[]) => void;
-        };
-        constructor(url: string, options?: any);
-        join<T>(roomName: string, options?: any): Room<T>;
-        getAvailableRooms(roomName: string, callback: (rooms: RoomAvailable[], err?: string) => void): void;
-        close(colyseusId: string): void;
+        constructor(url: string);
+        joinOrCreate<T = any>(roomName: string, options?: any, rootSchema?: any): Promise<Room<T>>;
+        create<T = any>(roomName: string, options?: any, rootSchema?: any): Promise<Room<T>>;
+        join<T = any>(roomName: string, options?: any, rootSchema?: any): Promise<Room<T>>;
+        joinById<T = any>(roomId: string, options?: any, rootSchema?: any): Promise<Room<T>>;
+        reconnect<T = any>(roomId: string, sessionId: string, rootSchema?: any): Promise<Room<T>>;
+        getAvailableRooms(roomName?: string): Promise<RoomAvailable[]>;
     }
 }
-/**
- ** Created by Alexander Kolarov, on 6.5.2018 г.
- **/
+
 declare namespace Colyseus {
     class Connection {
         constructor(url: any, querry?: any);
@@ -38,9 +22,7 @@ declare namespace Colyseus {
         send(data: any): void;
     }
 }
-/**
- ** Created by Alexander Kolarov, on 6.5.2018 г.
- **/
+
 declare namespace Colyseus {
     enum Protocol {
         USER_ID = 1,
@@ -54,42 +36,18 @@ declare namespace Colyseus {
         BAD_REQUEST = 50,
     }
 }
-/**
- ** Created by Alexander Kolarov, on 6.5.2018 г.
- **/
+
 declare namespace Colyseus {
-    class Signal {
-        constructor();
-        add(listener: Function): Slot;
+    type FunctionParameters<T extends (...args: any[]) => any> = T extends (...args: infer P) => any ? P : never;
+    class EventEmitter<CallbackSignature extends (...args: any[]) => any> {
+        handlers: Array<CallbackSignature>;
+        register(cb: CallbackSignature, once?: boolean): this;
+        invoke(...args: FunctionParameters<CallbackSignature>): void;
+        remove(cb: CallbackSignature): void;
+        clear(): void;
     }
 }
-/**
- ** Created by Alexander Kolarov, on 6.5.2018 г.
- **/
-declare namespace Colyseus {
-    class Slot {
-        protected _signal: any;
-        protected _enabled: boolean;
-        protected _listener: Function;
-        protected _once: boolean;
-        protected _priority: number;
-        protected _params: any[];
-        execute0(): void;
-        execute1(value: any): void;
-        execute(valueObjects: any[]): void;
-        listener: Function;
-        readonly once: boolean;
-        readonly priority: number;
-        toString(): string;
-        enabled: boolean;
-        params: any[];
-        remove(): void;
-        protected verifyListener(listener: Function): void;
-    }
-}
-/**
- ** Created by Alexander Kolarov, on 6.5.2018 г.
- **/
+
 declare namespace Colyseus {
     class StateContainer<T = any> {
         state: T;
@@ -101,31 +59,46 @@ declare namespace Colyseus {
         removeAllListeners(): void;
     }
 }
-/**
- ** Created by Alexander Kolarov, on 6.5.2018 г.
- **/
+
 declare namespace Colyseus {
     class Room<T = any> extends StateContainer {
         id: string;
         sessionId: string;
         name: string;
-        options: any;
-        clock: Clock;
-        remoteClock: Clock;
-        onJoin: Signal;
-        onStateChange: Signal;
-        onMessage: Signal;
-        onError: Signal;
-        onLeave: Signal;
+        onStateChange: {
+            (this: any, cb: (state: T) => void): EventEmitter<(state: T) => void>;
+            once(cb: (state: T) => void): void;
+            remove(cb: (state: T) => void): void;
+            invoke(state: T): void;
+            clear(): void;
+        };
+        onMessage: {
+            (this: any, cb: (data: any) => void): EventEmitter<(data: any) => void>;
+            once(cb: (data: any) => void): void;
+            remove(cb: (data: any) => void): void;
+            invoke(data: any): void;
+            clear(): void;
+        };
+        onError: {
+            (this: any, cb: (message: string) => void): EventEmitter<(message: string) => void>;
+            once(cb: (message: string) => void): void;
+            remove(cb: (message: string) => void): void;
+            invoke(message: string): void;
+            clear(): void;
+        };
+        onLeave: {
+            (this: any, cb: (code: number) => void): EventEmitter<(code: number) => void>;
+            once(cb: (code: number) => void): void;
+            remove(cb: (code: number) => void): void;
+            invoke(code: number): void;
+            clear(): void;
+        };
         connection: Connection;
-        constructor(name: string, options?: any);
+        constructor(name: string);
         connect(connection: Connection): void;
         leave(): void;
         send(data: any): void;
         removeAllListeners(): void;
-        protected onMessageCallback(event: any): void;
-        protected setState(encodedState: any, remoteCurrentTime?: number, remoteElapsedTime?: number): void;
-        protected patch(binaryPatch: any): void;
     }
     interface RoomAvailable {
         roomId: string;
