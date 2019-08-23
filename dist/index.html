@@ -18,9 +18,12 @@
     <div id="messages"></div>
 
     <button onclick="join()">Join</button>
+    <button onclick="joinOrCreate()">Join or create</button>
     <button onclick="create()">Create</button>
     <button onclick="joinByLastId()">Join by last id</button>
     <button onclick="getAvailableRooms()">List avaiable rooms</button>
+    <button onclick="closeConnection()">Close connection</button>
+    <button onclick="reconnect()">Re-join last closed connection</button>
 
     <script>
       var host = (window.document.location.host || "localhost").replace(/:.*/, '');
@@ -46,51 +49,69 @@
           http.send(params);
       }
 
-      client.onOpen.add(function() {
-          console.log("onOpen")
-
-      });
-
       function addListeners (room) {
-          room.onJoin.add(function() {
-              console.log(room.id);
-              console.log('joined!');
-          })
+          console.log('joined!');
+          room.onMessage(function(message) {
+              console.log(room.sessionId, message);
+          });
 
-		  room.onMessage.add(function(message) {
-			  console.log(room.sessionId, message);
-		  });
-
-          room.onLeave.add(function() {
+          room.onLeave(function() {
               console.log("LEFT ROOM", arguments);
           });
 
-          room.onStateChange.add(function(state) {
-              console.log("chat update: ", state)
+          room.onStateChange(function(state) {
+              console.log("state change: ", state)
           });
       }
 
       function join () {
-          room = client.join('chat');
-          addListeners(room);
-      }
-
-      function create () {
-          room = client.join('chat', { create: true });
-          addListeners(room);
-      }
-
-      function joinByLastId () {
-          room = client.join(room.id);
-          addListeners(room);
-      }
-
-      function getAvailableRooms() {
-          client.getAvailableRooms('chat', function(rooms, err) {
-                console.log(rooms);
+          client.join('chat', {}).then((r) => {
+              room = r;
+              addListeners(room);
+          }).catch(e => {
+              console.error(e.code, e.message);
           });
       }
 
+      function create () {
+          client.create('chat').then((r) => {
+              room = r
+              addListeners(room);
+          });
+      }
+
+      function joinOrCreate () {
+          client.joinOrCreate('chat', {}).then((r) => {
+              room = r
+              addListeners(room);
+          });
+      }
+
+      function joinByLastId () {
+          client.joinById(room.id).then(r => {
+            room = r;
+            addListeners(room);
+          });
+      }
+
+      function getAvailableRooms() {
+          client.getAvailableRooms().then((rooms) => {
+              console.log(rooms);
+          }).catch(e => {
+              console.error(e);
+          });
+      }
+
+      function reconnect() {
+        client.reconnect(room.id, room.sessionId).then(r => {
+            room = r;
+            addListeners(room);
+        });
+      }
+
+      function closeConnection() {
+        room.connection.close();
+      }
 
       document.getElementById('form').onsubmit = function(e) {
         e.preventDefault()
