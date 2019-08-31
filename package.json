@@ -21,9 +21,7 @@
     "build": "webpack --env.production",
     "watch": "tsc -w",
     "prepublish": "tsc && npm run build",
-    "tslint": "tslint --project .",
-    "postinstall": "npm run -s donate",
-    "donate": "echo \"\u001b[35m\u001b[1mLove Colyseus? ⚔  Support its development by becoming a backer\u001b[22m\u001b[39m ⚔ \n > \u001b[34mhttps://www.patreon.com/endel\u001b[39m\""
+    "tslint": "tslint --project ."
   },
   "files": [
     "lib",
