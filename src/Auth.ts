@@ -152,7 +152,7 @@ export class Auth implements IUser {
         })).data as IUser[];
     }
 
-    async getFriendRequests(friendId: string) {
+    async getFriendRequests() {
         return (await get(`${this.endpoint}/friends/requests`, {
             headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token }
         })).data as IUser[];
