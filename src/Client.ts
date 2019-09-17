@@ -48,7 +48,7 @@ export class Client {
         return await this.createMatchMakeRequest<T>('joinById', roomId, { sessionId }, rootSchema);
     }
 
-    public async getAvailableRooms(roomName: string = ""): Promise<RoomAvailable[]> {
+    public async getAvailableRooms<Metadata= any>(roomName: string = ""): Promise<RoomAvailable<Metadata>[]> {
         const url = `${this.endpoint.replace("ws", "http")}/matchmake/${roomName}`;
         return (await get(url, { headers: { 'Accept': 'application/json' } })).data;
     }

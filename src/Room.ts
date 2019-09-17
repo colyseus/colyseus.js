@@ -10,11 +10,11 @@ import { Listener } from '@gamestdio/state-listener';
 import { SchemaSerializer } from '.';
 import { RootSchemaConstructor } from './serializer/SchemaSerializer';
 
-export interface RoomAvailable {
+export interface RoomAvailable<Metadata> {
     roomId: string;
     clients: number;
     maxClients: number;
-    metadata?: any;
+    metadata?: Metadata;
 }
 
 export class Room<State= any> {
