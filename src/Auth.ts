@@ -1,4 +1,4 @@
-import { get, post, put, del } from "httpie";
+import * as http from "httpie";
 import { getItem, setItem, removeItem } from "./Storage";
 
 const TOKEN_STORAGE = "colyseus-auth-token";
@@ -96,20 +96,13 @@ export class Auth implements IUser {
         email?: string,
         password?: string,
     } = {}) {
-        const queryParams: string[] = [];
-        for (const name in options) {
-            queryParams.push(`${name}=${options[name]}`);
+        const queryParams: any = Object.assign({}, options);
+
+        if (this.hasToken) {
+            queryParams.token = this.token;
         }
 
-        if (this.token) {
-            queryParams.push(`token=${this.token}`);
-        }
-
-        const response = await post(`${this.endpoint}/auth?${queryParams.join("&")}`, {
-            headers: { 'Accept': 'application/json' }
-        });
-
-        const data = response.data;
+        const data = await this.request('post', '/auth', queryParams);
 
         // set & cache token
         this.token = data.token;
@@ -125,67 +118,73 @@ export class Auth implements IUser {
     }
 
     async save() {
-        await put(`${this.endpoint}/auth`, {
-            headers: { 'Accept': 'application/json' , 'Authorization': 'Bearer ' + this.token },
-            body: {
-                username: this.username,
-                displayName: this.displayName,
-                avatarUrl: this.avatarUrl,
-                lang: this.lang,
-                location: this.location,
-                timezone: this.timezone,
-            }
+        await this.request('put', '/auth', {}, {
+            username: this.username,
+            displayName: this.displayName,
+            avatarUrl: this.avatarUrl,
+            lang: this.lang,
+            location: this.location,
+            timezone: this.timezone,
         });
 
         return this;
     }
 
     async getFriends() {
-        return (await get(`${this.endpoint}/friends/all`, {
-            headers: { 'Accept': 'application/json' , 'Authorization': 'Bearer ' + this.token }
-        })).data as IUser[];
+        return (await this.request('get', '/friends/all')) as IUser[];
     }
 
     async getOnlineFriends() {
-        return (await get(`${this.endpoint}/friends/online`, {
-            headers: { 'Accept': 'application/json' , 'Authorization': 'Bearer ' + this.token }
-        })).data as IUser[];
+        return (await this.request('get', '/friends/online')) as IUser[];
     }
 
     async getFriendRequests() {
-        return (await get(`${this.endpoint}/friends/requests`, {
-            headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token }
-        })).data as IUser[];
+        return (await this.request('get', '/friends/requests')) as IUser[];
     }
 
     async sendFriendRequest(friendId: string) {
-        return (await post(`${this.endpoint}/friends/requests?userId=${friendId}`, {
-            headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token }
-        })).data as IStatus;
+        return (await this.request('post', '/friends/requests', { userId: friendId })) as IStatus;
     }
 
     async acceptFriendRequest(friendId: string) {
-        return (await put(`${this.endpoint}/friends/requests?userId=${friendId}`, {
-            headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token }
-        })).data as IStatus;
+        return (await this.request('put', '/friends/requests', { userId: friendId })) as IStatus;
     }
 
     async declineFriendRequest(friendId: string) {
-        return (await del(`${this.endpoint}/friends/requests?userId=${friendId}`, {
-            headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token }
-        })).data as IStatus;
+        return (await this.request('del', '/friends/requests', { userId: friendId })) as IStatus;
     }
 
     async blockUser(friendId: string) {
-        return (await post(`${this.endpoint}/friends/block?userId=${friendId}`, {
-            headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token }
-        })).data as IStatus;
+        return (await this.request('post', '/friends/block', { userId: friendId })) as IStatus;
     }
 
     async unblockUser(friendId: string) {
-        return (await put(`${this.endpoint}/friends/block?userId=${friendId}`, {
-            headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + this.token }
-        })).data as IStatus;
+        return (await this.request('put', '/friends/block', { userId: friendId })) as IStatus;
+    }
+
+    async request(
+        method: 'get' | 'post' | 'put' | 'del',
+        segments: string,
+        query: {[key: string]: number | string} = {},
+        body?: any,
+        headers: {[key: string]: string} = {}
+    ) {
+        headers['Accept'] = 'application/json';
+        if (this.hasToken) { headers['Authorization'] = 'Bearer ' + this.token; }
+
+        const queryParams: string[] = [];
+        for (const name in query) {
+            queryParams.push(`${name}=${query[name]}`);
+        }
+
+        const queryString = (queryParams.length > 0)
+            ? `?${queryParams.join("&")}`
+            : '';
+
+        const opts: Partial<http.HttpieOptions> = { headers };
+        if (body) { opts.body = body; }
+
+        return (await http[method](`${this.endpoint}${segments}${queryString}`, opts)).data;
     }
 
     logout() {
@@ -197,11 +196,7 @@ export class Auth implements IUser {
     registerPingService(timeout: number = 15000) {
         this.unregisterPingService();
 
-        this.keepOnlineInterval = setInterval(() => {
-            get(`${this.endpoint}/auth`, {
-                headers: { 'Accept': 'application/json' , 'Authorization': 'Bearer ' + this.token },
-            });
-        }, timeout);
+        this.keepOnlineInterval = setInterval(() => this.request('get', '/auth'), timeout);
     }
 
     unregisterPingService() {
