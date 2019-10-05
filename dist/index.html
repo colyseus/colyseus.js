@@ -65,7 +65,7 @@
       }
 
       function join () {
-          client.join('chat', {}).then((r) => {
+          client.join('relay', {}).then((r) => {
               room = r;
               addListeners(room);
           }).catch(e => {
@@ -74,14 +74,14 @@
       }
 
       function create () {
-          client.create('chat').then((r) => {
+          client.create('relay').then((r) => {
               room = r
               addListeners(room);
           });
       }
 
       function joinOrCreate () {
-          client.joinOrCreate('chat', {}).then((r) => {
+          client.joinOrCreate('relay', {}).then((r) => {
               room = r
               addListeners(room);
           });
@@ -116,7 +116,7 @@
       document.getElementById('form').onsubmit = function(e) {
         e.preventDefault()
 
-        room.send(document.getElementById('input').value);
+        room.send({ text: document.getElementById('input').value });
 
         // room.send(document.getElementById('input').value);
         document.getElementById('input').value = null
