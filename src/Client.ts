@@ -22,7 +22,7 @@ export class Client {
 
     protected endpoint: string;
 
-    constructor(endpoint: string) {
+    constructor(endpoint: string = `${location.protocol.replace("http", "ws")}//${location.hostname}${(location.port && `:${location.port}`)}`) {
         this.endpoint = endpoint;
         this.auth = new Auth(this.endpoint);
         this.push = new Push(this.endpoint);
