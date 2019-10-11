@@ -53,7 +53,7 @@ export class Client {
         return (await get(url, { headers: { 'Accept': 'application/json' } })).data;
     }
 
-    public async consumeMatchmakeResponse<T>(response: any, rootSchema?: RootSchemaConstructor): Promise<Room<T>> {
+    public async consumeSeatReservation<T>(response: any, rootSchema?: RootSchemaConstructor): Promise<Room<T>> {
         const room = this.createRoom<T>(response.room.name, rootSchema);
         room.id = response.room.roomId;
         room.sessionId = response.sessionId;
@@ -98,7 +98,7 @@ export class Client {
             throw new MatchMakeError(response.error, response.code);
         }
 
-        return this.consumeMatchmakeResponse<T>(response, rootSchema);
+        return this.consumeSeatReservation<T>(response, rootSchema);
     }
 
     protected createRoom<T>(roomName: string, rootSchema?: RootSchemaConstructor) {
