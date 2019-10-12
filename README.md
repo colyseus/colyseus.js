@@ -21,6 +21,10 @@
   <h3>
 </div>
 
+| Description | Status |
+| ------| -------|
+| Master Branch Build Status | [![Build Status](https://travis-ci.org/colyseus/colyseus.js.svg?branch=master)](https://travis-ci.org/colyseus/colyseus.js) |
+
 **Browser support tested with:**
 
 <a href="https://www.browserstack.com/"><img src="media/browserstack-logo.png?raw=true" width="300" /></a>
