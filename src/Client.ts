@@ -53,12 +53,30 @@ export class Client {
         return (await get(url, { headers: { 'Accept': 'application/json' } })).data;
     }
 
+    public async consumeSeatReservation<T>(response: any, rootSchema?: RootSchemaConstructor): Promise<Room<T>> {
+        const room = this.createRoom<T>(response.room.name, rootSchema);
+        room.id = response.room.roomId;
+        room.sessionId = response.sessionId;
+
+        room.connect(this.buildEndpoint(response.room, { sessionId: room.sessionId }));
+
+        return new Promise((resolve, reject) => {
+            const onError = (message) => reject(message);
+            room.onError.once(onError);
+
+            room.onJoin.once(() => {
+                room.onError.remove(onError);
+                resolve(room);
+            });
+        });
+    }
+
     protected async createMatchMakeRequest<T>(
         method: string,
         roomName: string,
         options: JoinOptions = {},
         rootSchema?: RootSchemaConstructor
-    ): Promise<Room<T>> {
+    ) {
         const url = `${this.endpoint.replace("ws", "http")}/matchmake/${method}/${roomName}`;
 
         // automatically forward auth token, if present
@@ -80,21 +98,7 @@ export class Client {
             throw new MatchMakeError(response.error, response.code);
         }
 
-        const room = this.createRoom<T>(roomName, rootSchema);
-        room.id = response.room.roomId;
-        room.sessionId = response.sessionId;
-
-        room.connect(this.buildEndpoint(response.room, { sessionId: room.sessionId }));
-
-        return new Promise((resolve, reject) => {
-            const onError = (message) => reject(message);
-            room.onError.once(onError);
-
-            room.onJoin.once(() => {
-                room.onError.remove(onError);
-                resolve(room);
-            });
-        });
+        return this.consumeSeatReservation<T>(response, rootSchema);
     }
 
     protected createRoom<T>(roomName: string, rootSchema?: RootSchemaConstructor) {
