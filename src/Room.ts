@@ -31,11 +31,11 @@ export class Room<State= any> {
     public onLeave = createSignal<(code: number) => void>();
 
     public connection: Connection;
-    public hasJoined: boolean = false;
 
     public serializerId: string;
     protected serializer: Serializer<State>;
 
+    protected hasJoined: boolean = false;
     protected previousCode: Protocol;
 
     // TODO: remove me on 1.0.0
