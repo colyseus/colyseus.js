@@ -31,6 +31,7 @@ export class Room<State= any> {
     public onLeave = createSignal<(code: number) => void>();
 
     public connection: Connection;
+    public hasJoined: boolean = false;
 
     public serializerId: string;
     protected serializer: Serializer<State>;
@@ -63,6 +64,12 @@ export class Room<State= any> {
         this.connection.reconnectEnabled = false;
         this.connection.onmessage = this.onMessageCallback.bind(this);
         this.connection.onclose = (e: CloseEvent) => {
+            if (!this.hasJoined) {
+                console.error(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
+                this.onError.invoke(e.reason);
+                return;
+            }
+
             this.onLeave.invoke(e.code)
         };
         this.connection.onerror = (e: CloseEvent) => {
@@ -151,6 +158,7 @@ export class Room<State= any> {
                     this.serializer.handshake(bytes);
                 }
 
+                this.hasJoined = true;
                 this.onJoin.invoke();
 
             } else if (code === Protocol.JOIN_ERROR) {
