@@ -32,7 +32,7 @@
     "node": ">= 5.x"
   },
   "dependencies": {
-    "@colyseus/schema": "^0.5.0",
+    "@colyseus/schema": "^0.5.5",
     "@gamestdio/signals": "^1.0.0",
     "@gamestdio/state-listener": "^3.1.0",
     "@gamestdio/websocket": "^0.3.2",
