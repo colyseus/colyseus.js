@@ -5,6 +5,9 @@ import { Auth } from './Auth';
 import { Push } from './Push';
 import { RootSchemaConstructor } from './serializer/SchemaSerializer';
 
+const WS_REGEX = "^(?:ws)";
+const HTTP_REGEX = "^(?:http)";
+
 export type JoinOptions = any;
 
 export class MatchMakeError extends Error {
@@ -22,7 +25,7 @@ export class Client {
 
     protected endpoint: string;
 
-    constructor(endpoint: string = `${location.protocol.replace("http", "ws")}//${location.hostname}${(location.port && `:${location.port}`)}`) {
+    constructor(endpoint: string = `${location.protocol.replace(HTTP_REGEX, "ws")}//${location.hostname}${(location.port && `:${location.port}`)}`) {
         this.endpoint = endpoint;
         this.auth = new Auth(this.endpoint);
         this.push = new Push(this.endpoint);
@@ -49,7 +52,7 @@ export class Client {
     }
 
     public async getAvailableRooms<Metadata= any>(roomName: string = ""): Promise<RoomAvailable<Metadata>[]> {
-        const url = `${this.endpoint.replace("ws", "http")}/matchmake/${roomName}`;
+        const url = `${this.endpoint.replace(WS_REGEX, "http")}/matchmake/${roomName}`;
         return (await get(url, { headers: { 'Accept': 'application/json' } })).data;
     }
 
@@ -77,7 +80,7 @@ export class Client {
         options: JoinOptions = {},
         rootSchema?: RootSchemaConstructor
     ) {
-        const url = `${this.endpoint.replace("ws", "http")}/matchmake/${method}/${roomName}`;
+        const url = `${this.endpoint.replace(WS_REGEX, "http")}/matchmake/${method}/${roomName}`;
 
         // automatically forward auth token, if present
         if (this.auth.hasToken) {

@@ -1,8 +1,10 @@
+const WS_REGEX = "^(?:ws)";
+
 export class Push {
     endpoint: string;
 
     constructor (endpoint: string) {
-        this.endpoint = endpoint.replace("ws", "http");
+        this.endpoint = endpoint.replace(WS_REGEX, "http");
     }
 
     public async register() {

@@ -2,6 +2,7 @@ import * as http from "httpie";
 import { getItem, setItem, removeItem } from "./Storage";
 
 const TOKEN_STORAGE = "colyseus-auth-token";
+const WS_REGEX = "^(?:ws)";
 
 export enum Platform {
     ios = "ios",
@@ -81,7 +82,7 @@ export class Auth implements IUser {
     protected keepOnlineInterval: any;
 
     constructor(endpoint: string) {
-        this.endpoint = endpoint.replace("ws", "http");
+        this.endpoint = endpoint.replace(WS_REGEX, "http");
         getItem(TOKEN_STORAGE, (token) => this.token = token);
     }
 
