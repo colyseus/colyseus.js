@@ -8,7 +8,8 @@ import { Protocol, utf8Read, utf8Length } from './Protocol';
 import { FossilDeltaSerializer } from './serializer/FossilDeltaSerializer';
 import { Listener } from '@gamestdio/state-listener';
 import { SchemaSerializer } from '.';
-import { RootSchemaConstructor } from './serializer/SchemaSerializer';
+import { SchemaConstructor } from './serializer/SchemaSerializer';
+import { Context, Schema } from '@colyseus/schema';
 
 export interface RoomAvailable<Metadata> {
     roomId: string;
@@ -39,16 +40,16 @@ export class Room<State= any> {
     protected previousCode: Protocol;
 
     // TODO: remove me on 1.0.0
-    protected rootSchema: RootSchemaConstructor;
+    protected rootSchema: SchemaConstructor<State>;
 
-    constructor(name: string, rootSchema?: RootSchemaConstructor) {
+    constructor(name: string, rootSchema?: SchemaConstructor<State>) {
         this.id = null;
         this.name = name;
 
         if (rootSchema) {
             this.serializer = new (getSerializer("schema"));
             this.rootSchema = rootSchema;
-            (this.serializer as SchemaSerializer).state = new (rootSchema)();
+            (this.serializer as SchemaSerializer).state = new rootSchema();
 
         } else {
             // TODO: remove default serializer. it should arrive only after JOIN_ROOM.
@@ -166,6 +167,17 @@ export class Room<State= any> {
 
             } else if (code === Protocol.LEAVE_ROOM) {
                 this.leave();
+
+            } else if (code === Protocol.ROOM_DATA_SCHEMA) {
+                const bytes = Array.from(new Uint8Array(event.data))
+
+                const context: Context = (this.serializer.getState() as any).constructor._context;
+                const type = context.get(bytes[1]);
+
+                const message: Schema = new (type as any)();
+                message.decode(bytes, { offset: 2 });
+
+                this.onMessage.invoke(message);
 
             } else {
                 this.previousCode = code;

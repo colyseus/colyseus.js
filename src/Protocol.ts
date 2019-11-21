@@ -8,6 +8,7 @@ export enum Protocol {
     ROOM_DATA = 13,
     ROOM_STATE = 14,
     ROOM_STATE_PATCH = 15,
+    ROOM_DATA_SCHEMA = 16,
 }
 
 export function utf8Read(view: DataView, offset: number) {

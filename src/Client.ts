@@ -3,7 +3,7 @@ import { post, get } from "httpie";
 import { Room, RoomAvailable } from './Room';
 import { Auth } from './Auth';
 import { Push } from './Push';
-import { RootSchemaConstructor } from './serializer/SchemaSerializer';
+import { SchemaConstructor } from './serializer/SchemaSerializer';
 
 export type JoinOptions = any;
 
@@ -28,23 +28,23 @@ export class Client {
         this.push = new Push(this.endpoint);
     }
 
-    public async joinOrCreate<T = any>(roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
+    public async joinOrCreate<T>(roomName: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {
         return await this.createMatchMakeRequest<T>('joinOrCreate', roomName, options, rootSchema);
     }
 
-    public async create<T = any>(roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
+    public async create<T>(roomName: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {
         return await this.createMatchMakeRequest<T>('create', roomName, options, rootSchema);
     }
 
-    public async join<T = any>(roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
+    public async join<T>(roomName: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {
         return await this.createMatchMakeRequest<T>('join', roomName, options, rootSchema);
     }
 
-    public async joinById<T = any>(roomId: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
+    public async joinById<T>(roomId: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {
         return await this.createMatchMakeRequest<T>('joinById', roomId, options, rootSchema);
     }
 
-    public async reconnect<T = any>(roomId: string, sessionId: string, rootSchema?: RootSchemaConstructor) {
+    public async reconnect<T>(roomId: string, sessionId: string, rootSchema?: SchemaConstructor<T>) {
         return await this.createMatchMakeRequest<T>('joinById', roomId, { sessionId }, rootSchema);
     }
 
@@ -53,7 +53,7 @@ export class Client {
         return (await get(url, { headers: { 'Accept': 'application/json' } })).data;
     }
 
-    public async consumeSeatReservation<T>(response: any, rootSchema?: RootSchemaConstructor): Promise<Room<T>> {
+    public async consumeSeatReservation<T>(response: any, rootSchema?: SchemaConstructor<T>): Promise<Room<T>> {
         const room = this.createRoom<T>(response.room.name, rootSchema);
         room.id = response.room.roomId;
         room.sessionId = response.sessionId;
@@ -75,7 +75,7 @@ export class Client {
         method: string,
         roomName: string,
         options: JoinOptions = {},
-        rootSchema?: RootSchemaConstructor
+        rootSchema?: SchemaConstructor<T>
     ) {
         const url = `${this.endpoint.replace("ws", "http")}/matchmake/${method}/${roomName}`;
 
@@ -101,7 +101,7 @@ export class Client {
         return this.consumeSeatReservation<T>(response, rootSchema);
     }
 
-    protected createRoom<T>(roomName: string, rootSchema?: RootSchemaConstructor) {
+    protected createRoom<T>(roomName: string, rootSchema?: SchemaConstructor<T>) {
         return new Room<T>(roomName, rootSchema);
     }
 

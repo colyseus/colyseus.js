@@ -52,7 +52,7 @@
       function addListeners (room) {
           console.log('joined!');
           room.onMessage(function(message) {
-              console.log(room.sessionId, message);
+              console.log("message:", room.sessionId, message);
           });
 
           room.onLeave(function() {
@@ -65,7 +65,7 @@
       }
 
       function join () {
-          client.join('relay', {}).then((r) => {
+          client.join('dummy', {}).then((r) => {
               room = r;
               addListeners(room);
           }).catch(e => {
@@ -74,14 +74,14 @@
       }
 
       function create () {
-          client.create('relay').then((r) => {
+          client.create('dummy').then((r) => {
               room = r
               addListeners(room);
           });
       }
 
       function joinOrCreate () {
-          client.joinOrCreate('relay', {}).then((r) => {
+          client.joinOrCreate('dummy', {}).then((r) => {
               room = r
               addListeners(room);
           });
@@ -116,7 +116,7 @@
       document.getElementById('form').onsubmit = function(e) {
         e.preventDefault()
 
-        room.send({ text: document.getElementById('input').value });
+        room.send(document.getElementById('input').value);
 
         // room.send(document.getElementById('input').value);
         document.getElementById('input').value = null

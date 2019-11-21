@@ -1,13 +1,13 @@
 import { Serializer } from "./Serializer";
 import { Schema, Reflection } from "@colyseus/schema";
 
-export type RootSchemaConstructor = new (...args: any[]) => Schema;
+export type SchemaConstructor<T = Schema> = new (...args: any[]) => T;
 
-export class SchemaSerializer<T extends Schema= any> implements Serializer<T> {
+export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
     state: T;
 
     setState(rawState: any): void {
-        (this.state as any).decode(rawState);
+        this.state.decode(rawState);
     }
 
     getState() {
@@ -15,7 +15,7 @@ export class SchemaSerializer<T extends Schema= any> implements Serializer<T> {
     }
 
     patch(patches) {
-        (this.state as any).decode(patches);
+        this.state.decode(patches);
     }
 
     teardown() {
