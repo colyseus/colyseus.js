@@ -1,10 +1,15 @@
-const webpack = require('webpack')
+const webpack = require('webpack');
 const path = require('path')
+const pkg = require('./package.json');
 
 module.exports = function(options) {
     if (!options) options = {};
 
     return {
+        mode: (options.production)
+            ? "production"
+            : "development",
+
         entry: path.join(__dirname, "src/index.ts"),
 
         output: {
@@ -23,26 +28,15 @@ module.exports = function(options) {
             ],
         },
 
+        plugins: [
+            new webpack.BannerPlugin({ banner: `colyseus.js@${pkg.version}` }),
+            // new webpack.DefinePlugin({ 'process.env.VERSION': JSON.stringify(pkg.version) }),
+        ],
+
         // hack: react-native is not used for the distribution build
         externals: {
             'react-native': "ReactNative"
         },
-
-        plugins: (
-            (options.production)
-                ? [
-                    new webpack.LoaderOptionsPlugin({
-                        minimize: true,
-                        debug: false
-                    }),
-                    new webpack.optimize.UglifyJsPlugin({
-                        compress: {},
-                        output: { comments: false },
-                        sourceMap: false
-                    })
-                  ]
-                : []
-        ),
 
         resolve: {
             extensions: ['.ts', '.js', '.json']
