@@ -6,15 +6,14 @@ module.exports = function(options) {
     if (!options) options = {};
 
     return {
-        mode: (options.production)
-            ? "production"
-            : "development",
-
+        mode: "production",
         entry: path.join(__dirname, "src/index.ts"),
 
         output: {
             path: path.join(__dirname, "dist"),
-            filename: "colyseus.js",
+            filename: (options.production)
+                ? "colyseus.js"
+                : "colyseus.dev.js",
 
             libraryTarget: "umd",
             library: "Colyseus"
@@ -36,6 +35,10 @@ module.exports = function(options) {
         // hack: react-native is not used for the distribution build
         externals: {
             'react-native': "ReactNative"
+        },
+
+        optimization: {
+            minimize: (options.production || false) // only minimize on production
         },
 
         resolve: {
