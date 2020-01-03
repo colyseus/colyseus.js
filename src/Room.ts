@@ -159,6 +159,9 @@ export class Room<State= any> {
             this.hasJoined = true;
             this.onJoin.invoke();
 
+            // acknowledge successfull JOIN_ROOM
+            this.connection.send([Protocol.JOIN_ROOM]);
+
         } else if (code === Protocol.JOIN_ERROR) {
             this.onError.invoke(utf8Read(bytes, 1));
 
