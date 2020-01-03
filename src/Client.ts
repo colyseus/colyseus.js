@@ -17,6 +17,8 @@ export class MatchMakeError extends Error {
 }
 
 export class Client {
+    // static VERSION = process.env.VERSION;
+
     public auth: Auth;
     public push: Push;
 
