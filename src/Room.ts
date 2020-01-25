@@ -37,7 +37,6 @@ export class Room<State= any> {
     protected serializer: Serializer<State>;
 
     protected hasJoined: boolean = false;
-    protected previousCode: Protocol;
 
     // TODO: remove me on 1.0.0
     protected rootSchema: SchemaConstructor<State>;
@@ -133,78 +132,70 @@ export class Room<State= any> {
     }
 
     protected onMessageCallback(event: MessageEvent) {
-        if (!this.previousCode) {
-            const view = new DataView(event.data);
-            const code = view.getUint8(0);
+        const bytes = Array.from(new Uint8Array(event.data))
+        const code = bytes[0];
 
-            if (code === Protocol.JOIN_ROOM) {
-                let offset = 1;
+        if (code === Protocol.JOIN_ROOM) {
+            let offset = 1;
 
-                this.serializerId = utf8Read(view, offset);
-                offset += utf8Length(this.serializerId);
+            this.serializerId = utf8Read(bytes, offset);
+            offset += utf8Length(this.serializerId);
 
-                // get serializer implementation
-                const serializer = getSerializer(this.serializerId);
-                if (!serializer) {
-                    throw new Error("missing serializer: " + this.serializerId);
-                }
-
-                // TODO: remove this check
-                if (this.serializerId !== "fossil-delta" && !this.rootSchema) {
-                    this.serializer = new serializer();
-                }
-
-                if (view.buffer.byteLength > offset && this.serializer.handshake) {
-                    const bytes = Array.from(new Uint8Array(view.buffer.slice(offset)));
-                    this.serializer.handshake(bytes);
-                }
-
-                this.hasJoined = true;
-                this.onJoin.invoke();
-
-            } else if (code === Protocol.JOIN_ERROR) {
-                this.onError.invoke(utf8Read(view, 1));
-
-            } else if (code === Protocol.LEAVE_ROOM) {
-                this.leave();
-
-            } else if (code === Protocol.ROOM_DATA_SCHEMA) {
-                const bytes = Array.from(new Uint8Array(event.data))
-
-                const context: Context = (this.serializer.getState() as any).constructor._context;
-                const type = context.get(bytes[1]);
-
-                const message: Schema = new (type as any)();
-                message.decode(bytes, { offset: 2 });
-
-                this.onMessage.invoke(message);
-
-            } else {
-                this.previousCode = code;
+            // get serializer implementation
+            const serializer = getSerializer(this.serializerId);
+            if (!serializer) {
+                throw new Error("missing serializer: " + this.serializerId);
             }
 
-        } else {
-            if (this.previousCode === Protocol.ROOM_STATE) {
-                // TODO: improve here!
-                this.setState(Array.from(new Uint8Array(event.data)));
-
-            } else if (this.previousCode === Protocol.ROOM_STATE_PATCH) {
-                this.patch(Array.from(new Uint8Array(event.data)));
-
-            } else if (this.previousCode === Protocol.ROOM_DATA) {
-                this.onMessage.invoke(msgpack.decode(event.data));
+            // TODO: remove this check
+            if (this.serializerId !== "fossil-delta" && !this.rootSchema) {
+                this.serializer = new serializer();
             }
 
-            this.previousCode = undefined;
+            if (bytes.length > offset && this.serializer.handshake) {
+                this.serializer.handshake(bytes, { offset: 1 });
+            }
+
+            this.hasJoined = true;
+            this.onJoin.invoke();
+
+            // acknowledge successfull JOIN_ROOM
+            this.connection.send([Protocol.JOIN_ROOM]);
+
+        } else if (code === Protocol.JOIN_ERROR) {
+            this.onError.invoke(utf8Read(bytes, 1));
+
+        } else if (code === Protocol.LEAVE_ROOM) {
+            this.leave();
+
+        } else if (code === Protocol.ROOM_DATA_SCHEMA) {
+            const context: Context = (this.serializer.getState() as any).constructor._context;
+            const type = context.get(bytes[1]);
+
+            const message: Schema = new (type as any)();
+            message.decode(bytes, { offset: 2 });
+
+            this.onMessage.invoke(message);
+
+        } else if (code === Protocol.ROOM_STATE) {
+            bytes.shift(); // drop `code` byte
+            this.setState(bytes);
+
+        } else if (code === Protocol.ROOM_STATE_PATCH) {
+            bytes.shift(); // drop `code` byte
+            this.patch(bytes);
+
+        } else if (code === Protocol.ROOM_DATA) {
+            this.onMessage.invoke(msgpack.decode(event.data, 1));
         }
     }
 
-    protected setState(encodedState): void {
+    protected setState(encodedState: number[]): void {
         this.serializer.setState(encodedState);
         this.onStateChange.invoke(this.serializer.getState());
     }
 
-    protected patch(binaryPatch) {
+    protected patch(binaryPatch: number[]) {
         this.serializer.patch(binaryPatch);
         this.onStateChange.invoke(this.serializer.getState());
     }

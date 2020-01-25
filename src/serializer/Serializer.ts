@@ -5,7 +5,7 @@ export interface Serializer<State> {
     patch(data: any): void;
     teardown(): void;
 
-    handshake?(bytes: number[]): void;
+    handshake?(bytes: number[], it?: any): void;
 }
 
 const serializers: { [id: string]: any } = {};
