@@ -11,6 +11,8 @@ import { SchemaSerializer } from '.';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
 import { Context, Schema } from '@colyseus/schema';
 
+import * as encode from '@colyseus/schema/lib/encoding/encode';
+
 export interface RoomAvailable<Metadata> {
     roomId: string;
     clients: number;
@@ -92,8 +94,28 @@ export class Room<State= any> {
         }
     }
 
-    public send(data): void {
-        this.connection.send([Protocol.ROOM_DATA, data]);
+    public send(type: string, message?: any): void
+    public send<T extends Schema>(message: T): void {
+        if (message instanceof Schema) {
+            this.connection.send([
+                Protocol.ROOM_DATA,
+                (message.constructor as typeof Schema)._typeid,
+                ...message.encodeAll()
+            ]);
+
+        } else if (typeof (message) === "string") {
+            const data = arguments[1];
+            const encoded = msgpack.encode(data);
+
+            const initialBytes: number[] = [Protocol.ROOM_DATA];
+            encode.string(initialBytes, arguments[0]);
+
+            const arr = new Uint8Array(initialBytes.length + encoded.byteLength);
+            arr.set(new Uint8Array(initialBytes), 0);
+            arr.set(new Uint8Array(encoded), initialBytes.length);
+
+            this.connection.send(arr.buffer);
+        }
     }
 
     public get state (): State {
@@ -104,7 +126,7 @@ export class Room<State= any> {
     // this method is useful only for FossilDeltaSerializer
     public listen(segments: string, callback: Function, immediate?: boolean) {
         if (this.serializerId === "schema") {
-            console.error(`'${this.serializerId}' serializer doesn't support .listen() method.`);
+            console.error(`'${this.serializerId}' serializer doesn't support .listen() method here.`);
             return;
 
         } else if (!this.serializerId) {

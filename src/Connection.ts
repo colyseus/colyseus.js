@@ -23,9 +23,14 @@ export class Connection extends WebSocketClient {
         }
     }
 
-    public send(data: any): void {
+    public send(data: ArrayBuffer | Array<number>): void {
         if (this.ws.readyState === WebSocketClient.OPEN) {
-            return super.send( msgpack.encode(data) );
+            if (data instanceof ArrayBuffer) {
+                return super.send(data);
+
+            } else if (Array.isArray(data)) {
+                return super.send((new Uint8Array(data)).buffer);
+            }
 
         } else {
             // WebSocket not connected.
