@@ -12,6 +12,7 @@ import { SchemaConstructor } from './serializer/SchemaSerializer';
 import { Context, Schema } from '@colyseus/schema';
 
 import * as encode from '@colyseus/schema/lib/encoding/encode';
+import * as decode from '@colyseus/schema/lib/encoding/decode';
 
 export interface RoomAvailable<Metadata> {
     roomId: string;
@@ -29,7 +30,6 @@ export class Room<State= any> {
     // Public signals
     public onJoin = createSignal();
     public onStateChange = createSignal<(state: State) => void>();
-    public onMessage = createSignal<(data: any) => void>();
     public onError = createSignal<(message: string) => void>();
     public onLeave = createSignal<(code: number) => void>();
 
@@ -42,6 +42,8 @@ export class Room<State= any> {
 
     // TODO: remove me on 1.0.0
     protected rootSchema: SchemaConstructor<State>;
+
+    protected onMessageHandlers: { [messageType: string]: (message: any) => void } = {};
 
     constructor(name: string, rootSchema?: SchemaConstructor<State>) {
         this.id = null;
@@ -94,28 +96,42 @@ export class Room<State= any> {
         }
     }
 
-    public send(type: string, message?: any): void
-    public send<T extends Schema>(message: T): void {
-        if (message instanceof Schema) {
-            this.connection.send([
-                Protocol.ROOM_DATA,
-                (message.constructor as typeof Schema)._typeid,
-                ...message.encodeAll()
-            ]);
+    public onMessage<T = any>(
+        type: "*",
+        callback: (type: string | number | typeof Schema, message: T) => void
+    )
+    public onMessage<T extends (typeof Schema & (new (...args: any[]) => any))>(
+        type: T,
+        callback: (message: InstanceType<T>) => void
+    )
+    public onMessage<T = any>(
+        type: T,
+        callback: (message: T) => void
+    )
+    public onMessage<T = any>(
+        type: '*' | string | number | typeof Schema,
+        callback: (...args: any[]) => void
+    ) {
+        this.onMessageHandlers[this.getMessageHandlerKey(type)] = callback;
+        return this;
+    }
 
-        } else if (typeof (message) === "string") {
-            const data = arguments[1];
-            const encoded = msgpack.encode(data);
+    public send(type: string | number, message?: any): void {
+        const encoded = msgpack.encode(message);
+        const initialBytes: number[] = [Protocol.ROOM_DATA];
 
-            const initialBytes: number[] = [Protocol.ROOM_DATA];
-            encode.string(initialBytes, arguments[0]);
+        if (typeof(type) === "string") {
+            encode.string(initialBytes, type);
 
-            const arr = new Uint8Array(initialBytes.length + encoded.byteLength);
-            arr.set(new Uint8Array(initialBytes), 0);
-            arr.set(new Uint8Array(encoded), initialBytes.length);
-
-            this.connection.send(arr.buffer);
+        } else {
+            encode.number(initialBytes, type);
         }
+
+        const arr = new Uint8Array(initialBytes.length + encoded.byteLength);
+        arr.set(new Uint8Array(initialBytes), 0);
+        arr.set(new Uint8Array(encoded), initialBytes.length);
+
+        this.connection.send(arr.buffer);
     }
 
     public get state (): State {
@@ -148,7 +164,6 @@ export class Room<State= any> {
         }
         this.onJoin.clear();
         this.onStateChange.clear();
-        this.onMessage.clear();
         this.onError.clear();
         this.onLeave.clear();
     }
@@ -197,7 +212,7 @@ export class Room<State= any> {
             const message: Schema = new (type as any)();
             message.decode(bytes, { offset: 2 });
 
-            this.onMessage.invoke(message);
+            this.dispatchMessage(type, message);
 
         } else if (code === Protocol.ROOM_STATE) {
             bytes.shift(); // drop `code` byte
@@ -208,7 +223,12 @@ export class Room<State= any> {
             this.patch(bytes);
 
         } else if (code === Protocol.ROOM_DATA) {
-            this.onMessage.invoke(msgpack.decode(event.data, 1));
+            const it: decode.Iterator = { offset: 1 };
+            const type = (decode.stringCheck(bytes, it))
+                ? decode.string(bytes, it)
+                : decode.number(bytes, it);
+
+            this.dispatchMessage(type, msgpack.decode(bytes.slice(it.offset, bytes.length)));
         }
     }
 
@@ -220,6 +240,35 @@ export class Room<State= any> {
     protected patch(binaryPatch: number[]) {
         this.serializer.patch(binaryPatch);
         this.onStateChange.invoke(this.serializer.getState());
+    }
+
+    private dispatchMessage(type: string | number | typeof Schema, message: any) {
+        const messageType = this.getMessageHandlerKey(type);
+
+        if (this.onMessageHandlers[messageType]) {
+            this.onMessageHandlers[messageType](message);
+
+        } else if (this.onMessageHandlers['*']) {
+            (this.onMessageHandlers[messageType] as any)(type, message);
+
+        } else {
+            console.warn(`onMessage not registered for type '${type}'.`);
+        }
+    }
+
+    private getMessageHandlerKey(type: string | number | typeof Schema): string {
+        switch (typeof(type)) {
+            // typeof Schema
+            case "object": return `$${(type as typeof Schema)._typeid}`;
+
+            // string
+            case "string": return type;
+
+            // number
+            case "number": return `i${type}`;
+
+            default: throw new Error("invalid message type.");
+        }
     }
 
 }

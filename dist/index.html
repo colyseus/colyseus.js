@@ -11,8 +11,11 @@
     <strong>Messages</strong><br>
 
     <form id="form">
-      Room name: <input type="text" id="room_name" value="" /> <br />
-      Send data: <input type="text" id="input" value="" /> <input type="submit" value="send" />
+      Room name: <input type="text" id="room_name" value="dummy" /> <br />
+
+      Send data: <input type="text" id="message_type" value="" placeholder="messageType" />
+                 <input type="text" id="message_data" value="" placeholder="data" />
+                 <input type="submit" value="send" />
     </form>
 
     <div id="messages"></div>
@@ -27,13 +30,13 @@
 
     <script>
       var host = (window.document.location.host || "localhost").replace(/:.*/, '');
-      var client = new Colyseus.Client('ws://' + host + ':8000');
+      var client = new Colyseus.Client('ws://' + host + ':2567');
       var room;
 
       function addListeners (room) {
           console.log('joined!');
-          room.onMessage(function(message) {
-              console.log("message:", room.sessionId);
+          room.onMessage("*", (message) => {
+              console.log("*, message =>", message);
           });
 
           room.onLeave(function() {
@@ -97,10 +100,10 @@
       document.getElementById('form').onsubmit = function(e) {
         e.preventDefault()
 
-        room.send(document.getElementById('input').value);
+        room.send(document.getElementById('message_type').value, document.getElementById('message_data').value);
 
         // room.send(document.getElementById('input').value);
-        document.getElementById('input').value = null
+        document.getElementById('message_data').value = null
       }
     </script>
 
