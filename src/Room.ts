@@ -228,7 +228,7 @@ export class Room<State= any> {
                 ? decode.string(bytes, it)
                 : decode.number(bytes, it);
 
-            this.dispatchMessage(type, msgpack.decode(event.data.slice(it.offset, bytes.length)));
+            this.dispatchMessage(type, msgpack.decode(event.data, it.offset));
         }
     }
 
