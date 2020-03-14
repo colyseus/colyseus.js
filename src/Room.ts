@@ -98,7 +98,7 @@ export class Room<State= any> {
 
     public onMessage<T = any>(
         type: "*",
-        callback: (type: string | number | typeof Schema, message: T) => void
+        callback: (type: string | number | Schema, message: T) => void
     )
     public onMessage<T extends (typeof Schema & (new (...args: any[]) => any))>(
         type: T,
@@ -228,7 +228,7 @@ export class Room<State= any> {
                 ? decode.string(bytes, it)
                 : decode.number(bytes, it);
 
-            this.dispatchMessage(type, msgpack.decode(bytes.slice(it.offset, bytes.length)));
+            this.dispatchMessage(type, msgpack.decode(event.data.slice(it.offset, bytes.length)));
         }
     }
 
@@ -259,7 +259,7 @@ export class Room<State= any> {
     private getMessageHandlerKey(type: string | number | typeof Schema): string {
         switch (typeof(type)) {
             // typeof Schema
-            case "object": return `$${(type as typeof Schema)._typeid}`;
+            case "function": return `$${(type as typeof Schema)._typeid}`;
 
             // string
             case "string": return type;
