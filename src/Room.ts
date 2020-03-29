@@ -117,7 +117,6 @@ export class Room<State= any> {
     }
 
     public send(type: string | number, message?: any): void {
-        const encoded = msgpack.encode(message);
         const initialBytes: number[] = [Protocol.ROOM_DATA];
 
         if (typeof(type) === "string") {
@@ -127,9 +126,17 @@ export class Room<State= any> {
             encode.number(initialBytes, type);
         }
 
-        const arr = new Uint8Array(initialBytes.length + encoded.byteLength);
-        arr.set(new Uint8Array(initialBytes), 0);
-        arr.set(new Uint8Array(encoded), initialBytes.length);
+        let arr: Uint8Array;
+
+        if (message !== undefined) {
+            const encoded = msgpack.encode(message);
+            arr = new Uint8Array(initialBytes.length + encoded.byteLength);
+            arr.set(new Uint8Array(initialBytes), 0);
+            arr.set(new Uint8Array(encoded), initialBytes.length);
+
+        } else {
+            arr = new Uint8Array(initialBytes);
+        }
 
         this.connection.send(arr.buffer);
     }
@@ -224,11 +231,16 @@ export class Room<State= any> {
 
         } else if (code === Protocol.ROOM_DATA) {
             const it: decode.Iterator = { offset: 1 };
+
             const type = (decode.stringCheck(bytes, it))
                 ? decode.string(bytes, it)
                 : decode.number(bytes, it);
 
-            this.dispatchMessage(type, msgpack.decode(event.data, it.offset));
+            const message = (bytes.length > it.offset)
+                ? msgpack.decode(event.data, it.offset)
+                : undefined;
+
+            this.dispatchMessage(type, message);
         }
     }
 
