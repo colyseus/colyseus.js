@@ -1,7 +1,7 @@
 import './legacy';
 
 export { Client, JoinOptions } from './Client';
-export { Protocol } from './Protocol';
+export { Protocol, ErrorCode } from './Protocol';
 export { Room, RoomAvailable } from './Room';
 export { DataChange } from '@gamestdio/state-listener';
 export { Auth, Platform, Device } from "./Auth";

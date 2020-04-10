@@ -1,5 +1,6 @@
 import { post, get } from "httpie";
 
+import { ServerError } from './errors/ServerError';
 import { Room, RoomAvailable } from './Room';
 import { Auth } from './Auth';
 import { Push } from './Push';
@@ -63,7 +64,7 @@ export class Client {
         room.connect(this.buildEndpoint(response.room, { sessionId: room.sessionId }));
 
         return new Promise((resolve, reject) => {
-            const onError = (message) => reject(message);
+            const onError = (code, message) => reject(new ServerError(code, message));
             room.onError.once(onError);
 
             room.onJoin.once(() => {

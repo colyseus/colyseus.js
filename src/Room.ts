@@ -30,7 +30,7 @@ export class Room<State= any> {
     // Public signals
     public onJoin = createSignal();
     public onStateChange = createSignal<(state: State) => void>();
-    public onError = createSignal<(message: string) => void>();
+    public onError = createSignal<(code: number, message?: string) => void>();
     public onLeave = createSignal<(code: number) => void>();
 
     public connection: Connection;
@@ -59,7 +59,7 @@ export class Room<State= any> {
             this.serializer = new (getSerializer("fossil-delta"));
         }
 
-        this.onError((message) => message && console.error(message));
+        this.onError((code, message) => console.error(`colyseus.js - onError => (${code}) ${message}`));
         this.onLeave(() => this.removeAllListeners());
     }
 
@@ -70,7 +70,7 @@ export class Room<State= any> {
         this.connection.onclose = (e: CloseEvent) => {
             if (!this.hasJoined) {
                 console.error(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
-                this.onError.invoke(e.reason);
+                this.onError.invoke(e.code, e.reason);
                 return;
             }
 
@@ -78,7 +78,7 @@ export class Room<State= any> {
         };
         this.connection.onerror = (e: CloseEvent) => {
             console.warn(`Room, onError (${e.code}): ${e.reason}`);
-            this.onError.invoke(e.reason);
+            this.onError.invoke(e.code, e.reason);
         };
         this.connection.open();
     }
@@ -206,8 +206,13 @@ export class Room<State= any> {
             // acknowledge successfull JOIN_ROOM
             this.connection.send([Protocol.JOIN_ROOM]);
 
-        } else if (code === Protocol.JOIN_ERROR) {
-            this.onError.invoke(utf8Read(bytes, 1));
+        } else if (code === Protocol.ERROR) {
+            const it: decode.Iterator = { offset: 1 };
+
+            const code = decode.number(bytes, it);
+            const message = decode.string(bytes, it);
+
+            this.onError.invoke(code, message);
 
         } else if (code === Protocol.LEAVE_ROOM) {
             this.leave();
