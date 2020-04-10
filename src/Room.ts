@@ -105,7 +105,7 @@ export class Room<State= any> {
         callback: (message: InstanceType<T>) => void
     )
     public onMessage<T = any>(
-        type: T,
+        type: string | number,
         callback: (message: T) => void
     )
     public onMessage<T = any>(
