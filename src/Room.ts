@@ -59,7 +59,7 @@ export class Room<State= any> {
             this.serializer = new (getSerializer("fossil-delta"));
         }
 
-        this.onError((message) => console.error(message));
+        this.onError((message) => message && console.error(message));
         this.onLeave(() => this.removeAllListeners());
     }
 
