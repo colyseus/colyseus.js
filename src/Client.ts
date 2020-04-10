@@ -5,6 +5,8 @@ import { Auth } from './Auth';
 import { Push } from './Push';
 import { RootSchemaConstructor } from './serializer/SchemaSerializer';
 
+import retry from "async-retry";
+
 export type JoinOptions = any;
 
 export class MatchMakeError extends Error {
@@ -29,23 +31,43 @@ export class Client {
     }
 
     public async joinOrCreate<T = any>(roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
-        return await this.createMatchMakeRequest<T>('joinOrCreate', roomName, options, rootSchema);
+        return await retry(async () => await this.createMatchMakeRequest<T>('joinOrCreate', roomName, options, rootSchema), {
+            retries: 3,
+            minTimeout: 0,
+            maxTimeout: 0,
+        });
     }
 
     public async create<T = any>(roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
-        return await this.createMatchMakeRequest<T>('create', roomName, options, rootSchema);
+        return await retry(async () => await this.createMatchMakeRequest<T>('create', roomName, options, rootSchema), {
+            retries: 3,
+            minTimeout: 0,
+            maxTimeout: 0,
+        });
     }
 
     public async join<T = any>(roomName: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
-        return await this.createMatchMakeRequest<T>('join', roomName, options, rootSchema);
+        return await retry(async () => await this.createMatchMakeRequest<T>('join', roomName, options, rootSchema), {
+            retries: 3,
+            minTimeout: 0,
+            maxTimeout: 0,
+        });;
     }
 
     public async joinById<T = any>(roomId: string, options: JoinOptions = {}, rootSchema?: RootSchemaConstructor) {
-        return await this.createMatchMakeRequest<T>('joinById', roomId, options, rootSchema);
+        return await retry(async () => await this.createMatchMakeRequest<T>('joinById', roomId, options, rootSchema), {
+            retries: 3,
+            minTimeout: 0,
+            maxTimeout: 0,
+        });;
     }
 
     public async reconnect<T = any>(roomId: string, sessionId: string, rootSchema?: RootSchemaConstructor) {
-        return await this.createMatchMakeRequest<T>('joinById', roomId, { sessionId }, rootSchema);
+        return await retry(async () => await this.createMatchMakeRequest<T>('joinById', roomId, { sessionId }, rootSchema), {
+            retries: 3,
+            minTimeout: 0,
+            maxTimeout: 0,
+        });;
     }
 
     public async getAvailableRooms(roomName: string = ""): Promise<RoomAvailable[]> {
