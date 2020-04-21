@@ -266,7 +266,7 @@ export class Room<State= any> {
             this.onMessageHandlers[messageType](message);
 
         } else if (this.onMessageHandlers['*']) {
-            (this.onMessageHandlers[messageType] as any)(type, message);
+            (this.onMessageHandlers['*'] as any)(type, message);
 
         } else {
             console.warn(`onMessage not registered for type '${type}'.`);

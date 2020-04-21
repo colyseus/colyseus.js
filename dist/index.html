@@ -35,8 +35,8 @@
 
       function addListeners (room) {
           console.log('joined!');
-          room.onMessage("*", (message) => {
-              console.log("*, message =>", message);
+          room.onMessage("*", (type, message) => {
+              console.log("received message:", type, "=>", message);
           });
 
           room.onLeave(function() {
