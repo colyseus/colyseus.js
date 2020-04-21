@@ -15,6 +15,7 @@ module.exports = function(options) {
                 ? "colyseus.js"
                 : "colyseus.dev.js",
 
+            globalObject: "self || this", // compatibility with Web Workers.
             libraryTarget: "umd",
             library: "Colyseus"
         },

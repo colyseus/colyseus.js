@@ -1,4 +1,4 @@
-/*! colyseus.js@0.11.7 */
+/*! colyseus.js@0.13.0-alpha.10 */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
@@ -8,7 +8,7 @@
 		exports["Colyseus"] = factory();
 	else
 		root["Colyseus"] = factory();
-})(window, function() {
+})(self || this, function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -92,677 +92,11 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 12);
+/******/ 	return __webpack_require__(__webpack_require__.s = 15);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-var spec_1 = __webpack_require__(9);
-var encode = __webpack_require__(31);
-var decode = __webpack_require__(32);
-var ArraySchema_1 = __webpack_require__(1);
-var MapSchema_1 = __webpack_require__(2);
-var ChangeTree_1 = __webpack_require__(10);
-var EncodeSchemaError = /** @class */ (function (_super) {
-    __extends(EncodeSchemaError, _super);
-    function EncodeSchemaError() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    return EncodeSchemaError;
-}(Error));
-function assertType(value, type, klass, field) {
-    var typeofTarget;
-    var allowNull = false;
-    switch (type) {
-        case "number":
-        case "int8":
-        case "uint8":
-        case "int16":
-        case "uint16":
-        case "int32":
-        case "uint32":
-        case "int64":
-        case "uint64":
-        case "float32":
-        case "float64":
-            typeofTarget = "number";
-            if (isNaN(value)) {
-                console.log("trying to encode \"NaN\" in " + klass.constructor.name + "#" + field);
-            }
-            break;
-        case "string":
-            typeofTarget = "string";
-            allowNull = true;
-            break;
-        case "boolean":
-            // boolean is always encoded as true/false based on truthiness
-            return;
-    }
-    if (typeof (value) !== typeofTarget && (!allowNull || (allowNull && value !== null))) {
-        var foundValue = "'" + JSON.stringify(value) + "'" + (value && value.constructor && " (" + value.constructor.name + ")");
-        throw new EncodeSchemaError("a '" + typeofTarget + "' was expected, but " + foundValue + " was provided in " + klass.constructor.name + "#" + field);
-    }
-}
-function assertInstanceType(value, type, klass, field) {
-    if (!(value instanceof type)) {
-        throw new EncodeSchemaError("a '" + type.name + "' was expected, but '" + value.constructor.name + "' was provided in " + klass.constructor.name + "#" + field);
-    }
-}
-function encodePrimitiveType(type, bytes, value, klass, field) {
-    assertType(value, type, klass, field);
-    var encodeFunc = encode[type];
-    if (encodeFunc) {
-        encodeFunc(bytes, value);
-    }
-    else {
-        throw new EncodeSchemaError("a '" + type + "' was expected, but " + value + " was provided in " + klass.constructor.name + "#" + field);
-    }
-}
-function decodePrimitiveType(type, bytes, it) {
-    return decode[type](bytes, it);
-}
-/**
- * Schema encoder / decoder
- */
-var Schema = /** @class */ (function () {
-    // allow inherited classes to have a constructor
-    function Schema() {
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i] = arguments[_i];
-        }
-        // fix enumerability of fields for end-user
-        Object.defineProperties(this, {
-            $changes: {
-                value: new ChangeTree_1.ChangeTree(this._indexes),
-                enumerable: false,
-                writable: true
-            },
-        });
-        var descriptors = this._descriptors;
-        if (descriptors) {
-            Object.defineProperties(this, descriptors);
-        }
-    }
-    Schema.onError = function (e) {
-        console.error(e);
-    };
-    Object.defineProperty(Schema.prototype, "_schema", {
-        get: function () { return this.constructor._schema; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Schema.prototype, "_descriptors", {
-        get: function () { return this.constructor._descriptors; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Schema.prototype, "_indexes", {
-        get: function () { return this.constructor._indexes; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Schema.prototype, "_fieldsByIndex", {
-        get: function () { return this.constructor._fieldsByIndex; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Schema.prototype, "_filters", {
-        get: function () { return this.constructor._filters; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Schema.prototype, "_deprecated", {
-        get: function () { return this.constructor._deprecated; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Schema.prototype, "$changed", {
-        get: function () { return this.$changes.changed; },
-        enumerable: true,
-        configurable: true
-    });
-    Schema.prototype.decode = function (bytes, it) {
-        if (it === void 0) { it = { offset: 0 }; }
-        var changes = [];
-        var schema = this._schema;
-        var fieldsByIndex = this._fieldsByIndex;
-        var totalBytes = bytes.length;
-        // skip TYPE_ID of existing instances
-        if (bytes[it.offset] === spec_1.TYPE_ID) {
-            it.offset += 2;
-        }
-        var _loop_1 = function () {
-            var isNil = decode.nilCheck(bytes, it) && ++it.offset;
-            var index = bytes[it.offset++];
-            if (index === spec_1.END_OF_STRUCTURE) {
-                return "break";
-            }
-            var field = fieldsByIndex[index];
-            var _field = "_" + field;
-            var type = schema[field];
-            var value = void 0;
-            var change = void 0; // for triggering onChange
-            var hasChange = false;
-            if (!field) {
-                return "continue";
-            }
-            else if (isNil) {
-                value = null;
-                hasChange = true;
-            }
-            else if (type._schema) {
-                value = this_1[_field] || this_1.createTypeInstance(bytes, it, type);
-                value.decode(bytes, it);
-                hasChange = true;
-            }
-            else if (Array.isArray(type)) {
-                type = type[0];
-                change = [];
-                var valueRef_1 = this_1[_field] || new ArraySchema_1.ArraySchema();
-                value = valueRef_1.clone(true);
-                var newLength_1 = decode.number(bytes, it);
-                var numChanges = Math.min(decode.number(bytes, it), newLength_1);
-                hasChange = (numChanges > 0);
-                // FIXME: this may not be reliable. possibly need to encode this variable during serialization
-                var hasIndexChange = false;
-                // ensure current array has the same length as encoded one
-                if (value.length > newLength_1) {
-                    // decrease removed items from number of changes.
-                    // no need to iterate through them, as they're going to be removed.
-                    Array.prototype.splice.call(value, newLength_1).forEach(function (itemRemoved, i) {
-                        if (itemRemoved && itemRemoved.onRemove) {
-                            try {
-                                itemRemoved.onRemove();
-                            }
-                            catch (e) {
-                                Schema.onError(e);
-                            }
-                        }
-                        if (valueRef_1.onRemove) {
-                            try {
-                                valueRef_1.onRemove(itemRemoved, newLength_1 + i);
-                            }
-                            catch (e) {
-                                Schema.onError(e);
-                            }
-                        }
-                    });
-                }
-                for (var i = 0; i < numChanges; i++) {
-                    var newIndex = decode.number(bytes, it);
-                    var indexChangedFrom = void 0; // index change check
-                    if (decode.indexChangeCheck(bytes, it)) {
-                        decode.uint8(bytes, it);
-                        indexChangedFrom = decode.number(bytes, it);
-                        hasIndexChange = true;
-                    }
-                    var isNew = (!hasIndexChange && value[newIndex] === undefined) || (hasIndexChange && indexChangedFrom === undefined);
-                    if (type.prototype instanceof Schema) {
-                        var item = void 0;
-                        if (isNew) {
-                            item = this_1.createTypeInstance(bytes, it, type);
-                        }
-                        else if (indexChangedFrom !== undefined) {
-                            item = valueRef_1[indexChangedFrom];
-                        }
-                        else {
-                            item = valueRef_1[newIndex];
-                        }
-                        if (!item) {
-                            item = this_1.createTypeInstance(bytes, it, type);
-                            isNew = true;
-                        }
-                        item.decode(bytes, it);
-                        value[newIndex] = item;
-                    }
-                    else {
-                        value[newIndex] = decodePrimitiveType(type, bytes, it);
-                    }
-                    if (isNew) {
-                        if (valueRef_1.onAdd) {
-                            try {
-                                valueRef_1.onAdd(value[newIndex], newIndex);
-                            }
-                            catch (e) {
-                                Schema.onError(e);
-                            }
-                        }
-                    }
-                    else if (valueRef_1.onChange) {
-                        try {
-                            valueRef_1.onChange(value[newIndex], newIndex);
-                        }
-                        catch (e) {
-                            Schema.onError(e);
-                        }
-                    }
-                    change.push(value[newIndex]);
-                }
-            }
-            else if (type.map) {
-                type = type.map;
-                var valueRef = this_1[_field] || new MapSchema_1.MapSchema();
-                value = valueRef.clone(true);
-                var length = decode.number(bytes, it);
-                hasChange = (length > 0);
-                // FIXME: this may not be reliable. possibly need to encode this variable during
-                // serializagion
-                var hasIndexChange = false;
-                var previousKeys = Object.keys(valueRef);
-                for (var i = 0; i < length; i++) {
-                    // `encodeAll` may indicate a higher number of indexes it actually encodes
-                    // TODO: do not encode a higher number than actual encoded entries
-                    if (bytes[it.offset] === undefined ||
-                        bytes[it.offset] === spec_1.END_OF_STRUCTURE) {
-                        break;
-                    }
-                    var isNilItem = decode.nilCheck(bytes, it) && ++it.offset;
-                    // index change check
-                    var previousKey = void 0;
-                    if (decode.indexChangeCheck(bytes, it)) {
-                        decode.uint8(bytes, it);
-                        previousKey = previousKeys[decode.number(bytes, it)];
-                        hasIndexChange = true;
-                    }
-                    var hasMapIndex = decode.numberCheck(bytes, it);
-                    var isSchemaType = typeof (type) !== "string";
-                    var newKey = (hasMapIndex)
-                        ? previousKeys[decode.number(bytes, it)]
-                        : decode.string(bytes, it);
-                    var item = void 0;
-                    var isNew = (!hasIndexChange && valueRef[newKey] === undefined) || (hasIndexChange && previousKey === undefined && hasMapIndex);
-                    if (isNew && isSchemaType) {
-                        item = this_1.createTypeInstance(bytes, it, type);
-                    }
-                    else if (previousKey !== undefined) {
-                        item = valueRef[previousKey];
-                    }
-                    else {
-                        item = valueRef[newKey];
-                    }
-                    if (isNilItem) {
-                        if (item && item.onRemove) {
-                            try {
-                                item.onRemove();
-                            }
-                            catch (e) {
-                                Schema.onError(e);
-                            }
-                        }
-                        if (valueRef.onRemove) {
-                            try {
-                                valueRef.onRemove(item, newKey);
-                            }
-                            catch (e) {
-                                Schema.onError(e);
-                            }
-                        }
-                        delete value[newKey];
-                        continue;
-                    }
-                    else if (!isSchemaType) {
-                        value[newKey] = decodePrimitiveType(type, bytes, it);
-                    }
-                    else {
-                        item.decode(bytes, it);
-                        value[newKey] = item;
-                    }
-                    if (isNew) {
-                        if (valueRef.onAdd) {
-                            try {
-                                valueRef.onAdd(value[newKey], newKey);
-                            }
-                            catch (e) {
-                                Schema.onError(e);
-                            }
-                        }
-                    }
-                    else if (valueRef.onChange) {
-                        try {
-                            valueRef.onChange(value[newKey], newKey);
-                        }
-                        catch (e) {
-                            Schema.onError(e);
-                        }
-                    }
-                }
-            }
-            else {
-                value = decodePrimitiveType(type, bytes, it);
-                hasChange = true;
-            }
-            if (hasChange && this_1.onChange) {
-                changes.push({
-                    field: field,
-                    value: change || value,
-                    previousValue: this_1[_field]
-                });
-            }
-            this_1[_field] = value;
-        };
-        var this_1 = this;
-        while (it.offset < totalBytes) {
-            var state_1 = _loop_1();
-            if (state_1 === "break")
-                break;
-        }
-        if (this.onChange && changes.length > 0) {
-            try {
-                this.onChange(changes);
-            }
-            catch (e) {
-                Schema.onError(e);
-            }
-        }
-        return this;
-    };
-    Schema.prototype.encode = function (root, encodeAll, client, bytes) {
-        var _this = this;
-        if (root === void 0) { root = this; }
-        if (encodeAll === void 0) { encodeAll = false; }
-        if (bytes === void 0) { bytes = []; }
-        // skip if nothing has changed
-        if (!this.$changes.changed && !encodeAll) {
-            this._encodeEndOfStructure(this, root, bytes);
-            return bytes;
-        }
-        var schema = this._schema;
-        var indexes = this._indexes;
-        var fieldsByIndex = this._fieldsByIndex;
-        var filters = this._filters;
-        var changes = Array.from((encodeAll || client)
-            ? this.$changes.allChanges
-            : this.$changes.changes).sort();
-        var _loop_2 = function (i, l) {
-            var field = fieldsByIndex[changes[i]] || changes[i];
-            var _field = "_" + field;
-            var type = schema[field];
-            var filter = (filters && filters[field]);
-            // const value = (filter && this.$allChanges[field]) || changes[field];
-            var value = this_2[_field];
-            var fieldIndex = indexes[field];
-            if (value === undefined) {
-                encode.uint8(bytes, spec_1.NIL);
-                encode.number(bytes, fieldIndex);
-            }
-            else if (type._schema) {
-                if (client && filter) {
-                    // skip if not allowed by custom filter
-                    if (!filter.call(this_2, client, value, root)) {
-                        return "continue";
-                    }
-                }
-                if (!value) {
-                    // value has been removed
-                    encode.uint8(bytes, spec_1.NIL);
-                    encode.number(bytes, fieldIndex);
-                }
-                else {
-                    // encode child object
-                    encode.number(bytes, fieldIndex);
-                    assertInstanceType(value, type, this_2, field);
-                    this_2.tryEncodeTypeId(bytes, type, value.constructor);
-                    value.encode(root, encodeAll, client, bytes);
-                }
-            }
-            else if (Array.isArray(type)) {
-                var $changes = value.$changes;
-                encode.number(bytes, fieldIndex);
-                // total of items in the array
-                encode.number(bytes, value.length);
-                var arrayChanges = Array.from((encodeAll || client)
-                    ? $changes.allChanges
-                    : $changes.changes)
-                    .filter(function (index) { return _this[_field][index] !== undefined; })
-                    .sort(function (a, b) { return a - b; });
-                // ensure number of changes doesn't exceed array length
-                var numChanges = arrayChanges.length;
-                // number of changed items
-                encode.number(bytes, numChanges);
-                var isChildSchema = typeof (type[0]) !== "string";
-                // assert ArraySchema was provided
-                assertInstanceType(this_2[_field], ArraySchema_1.ArraySchema, this_2, field);
-                // encode Array of type
-                for (var j = 0; j < numChanges; j++) {
-                    var index = arrayChanges[j];
-                    var item = this_2[_field][index];
-                    if (client && filter) {
-                        // skip if not allowed by custom filter
-                        if (!filter.call(this_2, client, item, root)) {
-                            continue;
-                        }
-                    }
-                    if (isChildSchema) { // is array of Schema
-                        encode.number(bytes, index);
-                        if (!encodeAll) {
-                            var indexChange = $changes.getIndexChange(item);
-                            if (indexChange !== undefined) {
-                                encode.uint8(bytes, spec_1.INDEX_CHANGE);
-                                encode.number(bytes, indexChange);
-                            }
-                        }
-                        assertInstanceType(item, type[0], this_2, field);
-                        this_2.tryEncodeTypeId(bytes, type[0], item.constructor);
-                        item.encode(root, encodeAll, client, bytes);
-                    }
-                    else if (item !== undefined) {
-                        encode.number(bytes, index);
-                        encodePrimitiveType(type[0], bytes, item, this_2, field);
-                    }
-                }
-                if (!encodeAll) {
-                    $changes.discard();
-                }
-            }
-            else if (type.map) {
-                var $changes = value.$changes;
-                // encode Map of type
-                encode.number(bytes, fieldIndex);
-                // TODO: during `encodeAll`, removed entries are not going to be encoded
-                var keys = Array.from((encodeAll || client)
-                    ? $changes.allChanges
-                    : $changes.changes);
-                encode.number(bytes, keys.length);
-                // const previousKeys = Object.keys(this[_field]); // this is costly!
-                var previousKeys = Array.from($changes.allChanges);
-                var isChildSchema = typeof (type.map) !== "string";
-                var numChanges = keys.length;
-                // assert MapSchema was provided
-                assertInstanceType(this_2[_field], MapSchema_1.MapSchema, this_2, field);
-                for (var i_1 = 0; i_1 < numChanges; i_1++) {
-                    var key = keys[i_1];
-                    var item = this_2[_field][key];
-                    var mapItemIndex = undefined;
-                    if (client && filter) {
-                        // skip if not allowed by custom filter
-                        if (!filter.call(this_2, client, item, root)) {
-                            continue;
-                        }
-                    }
-                    if (encodeAll) {
-                        if (item === undefined) {
-                            // previously deleted items are skipped during `encodeAll`
-                            continue;
-                        }
-                    }
-                    else {
-                        // encode index change
-                        var indexChange = $changes.getIndexChange(item);
-                        if (item && indexChange !== undefined) {
-                            encode.uint8(bytes, spec_1.INDEX_CHANGE);
-                            encode.number(bytes, this_2[_field]._indexes.get(indexChange));
-                        }
-                        /**
-                         * - Allow item replacement
-                         * - Allow to use the index of a deleted item to encode as NIL
-                         */
-                        mapItemIndex = (!$changes.isDeleted(key) || !item)
-                            ? this_2[_field]._indexes.get(key)
-                            : undefined;
-                    }
-                    var isNil = (item === undefined);
-                    /**
-                     * Invert NIL to prevent collision with data starting with NIL byte
-                     */
-                    if (isNil) {
-                        // TODO: remove item
-                        // console.log("REMOVE KEY INDEX", { key });
-                        // this[_field]._indexes.delete(key);
-                        encode.uint8(bytes, spec_1.NIL);
-                    }
-                    if (mapItemIndex !== undefined) {
-                        encode.number(bytes, mapItemIndex);
-                    }
-                    else {
-                        encode.string(bytes, key);
-                    }
-                    if (item && isChildSchema) {
-                        assertInstanceType(item, type.map, this_2, field);
-                        this_2.tryEncodeTypeId(bytes, type.map, item.constructor);
-                        item.encode(root, encodeAll, client, bytes);
-                    }
-                    else if (!isNil) {
-                        encodePrimitiveType(type.map, bytes, item, this_2, field);
-                    }
-                }
-                if (!encodeAll) {
-                    $changes.discard();
-                    // TODO: track array/map indexes per client (for filtering)?
-                    if (!client) {
-                        // TODO: do not iterate though all MapSchema indexes here.
-                        this_2[_field]._updateIndexes(previousKeys);
-                    }
-                }
-            }
-            else {
-                if (client && filter) {
-                    // skip if not allowed by custom filter
-                    if (!filter.call(this_2, client, value, root)) {
-                        return "continue";
-                    }
-                }
-                encode.number(bytes, fieldIndex);
-                encodePrimitiveType(type, bytes, value, this_2, field);
-            }
-        };
-        var this_2 = this;
-        for (var i = 0, l = changes.length; i < l; i++) {
-            _loop_2(i, l);
-        }
-        // flag end of Schema object structure
-        this._encodeEndOfStructure(this, root, bytes);
-        if (!encodeAll && !client) {
-            this.$changes.discard();
-        }
-        return bytes;
-    };
-    Schema.prototype.encodeFiltered = function (client, bytes) {
-        return this.encode(this, false, client, bytes);
-    };
-    Schema.prototype.encodeAll = function (bytes) {
-        return this.encode(this, true, undefined, bytes);
-    };
-    Schema.prototype.encodeAllFiltered = function (client, bytes) {
-        return this.encode(this, true, client, bytes);
-    };
-    Schema.prototype.clone = function () {
-        var cloned = new (this.constructor);
-        var schema = this._schema;
-        for (var field in schema) {
-            if (typeof (this[field]) === "object" &&
-                typeof (this[field].clone) === "function") {
-                // deep clone
-                cloned[field] = this[field].clone();
-            }
-            else {
-                // primitive values
-                cloned[field] = this[field];
-            }
-        }
-        return cloned;
-    };
-    Schema.prototype.triggerAll = function () {
-        if (!this.onChange) {
-            return;
-        }
-        var changes = [];
-        var schema = this._schema;
-        for (var field in schema) {
-            if (this[field] !== undefined) {
-                changes.push({
-                    field: field,
-                    value: this[field],
-                    previousValue: undefined
-                });
-            }
-        }
-        try {
-            this.onChange(changes);
-        }
-        catch (e) {
-            Schema.onError(e);
-        }
-    };
-    Schema.prototype.toJSON = function () {
-        var schema = this._schema;
-        var deprecated = this._deprecated;
-        var obj = {};
-        for (var field in schema) {
-            if (!deprecated[field] && this[field] !== null && typeof (this[field]) !== "undefined") {
-                obj[field] = (typeof (this[field].toJSON) === "function")
-                    ? this[field].toJSON()
-                    : this["_" + field];
-            }
-        }
-        return obj;
-    };
-    Schema.prototype._encodeEndOfStructure = function (instance, root, bytes) {
-        if (instance !== root) {
-            bytes.push(spec_1.END_OF_STRUCTURE);
-        }
-    };
-    Schema.prototype.tryEncodeTypeId = function (bytes, type, targetType) {
-        if (type._typeid !== targetType._typeid) {
-            encode.uint8(bytes, spec_1.TYPE_ID);
-            encode.uint8(bytes, targetType._typeid);
-        }
-    };
-    Schema.prototype.createTypeInstance = function (bytes, it, type) {
-        if (bytes[it.offset] === spec_1.TYPE_ID) {
-            it.offset++;
-            var anotherType = this.constructor._context.get(decode.uint8(bytes, it));
-            return new anotherType();
-        }
-        else {
-            return new type();
-        }
-    };
-    return Schema;
-}());
-exports.Schema = Schema;
-//# sourceMappingURL=Schema.js.map
-
-/***/ }),
-/* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -858,15 +192,17 @@ var ArraySchema = /** @class */ (function (_super) {
     ArraySchema.prototype.sort = function (compareFn) {
         this.$sorting = true;
         _super.prototype.sort.call(this, compareFn);
-        var changes = Array.from(this.$changes.changes);
-        for (var _i = 0, changes_1 = changes; _i < changes_1.length; _i++) {
-            var key = changes_1[_i];
-            // track index change
-            var previousIndex = this.$changes.getIndex(this[key]);
-            if (previousIndex !== undefined) {
-                this.$changes.mapIndexChange(this[key], previousIndex);
+        if (this.$changes) { // allow to .slice() + .sort()
+            var changes = Array.from(this.$changes.changes);
+            for (var _i = 0, changes_1 = changes; _i < changes_1.length; _i++) {
+                var key = changes_1[_i];
+                // track index change
+                var previousIndex = this.$changes.getIndex(this[key]);
+                if (previousIndex !== undefined) {
+                    this.$changes.mapIndexChange(this[key], previousIndex);
+                }
+                this.$changes.mapIndex(this[key], key);
             }
-            this.$changes.mapIndex(this[key], key);
         }
         this.$sorting = false;
         return this;
@@ -887,17 +223,20 @@ var ArraySchema = /** @class */ (function (_super) {
             return idx >= start + deleteCount - 1;
         });
         removedItems.map(function (removedItem) {
+            var $changes = removedItem && removedItem.$changes;
             // If the removed item is a schema we need to update it.
-            if (removedItem && removedItem.$changes) {
-                removedItem.$changes.parent.deleteIndex(removedItem);
-                removedItem.$changes.parent.deleteIndexChange(removedItem);
-                delete removedItem.$changes.parent;
+            if ($changes) {
+                $changes.parent.deleteIndex(removedItem);
+                delete $changes.parent;
             }
         });
         movedItems.forEach(function (movedItem) {
             // If the moved item is a schema we need to update it.
-            if (movedItem && movedItem.$changes) {
-                movedItem.$changes.parentField--;
+            var $changes = movedItem && movedItem.$changes;
+            if ($changes) {
+                // Update current index in parent, so subsequent changes in
+                // this item's properties are correctly reflected.
+                $changes.parentField--;
             }
         });
         return removedItems;
@@ -908,7 +247,7 @@ exports.ArraySchema = ArraySchema;
 //# sourceMappingURL=ArraySchema.js.map
 
 /***/ }),
-/* 2 */
+/* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -992,23 +331,760 @@ exports.MapSchema = MapSchema;
 //# sourceMappingURL=MapSchema.js.map
 
 /***/ }),
-/* 3 */
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var decode_1 = __importDefault(__webpack_require__(15));
-var encode_1 = __importDefault(__webpack_require__(16));
-exports.decode = decode_1.default;
-exports.encode = encode_1.default;
-
+var spec_1 = __webpack_require__(10);
+var encode = __webpack_require__(8);
+var decode = __webpack_require__(9);
+var ArraySchema_1 = __webpack_require__(0);
+var MapSchema_1 = __webpack_require__(1);
+var ChangeTree_1 = __webpack_require__(13);
+var EventEmitter_1 = __webpack_require__(34);
+var EncodeSchemaError = /** @class */ (function (_super) {
+    __extends(EncodeSchemaError, _super);
+    function EncodeSchemaError() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return EncodeSchemaError;
+}(Error));
+function assertType(value, type, klass, field) {
+    var typeofTarget;
+    var allowNull = false;
+    switch (type) {
+        case "number":
+        case "int8":
+        case "uint8":
+        case "int16":
+        case "uint16":
+        case "int32":
+        case "uint32":
+        case "int64":
+        case "uint64":
+        case "float32":
+        case "float64":
+            typeofTarget = "number";
+            if (isNaN(value)) {
+                console.log("trying to encode \"NaN\" in " + klass.constructor.name + "#" + field);
+            }
+            break;
+        case "string":
+            typeofTarget = "string";
+            allowNull = true;
+            break;
+        case "boolean":
+            // boolean is always encoded as true/false based on truthiness
+            return;
+    }
+    if (typeof (value) !== typeofTarget && (!allowNull || (allowNull && value !== null))) {
+        var foundValue = "'" + JSON.stringify(value) + "'" + (value && value.constructor && " (" + value.constructor.name + ")");
+        throw new EncodeSchemaError("a '" + typeofTarget + "' was expected, but " + foundValue + " was provided in " + klass.constructor.name + "#" + field);
+    }
+}
+function assertInstanceType(value, type, klass, field) {
+    if (!(value instanceof type)) {
+        throw new EncodeSchemaError("a '" + type.name + "' was expected, but '" + value.constructor.name + "' was provided in " + klass.constructor.name + "#" + field);
+    }
+}
+function encodePrimitiveType(type, bytes, value, klass, field) {
+    assertType(value, type, klass, field);
+    var encodeFunc = encode[type];
+    if (encodeFunc) {
+        encodeFunc(bytes, value);
+    }
+    else {
+        throw new EncodeSchemaError("a '" + type + "' was expected, but " + value + " was provided in " + klass.constructor.name + "#" + field);
+    }
+}
+function decodePrimitiveType(type, bytes, it) {
+    return decode[type](bytes, it);
+}
+/**
+ * Schema encoder / decoder
+ */
+var Schema = /** @class */ (function () {
+    // allow inherited classes to have a constructor
+    function Schema() {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        // fix enumerability of fields for end-user
+        Object.defineProperties(this, {
+            $changes: {
+                value: new ChangeTree_1.ChangeTree(this._indexes),
+                enumerable: false,
+                writable: true
+            },
+            $listeners: {
+                value: {},
+                enumerable: false,
+                writable: true
+            },
+        });
+        var descriptors = this._descriptors;
+        if (descriptors) {
+            Object.defineProperties(this, descriptors);
+        }
+    }
+    Schema.onError = function (e) {
+        console.error(e);
+    };
+    Object.defineProperty(Schema.prototype, "_schema", {
+        get: function () { return this.constructor._schema; },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Schema.prototype, "_descriptors", {
+        get: function () { return this.constructor._descriptors; },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Schema.prototype, "_indexes", {
+        get: function () { return this.constructor._indexes; },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Schema.prototype, "_fieldsByIndex", {
+        get: function () { return this.constructor._fieldsByIndex; },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Schema.prototype, "_filters", {
+        get: function () { return this.constructor._filters; },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Schema.prototype, "_deprecated", {
+        get: function () { return this.constructor._deprecated; },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Schema.prototype, "$changed", {
+        get: function () { return this.$changes.changed; },
+        enumerable: true,
+        configurable: true
+    });
+    Schema.prototype.listen = function (attr, callback) {
+        var _this = this;
+        if (!this.$listeners[attr]) {
+            this.$listeners[attr] = new EventEmitter_1.EventEmitter();
+        }
+        this.$listeners[attr].register(callback);
+        // return un-register callback.
+        return function () {
+            return _this.$listeners[attr].remove(callback);
+        };
+    };
+    Schema.prototype.decode = function (bytes, it) {
+        if (it === void 0) { it = { offset: 0 }; }
+        var changes = [];
+        var schema = this._schema;
+        var fieldsByIndex = this._fieldsByIndex;
+        var totalBytes = bytes.length;
+        // skip TYPE_ID of existing instances
+        if (bytes[it.offset] === spec_1.TYPE_ID) {
+            it.offset += 2;
+        }
+        var _loop_1 = function () {
+            var isNil = decode.nilCheck(bytes, it) && ++it.offset;
+            var index = bytes[it.offset++];
+            if (index === spec_1.END_OF_STRUCTURE) {
+                return "break";
+            }
+            var field = fieldsByIndex[index];
+            var _field = "_" + field;
+            var type = schema[field];
+            var value = void 0;
+            var hasChange = false;
+            if (!field) {
+                return "continue";
+            }
+            else if (isNil) {
+                value = null;
+                hasChange = true;
+            }
+            else if (type._schema) {
+                value = this_1[_field] || this_1.createTypeInstance(bytes, it, type);
+                value.decode(bytes, it);
+                hasChange = true;
+            }
+            else if (Array.isArray(type)) {
+                type = type[0];
+                var valueRef_1 = this_1[_field] || new ArraySchema_1.ArraySchema();
+                value = valueRef_1.clone(true);
+                var newLength_1 = decode.number(bytes, it);
+                var numChanges = Math.min(decode.number(bytes, it), newLength_1);
+                var hasRemoval = (value.length > newLength_1);
+                hasChange = (numChanges > 0) || hasRemoval;
+                // FIXME: this may not be reliable. possibly need to encode this variable during serialization
+                var hasIndexChange = false;
+                // ensure current array has the same length as encoded one
+                if (hasRemoval) {
+                    // decrease removed items from number of changes.
+                    // no need to iterate through them, as they're going to be removed.
+                    Array.prototype.splice.call(value, newLength_1).forEach(function (itemRemoved, i) {
+                        if (itemRemoved && itemRemoved.onRemove) {
+                            try {
+                                itemRemoved.onRemove();
+                            }
+                            catch (e) {
+                                Schema.onError(e);
+                            }
+                        }
+                        if (valueRef_1.onRemove) {
+                            try {
+                                valueRef_1.onRemove(itemRemoved, newLength_1 + i);
+                            }
+                            catch (e) {
+                                Schema.onError(e);
+                            }
+                        }
+                    });
+                }
+                for (var i = 0; i < numChanges; i++) {
+                    var newIndex = decode.number(bytes, it);
+                    var indexChangedFrom = void 0; // index change check
+                    if (decode.indexChangeCheck(bytes, it)) {
+                        decode.uint8(bytes, it);
+                        indexChangedFrom = decode.number(bytes, it);
+                        hasIndexChange = true;
+                    }
+                    var isNew = (!hasIndexChange && value[newIndex] === undefined) || (hasIndexChange && indexChangedFrom === undefined);
+                    if (type.prototype instanceof Schema) {
+                        var item = void 0;
+                        if (isNew) {
+                            item = this_1.createTypeInstance(bytes, it, type);
+                        }
+                        else if (indexChangedFrom !== undefined) {
+                            item = valueRef_1[indexChangedFrom];
+                        }
+                        else {
+                            item = valueRef_1[newIndex];
+                        }
+                        if (!item) {
+                            item = this_1.createTypeInstance(bytes, it, type);
+                            isNew = true;
+                        }
+                        item.decode(bytes, it);
+                        value[newIndex] = item;
+                    }
+                    else {
+                        value[newIndex] = decodePrimitiveType(type, bytes, it);
+                    }
+                    if (isNew) {
+                        if (valueRef_1.onAdd) {
+                            try {
+                                valueRef_1.onAdd(value[newIndex], newIndex);
+                            }
+                            catch (e) {
+                                Schema.onError(e);
+                            }
+                        }
+                    }
+                    else if (valueRef_1.onChange) {
+                        try {
+                            valueRef_1.onChange(value[newIndex], newIndex);
+                        }
+                        catch (e) {
+                            Schema.onError(e);
+                        }
+                    }
+                }
+            }
+            else if (type.map) {
+                type = type.map;
+                var valueRef = this_1[_field] || new MapSchema_1.MapSchema();
+                value = valueRef.clone(true);
+                var length = decode.number(bytes, it);
+                hasChange = (length > 0);
+                // FIXME: this may not be reliable. possibly need to encode this variable during
+                // serializagion
+                var hasIndexChange = false;
+                var previousKeys = Object.keys(valueRef);
+                for (var i = 0; i < length; i++) {
+                    // `encodeAll` may indicate a higher number of indexes it actually encodes
+                    // TODO: do not encode a higher number than actual encoded entries
+                    if (bytes[it.offset] === undefined ||
+                        bytes[it.offset] === spec_1.END_OF_STRUCTURE) {
+                        break;
+                    }
+                    var isNilItem = decode.nilCheck(bytes, it) && ++it.offset;
+                    // index change check
+                    var previousKey = void 0;
+                    if (decode.indexChangeCheck(bytes, it)) {
+                        decode.uint8(bytes, it);
+                        previousKey = previousKeys[decode.number(bytes, it)];
+                        hasIndexChange = true;
+                    }
+                    var hasMapIndex = decode.numberCheck(bytes, it);
+                    var isSchemaType = typeof (type) !== "string";
+                    var newKey = (hasMapIndex)
+                        ? previousKeys[decode.number(bytes, it)]
+                        : decode.string(bytes, it);
+                    var item = void 0;
+                    var isNew = (!hasIndexChange && valueRef[newKey] === undefined) || (hasIndexChange && previousKey === undefined && hasMapIndex);
+                    if (isNew && isSchemaType) {
+                        item = this_1.createTypeInstance(bytes, it, type);
+                    }
+                    else if (previousKey !== undefined) {
+                        item = valueRef[previousKey];
+                    }
+                    else {
+                        item = valueRef[newKey];
+                    }
+                    if (isNilItem) {
+                        if (item && item.onRemove) {
+                            try {
+                                item.onRemove();
+                            }
+                            catch (e) {
+                                Schema.onError(e);
+                            }
+                        }
+                        if (valueRef.onRemove) {
+                            try {
+                                valueRef.onRemove(item, newKey);
+                            }
+                            catch (e) {
+                                Schema.onError(e);
+                            }
+                        }
+                        delete value[newKey];
+                        continue;
+                    }
+                    else if (!isSchemaType) {
+                        value[newKey] = decodePrimitiveType(type, bytes, it);
+                    }
+                    else {
+                        item.decode(bytes, it);
+                        value[newKey] = item;
+                    }
+                    if (isNew) {
+                        if (valueRef.onAdd) {
+                            try {
+                                valueRef.onAdd(value[newKey], newKey);
+                            }
+                            catch (e) {
+                                Schema.onError(e);
+                            }
+                        }
+                    }
+                    else if (valueRef.onChange) {
+                        try {
+                            valueRef.onChange(value[newKey], newKey);
+                        }
+                        catch (e) {
+                            Schema.onError(e);
+                        }
+                    }
+                }
+            }
+            else {
+                value = decodePrimitiveType(type, bytes, it);
+                // FIXME: should not even have encoded if value haven't changed in the first place!
+                // check FilterTest.ts: "should not trigger `onChange` if field haven't changed"
+                hasChange = (value !== this_1[_field]);
+            }
+            if (hasChange && (this_1.onChange || this_1.$listeners[field])) {
+                changes.push({
+                    field: field,
+                    value: value,
+                    previousValue: this_1[_field]
+                });
+            }
+            this_1[_field] = value;
+        };
+        var this_1 = this;
+        while (it.offset < totalBytes) {
+            var state_1 = _loop_1();
+            if (state_1 === "break")
+                break;
+        }
+        this._triggerChanges(changes);
+        return this;
+    };
+    Schema.prototype.encode = function (root, encodeAll, client, bytes) {
+        var _this = this;
+        if (root === void 0) { root = this; }
+        if (encodeAll === void 0) { encodeAll = false; }
+        if (bytes === void 0) { bytes = []; }
+        // skip if nothing has changed
+        if (!this.$changes.changed && !encodeAll) {
+            this._encodeEndOfStructure(this, root, bytes);
+            return bytes;
+        }
+        var schema = this._schema;
+        var indexes = this._indexes;
+        var fieldsByIndex = this._fieldsByIndex;
+        var filters = this._filters;
+        var changes = Array.from((encodeAll) //  || client
+            ? this.$changes.allChanges
+            : this.$changes.changes).sort();
+        var _loop_2 = function (i, l) {
+            var field = fieldsByIndex[changes[i]] || changes[i];
+            var _field = "_" + field;
+            var type = schema[field];
+            var filter = (filters && filters[field]);
+            // const value = (filter && this.$allChanges[field]) || changes[field];
+            var value = this_2[_field];
+            var fieldIndex = indexes[field];
+            if (value === undefined) {
+                encode.uint8(bytes, spec_1.NIL);
+                encode.number(bytes, fieldIndex);
+            }
+            else if (type._schema) {
+                if (client && filter) {
+                    // skip if not allowed by custom filter
+                    if (!filter.call(this_2, client, value, root)) {
+                        return "continue";
+                    }
+                }
+                if (!value) {
+                    // value has been removed
+                    encode.uint8(bytes, spec_1.NIL);
+                    encode.number(bytes, fieldIndex);
+                }
+                else {
+                    // encode child object
+                    encode.number(bytes, fieldIndex);
+                    assertInstanceType(value, type, this_2, field);
+                    this_2.tryEncodeTypeId(bytes, type, value.constructor);
+                    value.encode(root, encodeAll, client, bytes);
+                }
+            }
+            else if (Array.isArray(type)) {
+                var $changes = value.$changes;
+                if (client && filter) {
+                    // skip if not allowed by custom filter
+                    if (!filter.call(this_2, client, value, root)) {
+                        return "continue";
+                    }
+                }
+                encode.number(bytes, fieldIndex);
+                // total number of items in the array
+                encode.number(bytes, value.length);
+                var arrayChanges = Array.from((encodeAll) //  || client
+                    ? $changes.allChanges
+                    : $changes.changes)
+                    .filter(function (index) { return _this[_field][index] !== undefined; })
+                    .sort(function (a, b) { return a - b; });
+                // ensure number of changes doesn't exceed array length
+                var numChanges = arrayChanges.length;
+                // number of changed items
+                encode.number(bytes, numChanges);
+                var isChildSchema = typeof (type[0]) !== "string";
+                // assert ArraySchema was provided
+                assertInstanceType(this_2[_field], ArraySchema_1.ArraySchema, this_2, field);
+                // encode Array of type
+                for (var j = 0; j < numChanges; j++) {
+                    var index = arrayChanges[j];
+                    var item = this_2[_field][index];
+                    /**
+                     * TODO: filter array by items instead of the whole object
+                     */
+                    // if (client && filter) {
+                    //     // skip if not allowed by custom filter
+                    //     if (!filter.call(this, client, item, root)) {
+                    //         continue;
+                    //     }
+                    // }
+                    if (isChildSchema) { // is array of Schema
+                        encode.number(bytes, index);
+                        if (!encodeAll) {
+                            var indexChange = $changes.getIndexChange(item);
+                            if (indexChange !== undefined) {
+                                encode.uint8(bytes, spec_1.INDEX_CHANGE);
+                                encode.number(bytes, indexChange);
+                            }
+                        }
+                        assertInstanceType(item, type[0], this_2, field);
+                        this_2.tryEncodeTypeId(bytes, type[0], item.constructor);
+                        item.encode(root, encodeAll, client, bytes);
+                    }
+                    else if (item !== undefined) { // is array of primitives
+                        encode.number(bytes, index);
+                        encodePrimitiveType(type[0], bytes, item, this_2, field);
+                    }
+                }
+                if (!encodeAll && !client) {
+                    $changes.discard();
+                }
+            }
+            else if (type.map) {
+                var $changes = value.$changes;
+                if (client && filter) {
+                    // skip if not allowed by custom filter
+                    if (!filter.call(this_2, client, value, root)) {
+                        return "continue";
+                    }
+                }
+                // encode Map of type
+                encode.number(bytes, fieldIndex);
+                // TODO: during `encodeAll`, removed entries are not going to be encoded
+                var keys = Array.from((encodeAll) //  || client
+                    ? $changes.allChanges
+                    : $changes.changes);
+                encode.number(bytes, keys.length);
+                // const previousKeys = Object.keys(this[_field]); // this is costly!
+                var previousKeys = Array.from($changes.allChanges);
+                var isChildSchema = typeof (type.map) !== "string";
+                var numChanges = keys.length;
+                // assert MapSchema was provided
+                assertInstanceType(this_2[_field], MapSchema_1.MapSchema, this_2, field);
+                for (var i_1 = 0; i_1 < numChanges; i_1++) {
+                    var key = keys[i_1];
+                    var item = this_2[_field][key];
+                    var mapItemIndex = undefined;
+                    /**
+                     * TODO: filter map by items instead of the whole object
+                     */
+                    // if (client && filter) {
+                    //     // skip if not allowed by custom filter
+                    //     if (!filter.call(this, client, item, root)) {
+                    //         continue;
+                    //     }
+                    // }
+                    if (encodeAll) {
+                        if (item === undefined) {
+                            // previously deleted items are skipped during `encodeAll`
+                            continue;
+                        }
+                    }
+                    else {
+                        // encode index change
+                        var indexChange = $changes.getIndexChange(item);
+                        if (item && indexChange !== undefined) {
+                            encode.uint8(bytes, spec_1.INDEX_CHANGE);
+                            encode.number(bytes, this_2[_field]._indexes.get(indexChange));
+                        }
+                        /**
+                         * - Allow item replacement
+                         * - Allow to use the index of a deleted item to encode as NIL
+                         */
+                        mapItemIndex = (!$changes.isDeleted(key) || !item)
+                            ? this_2[_field]._indexes.get(key)
+                            : undefined;
+                    }
+                    var isNil = (item === undefined);
+                    /**
+                     * Invert NIL to prevent collision with data starting with NIL byte
+                     */
+                    if (isNil) {
+                        // TODO: remove item
+                        // console.log("REMOVE KEY INDEX", { key });
+                        // this[_field]._indexes.delete(key);
+                        encode.uint8(bytes, spec_1.NIL);
+                    }
+                    if (mapItemIndex !== undefined) {
+                        encode.number(bytes, mapItemIndex);
+                    }
+                    else {
+                        encode.string(bytes, key);
+                    }
+                    if (item && isChildSchema) {
+                        assertInstanceType(item, type.map, this_2, field);
+                        this_2.tryEncodeTypeId(bytes, type.map, item.constructor);
+                        item.encode(root, encodeAll, client, bytes);
+                    }
+                    else if (!isNil) {
+                        encodePrimitiveType(type.map, bytes, item, this_2, field);
+                    }
+                }
+                if (!encodeAll && !client) {
+                    $changes.discard();
+                    // TODO: track array/map indexes per client (for filtering)?
+                    // TODO: do not iterate though all MapSchema indexes here.
+                    this_2[_field]._updateIndexes(previousKeys);
+                }
+            }
+            else {
+                if (client && filter) {
+                    // skip if not allowed by custom filter
+                    if (!filter.call(this_2, client, value, root)) {
+                        return "continue";
+                    }
+                }
+                encode.number(bytes, fieldIndex);
+                encodePrimitiveType(type, bytes, value, this_2, field);
+            }
+        };
+        var this_2 = this;
+        for (var i = 0, l = changes.length; i < l; i++) {
+            _loop_2(i, l);
+        }
+        // flag end of Schema object structure
+        this._encodeEndOfStructure(this, root, bytes);
+        if (!encodeAll && !client) {
+            this.$changes.discard();
+        }
+        return bytes;
+    };
+    Schema.prototype.encodeFiltered = function (client, bytes) {
+        return this.encode(this, false, client, bytes);
+    };
+    Schema.prototype.encodeAll = function (bytes) {
+        return this.encode(this, true, undefined, bytes);
+    };
+    Schema.prototype.encodeAllFiltered = function (client, bytes) {
+        return this.encode(this, true, client, bytes);
+    };
+    Schema.prototype.clone = function () {
+        var cloned = new (this.constructor);
+        var schema = this._schema;
+        for (var field in schema) {
+            if (typeof (this[field]) === "object" &&
+                typeof (this[field].clone) === "function") {
+                // deep clone
+                cloned[field] = this[field].clone();
+            }
+            else {
+                // primitive values
+                cloned[field] = this[field];
+            }
+        }
+        return cloned;
+    };
+    Schema.prototype.triggerAll = function () {
+        var changes = [];
+        var schema = this._schema;
+        for (var field in schema) {
+            if (this[field] !== undefined) {
+                changes.push({
+                    field: field,
+                    value: this[field],
+                    previousValue: undefined
+                });
+            }
+        }
+        try {
+            this._triggerChanges(changes);
+        }
+        catch (e) {
+            Schema.onError(e);
+        }
+    };
+    Schema.prototype.toJSON = function () {
+        var schema = this._schema;
+        var deprecated = this._deprecated;
+        var obj = {};
+        for (var field in schema) {
+            if (!deprecated[field] && this[field] !== null && typeof (this[field]) !== "undefined") {
+                obj[field] = (typeof (this[field].toJSON) === "function")
+                    ? this[field].toJSON()
+                    : this["_" + field];
+            }
+        }
+        return obj;
+    };
+    Schema.prototype.discardAllChanges = function () {
+        var schema = this._schema;
+        var changes = Array.from(this.$changes.changes);
+        var fieldsByIndex = this._fieldsByIndex;
+        for (var index in changes) {
+            var field = fieldsByIndex[index];
+            var type = schema[field];
+            var value = this[field];
+            // skip unchagned fields
+            if (value === undefined) {
+                continue;
+            }
+            if (type._schema) {
+                value.discardAllChanges();
+            }
+            else if (Array.isArray(type)) {
+                for (var i = 0, l = value.length; i < l; i++) {
+                    var index_1 = value[i];
+                    var item = this["_" + field][index_1];
+                    if (typeof (type[0]) !== "string" && item) { // is array of Schema
+                        item.discardAllChanges();
+                    }
+                }
+                value.$changes.discard();
+            }
+            else if (type.map) {
+                var keys = value;
+                var mapKeys = Object.keys(this["_" + field]);
+                for (var i = 0; i < keys.length; i++) {
+                    var key = mapKeys[keys[i]] || keys[i];
+                    var item = this["_" + field][key];
+                    if (item instanceof Schema && item) {
+                        item.discardAllChanges();
+                    }
+                }
+                value.$changes.discard();
+            }
+        }
+        this.$changes.discard();
+    };
+    Schema.prototype._encodeEndOfStructure = function (instance, root, bytes) {
+        if (instance !== root) {
+            bytes.push(spec_1.END_OF_STRUCTURE);
+        }
+    };
+    Schema.prototype.tryEncodeTypeId = function (bytes, type, targetType) {
+        if (type._typeid !== targetType._typeid) {
+            encode.uint8(bytes, spec_1.TYPE_ID);
+            encode.uint8(bytes, targetType._typeid);
+        }
+    };
+    Schema.prototype.createTypeInstance = function (bytes, it, type) {
+        if (bytes[it.offset] === spec_1.TYPE_ID) {
+            it.offset++;
+            var anotherType = this.constructor._context.get(decode.uint8(bytes, it));
+            return new anotherType();
+        }
+        else {
+            return new type();
+        }
+    };
+    Schema.prototype._triggerChanges = function (changes) {
+        if (changes.length > 0) {
+            for (var i = 0; i < changes.length; i++) {
+                var change = changes[i];
+                var listener = this.$listeners[change.field];
+                if (listener) {
+                    try {
+                        listener.invoke(change.value, change.previousValue);
+                    }
+                    catch (e) {
+                        Schema.onError(e);
+                    }
+                }
+            }
+            if (this.onChange) {
+                try {
+                    this.onChange(changes);
+                }
+                catch (e) {
+                    Schema.onError(e);
+                }
+            }
+        }
+    };
+    return Schema;
+}());
+exports.Schema = Schema;
+//# sourceMappingURL=Schema.js.map
 
 /***/ }),
-/* 4 */
+/* 3 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1033,13 +1109,14 @@ function send(method, uri, opts) {
 		var req = new XMLHttpRequest;
 		var headers = opts.headers || {};
 
-		req.timeout = opts.timeout;
+		// IE compatible
+		if (opts.timeout) req.timeout = opts.timeout;
 		req.ontimeout = req.onerror = function (err) {
 			err.timeout = err.type == 'timeout';
 			rej(err);
 		}
 
-		req.open(method, uri);
+		req.open(method, uri.href || uri);
 
 		req.onload = function () {
 			arr = req.getAllResponseHeaders().trim().split(/[\r\n]+/);
@@ -1063,10 +1140,12 @@ function send(method, uri, opts) {
 			(req.status >= 400 ? rej : res)(req);
 		};
 
-		if ((str = opts.body) && /Array|Object/.test(str.constructor)) {
+		if ((str = opts.body) && typeof str == 'object') {
 			headers['content-type'] = 'application/json';
 			str = JSON.stringify(str);
 		}
+
+		req.withCredentials = !!opts.withCredentials;
 
 		for (k in headers) {
 			req.setRequestHeader(k, headers[k]);
@@ -1084,7 +1163,7 @@ var put = send.bind(send, 'PUT');
 
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1097,21 +1176,23 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var msgpack = __importStar(__webpack_require__(3));
-var strong_events_1 = __webpack_require__(17);
-var Connection_1 = __webpack_require__(18);
+var msgpack = __importStar(__webpack_require__(5));
+var strong_events_1 = __webpack_require__(21);
+var Connection_1 = __webpack_require__(22);
 var Serializer_1 = __webpack_require__(6);
 var Protocol_1 = __webpack_require__(7);
+var encode = __importStar(__webpack_require__(8));
+var decode = __importStar(__webpack_require__(9));
 var Room = /** @class */ (function () {
     function Room(name, rootSchema) {
         var _this = this;
         // Public signals
         this.onJoin = strong_events_1.createSignal();
         this.onStateChange = strong_events_1.createSignal();
-        this.onMessage = strong_events_1.createSignal();
         this.onError = strong_events_1.createSignal();
         this.onLeave = strong_events_1.createSignal();
         this.hasJoined = false;
+        this.onMessageHandlers = {};
         this.id = null;
         this.name = name;
         if (rootSchema) {
@@ -1123,7 +1204,7 @@ var Room = /** @class */ (function () {
             // TODO: remove default serializer. it should arrive only after JOIN_ROOM.
             this.serializer = new (Serializer_1.getSerializer("fossil-delta"));
         }
-        this.onError(function (message) { return console.error(message); });
+        this.onError(function (code, message) { return console.error("colyseus.js - onError => (" + code + ") " + message); });
         this.onLeave(function () { return _this.removeAllListeners(); });
     }
     Room.prototype.connect = function (endpoint) {
@@ -1134,14 +1215,14 @@ var Room = /** @class */ (function () {
         this.connection.onclose = function (e) {
             if (!_this.hasJoined) {
                 console.error("Room connection was closed unexpectedly (" + e.code + "): " + e.reason);
-                _this.onError.invoke(e.reason);
+                _this.onError.invoke(e.code, e.reason);
                 return;
             }
             _this.onLeave.invoke(e.code);
         };
         this.connection.onerror = function (e) {
             console.warn("Room, onError (" + e.code + "): " + e.reason);
-            _this.onError.invoke(e.reason);
+            _this.onError.invoke(e.code, e.reason);
         };
         this.connection.open();
     };
@@ -1159,8 +1240,29 @@ var Room = /** @class */ (function () {
             this.onLeave.invoke(4000); // "consented" code
         }
     };
-    Room.prototype.send = function (data) {
-        this.connection.send([Protocol_1.Protocol.ROOM_DATA, data]);
+    Room.prototype.onMessage = function (type, callback) {
+        this.onMessageHandlers[this.getMessageHandlerKey(type)] = callback;
+        return this;
+    };
+    Room.prototype.send = function (type, message) {
+        var initialBytes = [Protocol_1.Protocol.ROOM_DATA];
+        if (typeof (type) === "string") {
+            encode.string(initialBytes, type);
+        }
+        else {
+            encode.number(initialBytes, type);
+        }
+        var arr;
+        if (message !== undefined) {
+            var encoded = msgpack.encode(message);
+            arr = new Uint8Array(initialBytes.length + encoded.byteLength);
+            arr.set(new Uint8Array(initialBytes), 0);
+            arr.set(new Uint8Array(encoded), initialBytes.length);
+        }
+        else {
+            arr = new Uint8Array(initialBytes);
+        }
+        this.connection.send(arr.buffer);
     };
     Object.defineProperty(Room.prototype, "state", {
         get: function () {
@@ -1173,7 +1275,7 @@ var Room = /** @class */ (function () {
     // this method is useful only for FossilDeltaSerializer
     Room.prototype.listen = function (segments, callback, immediate) {
         if (this.serializerId === "schema") {
-            console.error("'" + this.serializerId + "' serializer doesn't support .listen() method.");
+            console.error("'" + this.serializerId + "' serializer doesn't support .listen() method here.");
             return;
         }
         else if (!this.serializerId) {
@@ -1192,64 +1294,66 @@ var Room = /** @class */ (function () {
         }
         this.onJoin.clear();
         this.onStateChange.clear();
-        this.onMessage.clear();
         this.onError.clear();
         this.onLeave.clear();
     };
     Room.prototype.onMessageCallback = function (event) {
-        if (!this.previousCode) {
-            var view = new DataView(event.data);
-            var code = view.getUint8(0);
-            if (code === Protocol_1.Protocol.JOIN_ROOM) {
-                var offset = 1;
-                this.serializerId = Protocol_1.utf8Read(view, offset);
-                offset += Protocol_1.utf8Length(this.serializerId);
-                // get serializer implementation
-                var serializer = Serializer_1.getSerializer(this.serializerId);
-                if (!serializer) {
-                    throw new Error("missing serializer: " + this.serializerId);
-                }
-                // TODO: remove this check
-                if (this.serializerId !== "fossil-delta" && !this.rootSchema) {
-                    this.serializer = new serializer();
-                }
-                if (view.buffer.byteLength > offset && this.serializer.handshake) {
-                    var bytes = Array.from(new Uint8Array(view.buffer.slice(offset)));
-                    this.serializer.handshake(bytes);
-                }
-                this.hasJoined = true;
-                this.onJoin.invoke();
+        var bytes = Array.from(new Uint8Array(event.data));
+        var code = bytes[0];
+        if (code === Protocol_1.Protocol.JOIN_ROOM) {
+            var offset = 1;
+            this.serializerId = Protocol_1.utf8Read(bytes, offset);
+            offset += Protocol_1.utf8Length(this.serializerId);
+            // get serializer implementation
+            var serializer = Serializer_1.getSerializer(this.serializerId);
+            if (!serializer) {
+                throw new Error("missing serializer: " + this.serializerId);
             }
-            else if (code === Protocol_1.Protocol.JOIN_ERROR) {
-                this.onError.invoke(Protocol_1.utf8Read(view, 1));
+            // TODO: remove this check
+            if (this.serializerId !== "fossil-delta" && !this.rootSchema) {
+                this.serializer = new serializer();
             }
-            else if (code === Protocol_1.Protocol.LEAVE_ROOM) {
-                this.leave();
+            if (bytes.length > offset && this.serializer.handshake) {
+                this.serializer.handshake(bytes, { offset: 1 });
             }
-            else if (code === Protocol_1.Protocol.ROOM_DATA_SCHEMA) {
-                var bytes = Array.from(new Uint8Array(event.data));
-                var context_1 = this.serializer.getState().constructor._context;
-                var type = context_1.get(bytes[1]);
-                var message = new type();
-                message.decode(bytes, { offset: 2 });
-                this.onMessage.invoke(message);
-            }
-            else {
-                this.previousCode = code;
-            }
+            this.hasJoined = true;
+            this.onJoin.invoke();
+            // acknowledge successfull JOIN_ROOM
+            this.connection.send([Protocol_1.Protocol.JOIN_ROOM]);
         }
-        else {
-            if (this.previousCode === Protocol_1.Protocol.ROOM_STATE) {
-                // TODO: improve here!
-                this.setState(Array.from(new Uint8Array(event.data)));
-            }
-            else if (this.previousCode === Protocol_1.Protocol.ROOM_STATE_PATCH) {
-                this.patch(Array.from(new Uint8Array(event.data)));
-            }
-            else if (this.previousCode === Protocol_1.Protocol.ROOM_DATA) {
-                this.onMessage.invoke(msgpack.decode(event.data));
-            }
-            this.previousCode = undefined;
+        else if (code === Protocol_1.Protocol.ERROR) {
+            var it_1 = { offset: 1 };
+            var code_1 = decode.number(bytes, it_1);
+            var message = decode.string(bytes, it_1);
+            this.onError.invoke(code_1, message);
+        }
+        else if (code === Protocol_1.Protocol.LEAVE_ROOM) {
+            this.leave();
+        }
+        else if (code === Protocol_1.Protocol.ROOM_DATA_SCHEMA) {
+            var context_1 = this.serializer.getState().constructor._context;
+            var type = context_1.get(bytes[1]);
+            var message = new type();
+            message.decode(bytes, { offset: 2 });
+            this.dispatchMessage(type, message);
+        }
+        else if (code === Protocol_1.Protocol.ROOM_STATE) {
+            bytes.shift(); // drop `code` byte
+            this.setState(bytes);
+        }
+        else if (code === Protocol_1.Protocol.ROOM_STATE_PATCH) {
+            bytes.shift(); // drop `code` byte
+            this.patch(bytes);
+        }
+        else if (code === Protocol_1.Protocol.ROOM_DATA) {
+            var it_2 = { offset: 1 };
+            var type = (decode.stringCheck(bytes, it_2))
+                ? decode.string(bytes, it_2)
+                : decode.number(bytes, it_2);
+            var message = (bytes.length > it_2.offset)
+                ? msgpack.decode(event.data, it_2.offset)
+                : undefined;
+            this.dispatchMessage(type, message);
         }
     };
     Room.prototype.setState = function (encodedState) {
@@ -1260,9 +1364,48 @@ var Room = /** @class */ (function () {
         this.serializer.patch(binaryPatch);
         this.onStateChange.invoke(this.serializer.getState());
     };
+    Room.prototype.dispatchMessage = function (type, message) {
+        var messageType = this.getMessageHandlerKey(type);
+        if (this.onMessageHandlers[messageType]) {
+            this.onMessageHandlers[messageType](message);
+        }
+        else if (this.onMessageHandlers['*']) {
+            this.onMessageHandlers['*'](type, message);
+        }
+        else {
+            console.warn("onMessage not registered for type '" + type + "'.");
+        }
+    };
+    Room.prototype.getMessageHandlerKey = function (type) {
+        switch (typeof (type)) {
+            // typeof Schema
+            case "function": return "$" + type._typeid;
+            // string
+            case "string": return type;
+            // number
+            case "number": return "i" + type;
+            default: throw new Error("invalid message type.");
+        }
+    };
     return Room;
 }());
 exports.Room = Room;
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var decode_1 = __importDefault(__webpack_require__(19));
+var encode_1 = __importDefault(__webpack_require__(20));
+exports.decode = decode_1.default;
+exports.encode = encode_1.default;
 
 
 /***/ }),
@@ -1294,39 +1437,50 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Protocol;
 (function (Protocol) {
     // Room-related (10~19)
+    Protocol[Protocol["HANDSHAKE"] = 9] = "HANDSHAKE";
     Protocol[Protocol["JOIN_ROOM"] = 10] = "JOIN_ROOM";
-    Protocol[Protocol["JOIN_ERROR"] = 11] = "JOIN_ERROR";
+    Protocol[Protocol["ERROR"] = 11] = "ERROR";
     Protocol[Protocol["LEAVE_ROOM"] = 12] = "LEAVE_ROOM";
     Protocol[Protocol["ROOM_DATA"] = 13] = "ROOM_DATA";
     Protocol[Protocol["ROOM_STATE"] = 14] = "ROOM_STATE";
     Protocol[Protocol["ROOM_STATE_PATCH"] = 15] = "ROOM_STATE_PATCH";
     Protocol[Protocol["ROOM_DATA_SCHEMA"] = 16] = "ROOM_DATA_SCHEMA";
 })(Protocol = exports.Protocol || (exports.Protocol = {}));
+var ErrorCode;
+(function (ErrorCode) {
+    ErrorCode[ErrorCode["MATCHMAKE_NO_HANDLER"] = 4210] = "MATCHMAKE_NO_HANDLER";
+    ErrorCode[ErrorCode["MATCHMAKE_INVALID_CRITERIA"] = 4211] = "MATCHMAKE_INVALID_CRITERIA";
+    ErrorCode[ErrorCode["MATCHMAKE_INVALID_ROOM_ID"] = 4212] = "MATCHMAKE_INVALID_ROOM_ID";
+    ErrorCode[ErrorCode["MATCHMAKE_UNHANDLED"] = 4213] = "MATCHMAKE_UNHANDLED";
+    ErrorCode[ErrorCode["MATCHMAKE_EXPIRED"] = 4214] = "MATCHMAKE_EXPIRED";
+    ErrorCode[ErrorCode["AUTH_FAILED"] = 4215] = "AUTH_FAILED";
+    ErrorCode[ErrorCode["APPLICATION_ERROR"] = 4216] = "APPLICATION_ERROR";
+})(ErrorCode = exports.ErrorCode || (exports.ErrorCode = {}));
 function utf8Read(view, offset) {
-    var length = view.getUint8(offset++);
+    var length = view[offset++];
     var string = '', chr = 0;
     for (var i = offset, end = offset + length; i < end; i++) {
-        var byte = view.getUint8(i);
+        var byte = view[i];
         if ((byte & 0x80) === 0x00) {
             string += String.fromCharCode(byte);
             continue;
         }
         if ((byte & 0xe0) === 0xc0) {
             string += String.fromCharCode(((byte & 0x1f) << 6) |
-                (view.getUint8(++i) & 0x3f));
+                (view[++i] & 0x3f));
             continue;
         }
         if ((byte & 0xf0) === 0xe0) {
             string += String.fromCharCode(((byte & 0x0f) << 12) |
-                ((view.getUint8(++i) & 0x3f) << 6) |
-                ((view.getUint8(++i) & 0x3f) << 0));
+                ((view[++i] & 0x3f) << 6) |
+                ((view[++i] & 0x3f) << 0));
             continue;
         }
         if ((byte & 0xf8) === 0xf0) {
             chr = ((byte & 0x07) << 18) |
-                ((view.getUint8(++i) & 0x3f) << 12) |
-                ((view.getUint8(++i) & 0x3f) << 6) |
-                ((view.getUint8(++i) & 0x3f) << 0);
+                ((view[++i] & 0x3f) << 12) |
+                ((view[++i] & 0x3f) << 6) |
+                ((view[++i] & 0x3f) << 0);
             if (chr >= 0x010000) { // surrogate pair
                 chr -= 0x010000;
                 string += String.fromCharCode((chr >>> 10) + 0xD800, (chr & 0x3FF) + 0xDC00);
@@ -1373,11 +1527,559 @@ exports.utf8Length = utf8Length;
 
 "use strict";
 
+/**
+ * Copyright (c) 2018 Endel Dreyer
+ * Copyright (c) 2014 Ion Drive Software Ltd.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * msgpack implementation highly based on notepack.io
+ * https://github.com/darrachequesne/notepack
+ */
+function utf8Length(str) {
+    var c = 0, length = 0;
+    for (var i = 0, l = str.length; i < l; i++) {
+        c = str.charCodeAt(i);
+        if (c < 0x80) {
+            length += 1;
+        }
+        else if (c < 0x800) {
+            length += 2;
+        }
+        else if (c < 0xd800 || c >= 0xe000) {
+            length += 3;
+        }
+        else {
+            i++;
+            length += 4;
+        }
+    }
+    return length;
+}
+function utf8Write(view, offset, str) {
+    var c = 0;
+    for (var i = 0, l = str.length; i < l; i++) {
+        c = str.charCodeAt(i);
+        if (c < 0x80) {
+            view[offset++] = c;
+        }
+        else if (c < 0x800) {
+            view[offset++] = 0xc0 | (c >> 6);
+            view[offset++] = 0x80 | (c & 0x3f);
+        }
+        else if (c < 0xd800 || c >= 0xe000) {
+            view[offset++] = 0xe0 | (c >> 12);
+            view[offset++] = 0x80 | (c >> 6 & 0x3f);
+            view[offset++] = 0x80 | (c & 0x3f);
+        }
+        else {
+            i++;
+            c = 0x10000 + (((c & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff));
+            view[offset++] = 0xf0 | (c >> 18);
+            view[offset++] = 0x80 | (c >> 12 & 0x3f);
+            view[offset++] = 0x80 | (c >> 6 & 0x3f);
+            view[offset++] = 0x80 | (c & 0x3f);
+        }
+    }
+}
+exports.utf8Write = utf8Write;
+function int8(bytes, value) {
+    bytes.push(value & 255);
+}
+exports.int8 = int8;
+;
+function uint8(bytes, value) {
+    bytes.push(value & 255);
+}
+exports.uint8 = uint8;
+;
+function int16(bytes, value) {
+    bytes.push(value & 255);
+    bytes.push((value >> 8) & 255);
+}
+exports.int16 = int16;
+;
+function uint16(bytes, value) {
+    bytes.push(value & 255);
+    bytes.push((value >> 8) & 255);
+}
+exports.uint16 = uint16;
+;
+function int32(bytes, value) {
+    bytes.push(value & 255);
+    bytes.push((value >> 8) & 255);
+    bytes.push((value >> 16) & 255);
+    bytes.push((value >> 24) & 255);
+}
+exports.int32 = int32;
+;
+function uint32(bytes, value) {
+    var b4 = value >> 24;
+    var b3 = value >> 16;
+    var b2 = value >> 8;
+    var b1 = value;
+    bytes.push(b1 & 255);
+    bytes.push(b2 & 255);
+    bytes.push(b3 & 255);
+    bytes.push(b4 & 255);
+}
+exports.uint32 = uint32;
+;
+function int64(bytes, value) {
+    var high = Math.floor(value / Math.pow(2, 32));
+    var low = value >>> 0;
+    uint32(bytes, low);
+    uint32(bytes, high);
+}
+exports.int64 = int64;
+;
+function uint64(bytes, value) {
+    var high = (value / Math.pow(2, 32)) >> 0;
+    var low = value >>> 0;
+    uint32(bytes, low);
+    uint32(bytes, high);
+}
+exports.uint64 = uint64;
+;
+function float32(bytes, value) {
+    writeFloat32(bytes, value);
+}
+exports.float32 = float32;
+function float64(bytes, value) {
+    writeFloat64(bytes, value);
+}
+exports.float64 = float64;
+// force little endian to facilitate decoding on multiple implementations
+var _isLittleEndian = true; // new Uint16Array(new Uint8Array([1, 0]).buffer)[0] === 1;
+var _int32 = new Int32Array(2);
+var _float32 = new Float32Array(_int32.buffer);
+var _float64 = new Float64Array(_int32.buffer);
+function writeFloat32(bytes, value) {
+    _float32[0] = value;
+    int32(bytes, _int32[0]);
+}
+exports.writeFloat32 = writeFloat32;
+;
+function writeFloat64(bytes, value) {
+    _float64[0] = value;
+    int32(bytes, _int32[_isLittleEndian ? 0 : 1]);
+    int32(bytes, _int32[_isLittleEndian ? 1 : 0]);
+}
+exports.writeFloat64 = writeFloat64;
+;
+function boolean(bytes, value) {
+    return uint8(bytes, value ? 1 : 0);
+}
+exports.boolean = boolean;
+;
+function string(bytes, value) {
+    // encode `null` strings as empty.
+    if (!value) {
+        value = "";
+    }
+    var length = utf8Length(value);
+    var size = 0;
+    // fixstr
+    if (length < 0x20) {
+        bytes.push(length | 0xa0);
+        size = 1;
+    }
+    // str 8
+    else if (length < 0x100) {
+        bytes.push(0xd9);
+        uint8(bytes, length);
+        size = 2;
+    }
+    // str 16
+    else if (length < 0x10000) {
+        bytes.push(0xda);
+        uint16(bytes, length);
+        size = 3;
+    }
+    // str 32
+    else if (length < 0x100000000) {
+        bytes.push(0xdb);
+        uint32(bytes, length);
+        size = 5;
+    }
+    else {
+        throw new Error('String too long');
+    }
+    utf8Write(bytes, bytes.length, value);
+    return size + length;
+}
+exports.string = string;
+function number(bytes, value) {
+    if (isNaN(value)) {
+        return number(bytes, 0);
+    }
+    else if (!isFinite(value)) {
+        return number(bytes, (value > 0) ? Number.MAX_SAFE_INTEGER : -Number.MAX_SAFE_INTEGER);
+    }
+    else if (value !== (value | 0)) {
+        bytes.push(0xcb);
+        writeFloat64(bytes, value);
+        return 9;
+        // TODO: encode float 32?
+        // is it possible to differentiate between float32 / float64 here?
+        // // float 32
+        // bytes.push(0xca);
+        // writeFloat32(bytes, value);
+        // return 5;
+    }
+    if (value >= 0) {
+        // positive fixnum
+        if (value < 0x80) {
+            uint8(bytes, value);
+            return 1;
+        }
+        // uint 8
+        if (value < 0x100) {
+            bytes.push(0xcc);
+            uint8(bytes, value);
+            return 2;
+        }
+        // uint 16
+        if (value < 0x10000) {
+            bytes.push(0xcd);
+            uint16(bytes, value);
+            return 3;
+        }
+        // uint 32
+        if (value < 0x100000000) {
+            bytes.push(0xce);
+            uint32(bytes, value);
+            return 5;
+        }
+        // uint 64
+        bytes.push(0xcf);
+        uint64(bytes, value);
+        return 9;
+    }
+    else {
+        // negative fixnum
+        if (value >= -0x20) {
+            bytes.push(value);
+            return 1;
+        }
+        // int 8
+        if (value >= -0x80) {
+            bytes.push(0xd0);
+            int8(bytes, value);
+            return 2;
+        }
+        // int 16
+        if (value >= -0x8000) {
+            bytes.push(0xd1);
+            int16(bytes, value);
+            return 3;
+        }
+        // int 32
+        if (value >= -0x80000000) {
+            bytes.push(0xd2);
+            int32(bytes, value);
+            return 5;
+        }
+        // int 64
+        bytes.push(0xd3);
+        int64(bytes, value);
+        return 9;
+    }
+}
+exports.number = number;
+//# sourceMappingURL=encode.js.map
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var spec_1 = __webpack_require__(10);
+function utf8Read(bytes, offset, length) {
+    var string = '', chr = 0;
+    for (var i = offset, end = offset + length; i < end; i++) {
+        var byte = bytes[i];
+        if ((byte & 0x80) === 0x00) {
+            string += String.fromCharCode(byte);
+            continue;
+        }
+        if ((byte & 0xe0) === 0xc0) {
+            string += String.fromCharCode(((byte & 0x1f) << 6) |
+                (bytes[++i] & 0x3f));
+            continue;
+        }
+        if ((byte & 0xf0) === 0xe0) {
+            string += String.fromCharCode(((byte & 0x0f) << 12) |
+                ((bytes[++i] & 0x3f) << 6) |
+                ((bytes[++i] & 0x3f) << 0));
+            continue;
+        }
+        if ((byte & 0xf8) === 0xf0) {
+            chr = ((byte & 0x07) << 18) |
+                ((bytes[++i] & 0x3f) << 12) |
+                ((bytes[++i] & 0x3f) << 6) |
+                ((bytes[++i] & 0x3f) << 0);
+            if (chr >= 0x010000) { // surrogate pair
+                chr -= 0x010000;
+                string += String.fromCharCode((chr >>> 10) + 0xD800, (chr & 0x3FF) + 0xDC00);
+            }
+            else {
+                string += String.fromCharCode(chr);
+            }
+            continue;
+        }
+        throw new Error('Invalid byte ' + byte.toString(16));
+    }
+    return string;
+}
+function int8(bytes, it) {
+    return uint8(bytes, it) << 24 >> 24;
+}
+exports.int8 = int8;
+;
+function uint8(bytes, it) {
+    return bytes[it.offset++];
+}
+exports.uint8 = uint8;
+;
+function int16(bytes, it) {
+    return uint16(bytes, it) << 16 >> 16;
+}
+exports.int16 = int16;
+;
+function uint16(bytes, it) {
+    return bytes[it.offset++] | bytes[it.offset++] << 8;
+}
+exports.uint16 = uint16;
+;
+function int32(bytes, it) {
+    return bytes[it.offset++] | bytes[it.offset++] << 8 | bytes[it.offset++] << 16 | bytes[it.offset++] << 24;
+}
+exports.int32 = int32;
+;
+function uint32(bytes, it) {
+    return int32(bytes, it) >>> 0;
+}
+exports.uint32 = uint32;
+;
+function float32(bytes, it) {
+    return readFloat32(bytes, it);
+}
+exports.float32 = float32;
+function float64(bytes, it) {
+    return readFloat64(bytes, it);
+}
+exports.float64 = float64;
+function int64(bytes, it) {
+    var low = uint32(bytes, it);
+    var high = int32(bytes, it) * Math.pow(2, 32);
+    return high + low;
+}
+exports.int64 = int64;
+;
+function uint64(bytes, it) {
+    var low = uint32(bytes, it);
+    var high = uint32(bytes, it) * Math.pow(2, 32);
+    return high + low;
+}
+exports.uint64 = uint64;
+;
+// force little endian to facilitate decoding on multiple implementations
+var _isLittleEndian = true; // new Uint16Array(new Uint8Array([1, 0]).buffer)[0] === 1;
+var _int32 = new Int32Array(2);
+var _float32 = new Float32Array(_int32.buffer);
+var _float64 = new Float64Array(_int32.buffer);
+function readFloat32(bytes, it) {
+    _int32[0] = int32(bytes, it);
+    return _float32[0];
+}
+exports.readFloat32 = readFloat32;
+;
+function readFloat64(bytes, it) {
+    _int32[_isLittleEndian ? 0 : 1] = int32(bytes, it);
+    _int32[_isLittleEndian ? 1 : 0] = int32(bytes, it);
+    return _float64[0];
+}
+exports.readFloat64 = readFloat64;
+;
+function boolean(bytes, it) {
+    return uint8(bytes, it) > 0;
+}
+exports.boolean = boolean;
+;
+function string(bytes, it) {
+    var prefix = bytes[it.offset++];
+    var length;
+    if (prefix < 0xc0) {
+        // fixstr
+        length = prefix & 0x1f;
+    }
+    else if (prefix === 0xd9) {
+        length = uint8(bytes, it);
+    }
+    else if (prefix === 0xda) {
+        length = uint16(bytes, it);
+    }
+    else if (prefix === 0xdb) {
+        length = uint32(bytes, it);
+    }
+    var value = utf8Read(bytes, it.offset, length);
+    it.offset += length;
+    return value;
+}
+exports.string = string;
+function stringCheck(bytes, it) {
+    var prefix = bytes[it.offset];
+    return (
+    // fixstr
+    (prefix < 0xc0 && prefix > 0xa0) ||
+        // str 8
+        prefix === 0xd9 ||
+        // str 16
+        prefix === 0xda ||
+        // str 32
+        prefix === 0xdb);
+}
+exports.stringCheck = stringCheck;
+function number(bytes, it) {
+    var prefix = bytes[it.offset++];
+    if (prefix < 0x80) {
+        // positive fixint
+        return prefix;
+    }
+    else if (prefix === 0xca) {
+        // float 32
+        return readFloat32(bytes, it);
+    }
+    else if (prefix === 0xcb) {
+        // float 64
+        return readFloat64(bytes, it);
+    }
+    else if (prefix === 0xcc) {
+        // uint 8
+        return uint8(bytes, it);
+    }
+    else if (prefix === 0xcd) {
+        // uint 16
+        return uint16(bytes, it);
+    }
+    else if (prefix === 0xce) {
+        // uint 32
+        return uint32(bytes, it);
+    }
+    else if (prefix === 0xcf) {
+        // uint 64
+        return uint64(bytes, it);
+    }
+    else if (prefix === 0xd0) {
+        // int 8
+        return int8(bytes, it);
+    }
+    else if (prefix === 0xd1) {
+        // int 16
+        return int16(bytes, it);
+    }
+    else if (prefix === 0xd2) {
+        // int 32
+        return int32(bytes, it);
+    }
+    else if (prefix === 0xd3) {
+        // int 64
+        return int64(bytes, it);
+    }
+    else if (prefix > 0xdf) {
+        // negative fixint
+        return (0xff - prefix + 1) * -1;
+    }
+}
+exports.number = number;
+;
+function numberCheck(bytes, it) {
+    var prefix = bytes[it.offset];
+    // positive fixint - 0x00 - 0x7f
+    // float 32        - 0xca
+    // float 64        - 0xcb
+    // uint 8          - 0xcc
+    // uint 16         - 0xcd
+    // uint 32         - 0xce
+    // uint 64         - 0xcf
+    // int 8           - 0xd0
+    // int 16          - 0xd1
+    // int 32          - 0xd2
+    // int 64          - 0xd3
+    return (prefix < 0x80 ||
+        (prefix >= 0xca && prefix <= 0xd3));
+}
+exports.numberCheck = numberCheck;
+function arrayCheck(bytes, it) {
+    return bytes[it.offset] < 0xa0;
+    // const prefix = bytes[it.offset] ;
+    // if (prefix < 0xa0) {
+    //   return prefix;
+    // // array
+    // } else if (prefix === 0xdc) {
+    //   it.offset += 2;
+    // } else if (0xdd) {
+    //   it.offset += 4;
+    // }
+    // return prefix;
+}
+exports.arrayCheck = arrayCheck;
+function nilCheck(bytes, it) {
+    return bytes[it.offset] === spec_1.NIL;
+}
+exports.nilCheck = nilCheck;
+function indexChangeCheck(bytes, it) {
+    return bytes[it.offset] === spec_1.INDEX_CHANGE;
+}
+exports.indexChangeCheck = indexChangeCheck;
+//# sourceMappingURL=decode.js.map
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.END_OF_STRUCTURE = 0xc1; // (msgpack spec: never used)
+exports.NIL = 0xc0;
+exports.INDEX_CHANGE = 0xd4;
+exports.TYPE_ID = 0xd5;
+//# sourceMappingURL=spec.js.map
+
+/***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -1416,8 +2118,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var http = __importStar(__webpack_require__(4));
-var Storage_1 = __webpack_require__(22);
+var http = __importStar(__webpack_require__(3));
+var Storage_1 = __webpack_require__(26);
 var TOKEN_STORAGE = "colyseus-auth-token";
 var Platform;
 (function (Platform) {
@@ -1635,28 +2337,46 @@ exports.Auth = Auth;
 
 
 /***/ }),
-/* 9 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.END_OF_STRUCTURE = 0xc1; // (msgpack spec: never used)
-exports.NIL = 0xc0;
-exports.INDEX_CHANGE = 0xd4;
-exports.TYPE_ID = 0xd5;
-//# sourceMappingURL=spec.js.map
+var Schema_1 = __webpack_require__(2);
+exports.Schema = Schema_1.Schema;
+var MapSchema_1 = __webpack_require__(1);
+exports.MapSchema = MapSchema_1.MapSchema;
+var ArraySchema_1 = __webpack_require__(0);
+exports.ArraySchema = ArraySchema_1.ArraySchema;
+// Utils
+var utils_1 = __webpack_require__(35);
+exports.dumpChanges = utils_1.dumpChanges;
+// Reflection
+var Reflection_1 = __webpack_require__(36);
+exports.Reflection = Reflection_1.Reflection;
+exports.ReflectionType = Reflection_1.ReflectionType;
+exports.ReflectionField = Reflection_1.ReflectionField;
+var annotations_1 = __webpack_require__(14);
+// Annotations
+exports.type = annotations_1.type;
+exports.deprecated = annotations_1.deprecated;
+exports.filter = annotations_1.filter;
+exports.defineTypes = annotations_1.defineTypes;
+// Types
+exports.Context = annotations_1.Context;
+//# sourceMappingURL=index.js.map
 
 /***/ }),
-/* 10 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var Schema_1 = __webpack_require__(0);
-var ArraySchema_1 = __webpack_require__(1);
-var MapSchema_1 = __webpack_require__(2);
+var Schema_1 = __webpack_require__(2);
+var ArraySchema_1 = __webpack_require__(0);
+var MapSchema_1 = __webpack_require__(1);
 var ChangeTree = /** @class */ (function () {
     function ChangeTree(indexes, parentField, parent) {
         if (indexes === void 0) { indexes = {}; }
@@ -1673,12 +2393,22 @@ var ChangeTree = /** @class */ (function () {
         if (isDelete === void 0) { isDelete = false; }
         var fieldIndex = this.fieldIndexes[fieldName];
         var field = (typeof (fieldIndex) === "number") ? fieldIndex : fieldName;
-        this.changed = true;
-        this.changes.add(field);
         if (!isDelete) {
+            this.changed = true;
+            this.changes.add(field);
             this.allChanges.add(field);
         }
         else if (isDelete) {
+            // if (this.changes.has(field))  {
+            //     /**
+            //      * un-flag a change if item has been added AND removed in the same patch.
+            //      * (https://github.com/colyseus/colyseus-unity3d/issues/103)
+            //      */
+            //     this.changes.delete(field);
+            // } else {
+            this.changed = true;
+            this.changes.add(field);
+            // }
             // discard all-changes for removed items.
             this.allChanges.delete(field);
         }
@@ -1707,9 +2437,9 @@ var ChangeTree = /** @class */ (function () {
     ChangeTree.prototype.isDeleted = function (key) {
         return this.deletedKeys[key] !== undefined;
     };
-    ChangeTree.prototype.mapIndexChange = function (instance, key) {
-        if (typeof instance === "object") {
-            this.indexChange.set(instance, key);
+    ChangeTree.prototype.mapIndexChange = function (instance, previousKey) {
+        if (typeof instance === "object" && !this.indexChange.has(instance)) {
+            this.indexChange.set(instance, previousKey);
         }
     };
     ChangeTree.prototype.getIndexChange = function (instance) {
@@ -1722,7 +2452,7 @@ var ChangeTree = /** @class */ (function () {
     };
     ChangeTree.prototype.changeAll = function (obj) {
         if (obj instanceof Schema_1.Schema) {
-            var schema = obj._schema;
+            var schema = obj['_schema'];
             for (var field in schema) {
                 // ensure ArraySchema and MapSchema already initialized
                 // on its structure have a valid parent.
@@ -1761,14 +2491,14 @@ exports.ChangeTree = ChangeTree;
 //# sourceMappingURL=ChangeTree.js.map
 
 /***/ }),
-/* 11 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var ChangeTree_1 = __webpack_require__(10);
-var Schema_1 = __webpack_require__(0);
+var ChangeTree_1 = __webpack_require__(13);
+var Schema_1 = __webpack_require__(2);
 var Context = /** @class */ (function () {
     function Context() {
         this.types = {};
@@ -1953,8 +2683,8 @@ function filter(cb) {
     return function (target, field) {
         var constructor = target.constructor;
         /*
-        * static filters
-        */
+         * static filters
+         */
         if (!constructor._filters) {
             constructor._filters = {};
         }
@@ -1994,28 +2724,29 @@ exports.defineTypes = defineTypes;
 //# sourceMappingURL=annotations.js.map
 
 /***/ }),
-/* 12 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-__webpack_require__(13);
-var Client_1 = __webpack_require__(14);
+__webpack_require__(16);
+var Client_1 = __webpack_require__(17);
 exports.Client = Client_1.Client;
 var Protocol_1 = __webpack_require__(7);
 exports.Protocol = Protocol_1.Protocol;
-var Room_1 = __webpack_require__(5);
+exports.ErrorCode = Protocol_1.ErrorCode;
+var Room_1 = __webpack_require__(4);
 exports.Room = Room_1.Room;
-var Auth_1 = __webpack_require__(8);
+var Auth_1 = __webpack_require__(11);
 exports.Auth = Auth_1.Auth;
 exports.Platform = Auth_1.Platform;
 /*
  * Serializers
  */
-var FossilDeltaSerializer_1 = __webpack_require__(24);
+var FossilDeltaSerializer_1 = __webpack_require__(28);
 exports.FossilDeltaSerializer = FossilDeltaSerializer_1.FossilDeltaSerializer;
-var SchemaSerializer_1 = __webpack_require__(29);
+var SchemaSerializer_1 = __webpack_require__(33);
 exports.SchemaSerializer = SchemaSerializer_1.SchemaSerializer;
 var Serializer_1 = __webpack_require__(6);
 exports.registerSerializer = Serializer_1.registerSerializer;
@@ -2024,7 +2755,7 @@ Serializer_1.registerSerializer('schema', SchemaSerializer_1.SchemaSerializer);
 
 
 /***/ }),
-/* 13 */
+/* 16 */
 /***/ (function(module, exports) {
 
 //
@@ -2041,7 +2772,7 @@ if (!ArrayBuffer.isView) {
 
 
 /***/ }),
-/* 14 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2060,10 +2791,11 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -2095,10 +2827,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var httpie_1 = __webpack_require__(4);
-var Room_1 = __webpack_require__(5);
-var Auth_1 = __webpack_require__(8);
-var Push_1 = __webpack_require__(23);
+var httpie_1 = __webpack_require__(3);
+var ServerError_1 = __webpack_require__(18);
+var Room_1 = __webpack_require__(4);
+var Auth_1 = __webpack_require__(11);
+var Push_1 = __webpack_require__(27);
 var MatchMakeError = /** @class */ (function (_super) {
     __extends(MatchMakeError, _super);
     function MatchMakeError(message, code) {
@@ -2194,7 +2927,7 @@ var Client = /** @class */ (function () {
                 room.sessionId = response.sessionId;
                 room.connect(this.buildEndpoint(response.room, { sessionId: room.sessionId }));
                 return [2 /*return*/, new Promise(function (resolve, reject) {
-                        var onError = function (message) { return reject(message); };
+                        var onError = function (code, message) { return reject(new ServerError_1.ServerError(code, message)); };
                         room.onError.once(onError);
                         room.onJoin.once(function () {
                             room.onError.remove(onError);
@@ -2253,607 +2986,661 @@ exports.Client = Client;
 
 
 /***/ }),
-/* 15 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+var ServerError = /** @class */ (function (_super) {
+    __extends(ServerError, _super);
+    function ServerError(code, message) {
+        var _this = _super.call(this, message) || this;
+        _this.name = "ServerError";
+        _this.code = code;
+        return _this;
+    }
+    return ServerError;
+}(Error));
+exports.ServerError = ServerError;
 
-function Decoder(buffer) {
-  this._offset = 0;
-  if (buffer instanceof ArrayBuffer) {
-    this._buffer = buffer;
-    this._view = new DataView(this._buffer);
-  } else if (ArrayBuffer.isView(buffer)) {
-    this._buffer = buffer.buffer;
-    this._view = new DataView(this._buffer, buffer.byteOffset, buffer.byteLength);
-  } else {
-    throw new Error('Invalid argument');
-  }
+
+/***/ }),
+/* 19 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+ * Copyright (c) 2014 Ion Drive Software Ltd.
+ * https://github.com/darrachequesne/notepack/
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Patch for Colyseus:
+ * -------------------
+ *
+ * added `offset` on Decoder constructor, for messages arriving with a code
+ * before actual msgpack data
+ */
+function Decoder(buffer, offset) {
+    this._offset = offset;
+    if (buffer instanceof ArrayBuffer) {
+        this._buffer = buffer;
+        this._view = new DataView(this._buffer);
+    }
+    else if (ArrayBuffer.isView(buffer)) {
+        this._buffer = buffer.buffer;
+        this._view = new DataView(this._buffer, buffer.byteOffset, buffer.byteLength);
+    }
+    else {
+        throw new Error('Invalid argument');
+    }
 }
-
 function utf8Read(view, offset, length) {
-  var string = '', chr = 0;
-  for (var i = offset, end = offset + length; i < end; i++) {
-    var byte = view.getUint8(i);
-    if ((byte & 0x80) === 0x00) {
-      string += String.fromCharCode(byte);
-      continue;
+    var string = '', chr = 0;
+    for (var i = offset, end = offset + length; i < end; i++) {
+        var byte = view.getUint8(i);
+        if ((byte & 0x80) === 0x00) {
+            string += String.fromCharCode(byte);
+            continue;
+        }
+        if ((byte & 0xe0) === 0xc0) {
+            string += String.fromCharCode(((byte & 0x1f) << 6) |
+                (view.getUint8(++i) & 0x3f));
+            continue;
+        }
+        if ((byte & 0xf0) === 0xe0) {
+            string += String.fromCharCode(((byte & 0x0f) << 12) |
+                ((view.getUint8(++i) & 0x3f) << 6) |
+                ((view.getUint8(++i) & 0x3f) << 0));
+            continue;
+        }
+        if ((byte & 0xf8) === 0xf0) {
+            chr = ((byte & 0x07) << 18) |
+                ((view.getUint8(++i) & 0x3f) << 12) |
+                ((view.getUint8(++i) & 0x3f) << 6) |
+                ((view.getUint8(++i) & 0x3f) << 0);
+            if (chr >= 0x010000) { // surrogate pair
+                chr -= 0x010000;
+                string += String.fromCharCode((chr >>> 10) + 0xD800, (chr & 0x3FF) + 0xDC00);
+            }
+            else {
+                string += String.fromCharCode(chr);
+            }
+            continue;
+        }
+        throw new Error('Invalid byte ' + byte.toString(16));
     }
-    if ((byte & 0xe0) === 0xc0) {
-      string += String.fromCharCode(
-        ((byte & 0x1f) << 6) |
-        (view.getUint8(++i) & 0x3f)
-      );
-      continue;
-    }
-    if ((byte & 0xf0) === 0xe0) {
-      string += String.fromCharCode(
-        ((byte & 0x0f) << 12) |
-        ((view.getUint8(++i) & 0x3f) << 6) |
-        ((view.getUint8(++i) & 0x3f) << 0)
-      );
-      continue;
-    }
-    if ((byte & 0xf8) === 0xf0) {
-      chr = ((byte & 0x07) << 18) |
-        ((view.getUint8(++i) & 0x3f) << 12) |
-        ((view.getUint8(++i) & 0x3f) << 6) |
-        ((view.getUint8(++i) & 0x3f) << 0);
-      if (chr >= 0x010000) { // surrogate pair
-        chr -= 0x010000;
-        string += String.fromCharCode((chr >>> 10) + 0xD800, (chr & 0x3FF) + 0xDC00);
-      } else {
-        string += String.fromCharCode(chr);
-      }
-      continue;
-    }
-    throw new Error('Invalid byte ' + byte.toString(16));
-  }
-  return string;
+    return string;
 }
-
 Decoder.prototype._array = function (length) {
-  var value = new Array(length);
-  for (var i = 0; i < length; i++) {
-    value[i] = this._parse();
-  }
-  return value;
+    var value = new Array(length);
+    for (var i = 0; i < length; i++) {
+        value[i] = this._parse();
+    }
+    return value;
 };
-
 Decoder.prototype._map = function (length) {
-  var key = '', value = {};
-  for (var i = 0; i < length; i++) {
-    key = this._parse();
-    value[key] = this._parse();
-  }
-  return value;
+    var key = '', value = {};
+    for (var i = 0; i < length; i++) {
+        key = this._parse();
+        value[key] = this._parse();
+    }
+    return value;
 };
-
 Decoder.prototype._str = function (length) {
-  var value = utf8Read(this._view, this._offset, length);
-  this._offset += length;
-  return value;
+    var value = utf8Read(this._view, this._offset, length);
+    this._offset += length;
+    return value;
 };
-
 Decoder.prototype._bin = function (length) {
-  var value = this._buffer.slice(this._offset, this._offset + length);
-  this._offset += length;
-  return value;
+    var value = this._buffer.slice(this._offset, this._offset + length);
+    this._offset += length;
+    return value;
 };
-
 Decoder.prototype._parse = function () {
-  var prefix = this._view.getUint8(this._offset++);
-  var value, length = 0, type = 0, hi = 0, lo = 0;
-
-  if (prefix < 0xc0) {
-    // positive fixint
-    if (prefix < 0x80) {
-      return prefix;
+    var prefix = this._view.getUint8(this._offset++);
+    var value, length = 0, type = 0, hi = 0, lo = 0;
+    if (prefix < 0xc0) {
+        // positive fixint
+        if (prefix < 0x80) {
+            return prefix;
+        }
+        // fixmap
+        if (prefix < 0x90) {
+            return this._map(prefix & 0x0f);
+        }
+        // fixarray
+        if (prefix < 0xa0) {
+            return this._array(prefix & 0x0f);
+        }
+        // fixstr
+        return this._str(prefix & 0x1f);
     }
-    // fixmap
-    if (prefix < 0x90) {
-      return this._map(prefix & 0x0f);
+    // negative fixint
+    if (prefix > 0xdf) {
+        return (0xff - prefix + 1) * -1;
     }
-    // fixarray
-    if (prefix < 0xa0) {
-      return this._array(prefix & 0x0f);
+    switch (prefix) {
+        // nil
+        case 0xc0:
+            return null;
+        // false
+        case 0xc2:
+            return false;
+        // true
+        case 0xc3:
+            return true;
+        // bin
+        case 0xc4:
+            length = this._view.getUint8(this._offset);
+            this._offset += 1;
+            return this._bin(length);
+        case 0xc5:
+            length = this._view.getUint16(this._offset);
+            this._offset += 2;
+            return this._bin(length);
+        case 0xc6:
+            length = this._view.getUint32(this._offset);
+            this._offset += 4;
+            return this._bin(length);
+        // ext
+        case 0xc7:
+            length = this._view.getUint8(this._offset);
+            type = this._view.getInt8(this._offset + 1);
+            this._offset += 2;
+            return [type, this._bin(length)];
+        case 0xc8:
+            length = this._view.getUint16(this._offset);
+            type = this._view.getInt8(this._offset + 2);
+            this._offset += 3;
+            return [type, this._bin(length)];
+        case 0xc9:
+            length = this._view.getUint32(this._offset);
+            type = this._view.getInt8(this._offset + 4);
+            this._offset += 5;
+            return [type, this._bin(length)];
+        // float
+        case 0xca:
+            value = this._view.getFloat32(this._offset);
+            this._offset += 4;
+            return value;
+        case 0xcb:
+            value = this._view.getFloat64(this._offset);
+            this._offset += 8;
+            return value;
+        // uint
+        case 0xcc:
+            value = this._view.getUint8(this._offset);
+            this._offset += 1;
+            return value;
+        case 0xcd:
+            value = this._view.getUint16(this._offset);
+            this._offset += 2;
+            return value;
+        case 0xce:
+            value = this._view.getUint32(this._offset);
+            this._offset += 4;
+            return value;
+        case 0xcf:
+            hi = this._view.getUint32(this._offset) * Math.pow(2, 32);
+            lo = this._view.getUint32(this._offset + 4);
+            this._offset += 8;
+            return hi + lo;
+        // int
+        case 0xd0:
+            value = this._view.getInt8(this._offset);
+            this._offset += 1;
+            return value;
+        case 0xd1:
+            value = this._view.getInt16(this._offset);
+            this._offset += 2;
+            return value;
+        case 0xd2:
+            value = this._view.getInt32(this._offset);
+            this._offset += 4;
+            return value;
+        case 0xd3:
+            hi = this._view.getInt32(this._offset) * Math.pow(2, 32);
+            lo = this._view.getUint32(this._offset + 4);
+            this._offset += 8;
+            return hi + lo;
+        // fixext
+        case 0xd4:
+            type = this._view.getInt8(this._offset);
+            this._offset += 1;
+            if (type === 0x00) {
+                this._offset += 1;
+                return void 0;
+            }
+            return [type, this._bin(1)];
+        case 0xd5:
+            type = this._view.getInt8(this._offset);
+            this._offset += 1;
+            return [type, this._bin(2)];
+        case 0xd6:
+            type = this._view.getInt8(this._offset);
+            this._offset += 1;
+            return [type, this._bin(4)];
+        case 0xd7:
+            type = this._view.getInt8(this._offset);
+            this._offset += 1;
+            if (type === 0x00) {
+                hi = this._view.getInt32(this._offset) * Math.pow(2, 32);
+                lo = this._view.getUint32(this._offset + 4);
+                this._offset += 8;
+                return new Date(hi + lo);
+            }
+            return [type, this._bin(8)];
+        case 0xd8:
+            type = this._view.getInt8(this._offset);
+            this._offset += 1;
+            return [type, this._bin(16)];
+        // str
+        case 0xd9:
+            length = this._view.getUint8(this._offset);
+            this._offset += 1;
+            return this._str(length);
+        case 0xda:
+            length = this._view.getUint16(this._offset);
+            this._offset += 2;
+            return this._str(length);
+        case 0xdb:
+            length = this._view.getUint32(this._offset);
+            this._offset += 4;
+            return this._str(length);
+        // array
+        case 0xdc:
+            length = this._view.getUint16(this._offset);
+            this._offset += 2;
+            return this._array(length);
+        case 0xdd:
+            length = this._view.getUint32(this._offset);
+            this._offset += 4;
+            return this._array(length);
+        // map
+        case 0xde:
+            length = this._view.getUint16(this._offset);
+            this._offset += 2;
+            return this._map(length);
+        case 0xdf:
+            length = this._view.getUint32(this._offset);
+            this._offset += 4;
+            return this._map(length);
     }
-    // fixstr
-    return this._str(prefix & 0x1f);
-  }
-
-  // negative fixint
-  if (prefix > 0xdf) {
-    return (0xff - prefix + 1) * -1;
-  }
-
-  switch (prefix) {
-    // nil
-    case 0xc0:
-      return null;
-    // false
-    case 0xc2:
-      return false;
-    // true
-    case 0xc3:
-      return true;
-
-    // bin
-    case 0xc4:
-      length = this._view.getUint8(this._offset);
-      this._offset += 1;
-      return this._bin(length);
-    case 0xc5:
-      length = this._view.getUint16(this._offset);
-      this._offset += 2;
-      return this._bin(length);
-    case 0xc6:
-      length = this._view.getUint32(this._offset);
-      this._offset += 4;
-      return this._bin(length);
-
-    // ext
-    case 0xc7:
-      length = this._view.getUint8(this._offset);
-      type = this._view.getInt8(this._offset + 1);
-      this._offset += 2;
-      return [type, this._bin(length)];
-    case 0xc8:
-      length = this._view.getUint16(this._offset);
-      type = this._view.getInt8(this._offset + 2);
-      this._offset += 3;
-      return [type, this._bin(length)];
-    case 0xc9:
-      length = this._view.getUint32(this._offset);
-      type = this._view.getInt8(this._offset + 4);
-      this._offset += 5;
-      return [type, this._bin(length)];
-
-    // float
-    case 0xca:
-      value = this._view.getFloat32(this._offset);
-      this._offset += 4;
-      return value;
-    case 0xcb:
-      value = this._view.getFloat64(this._offset);
-      this._offset += 8;
-      return value;
-
-    // uint
-    case 0xcc:
-      value = this._view.getUint8(this._offset);
-      this._offset += 1;
-      return value;
-    case 0xcd:
-      value = this._view.getUint16(this._offset);
-      this._offset += 2;
-      return value;
-    case 0xce:
-      value = this._view.getUint32(this._offset);
-      this._offset += 4;
-      return value;
-    case 0xcf:
-      hi = this._view.getUint32(this._offset) * Math.pow(2, 32);
-      lo = this._view.getUint32(this._offset + 4);
-      this._offset += 8;
-      return hi + lo;
-
-    // int
-    case 0xd0:
-      value = this._view.getInt8(this._offset);
-      this._offset += 1;
-      return value;
-    case 0xd1:
-      value = this._view.getInt16(this._offset);
-      this._offset += 2;
-      return value;
-    case 0xd2:
-      value = this._view.getInt32(this._offset);
-      this._offset += 4;
-      return value;
-    case 0xd3:
-      hi = this._view.getInt32(this._offset) * Math.pow(2, 32);
-      lo = this._view.getUint32(this._offset + 4);
-      this._offset += 8;
-      return hi + lo;
-
-    // fixext
-    case 0xd4:
-      type = this._view.getInt8(this._offset);
-      this._offset += 1;
-      if (type === 0x00) {
-        this._offset += 1;
-        return void 0;
-      }
-      return [type, this._bin(1)];
-    case 0xd5:
-      type = this._view.getInt8(this._offset);
-      this._offset += 1;
-      return [type, this._bin(2)];
-    case 0xd6:
-      type = this._view.getInt8(this._offset);
-      this._offset += 1;
-      return [type, this._bin(4)];
-    case 0xd7:
-      type = this._view.getInt8(this._offset);
-      this._offset += 1;
-      if (type === 0x00) {
-        hi = this._view.getInt32(this._offset) * Math.pow(2, 32);
-        lo = this._view.getUint32(this._offset + 4);
-        this._offset += 8;
-        return new Date(hi + lo);
-      }
-      return [type, this._bin(8)];
-    case 0xd8:
-      type = this._view.getInt8(this._offset);
-      this._offset += 1;
-      return [type, this._bin(16)];
-
-    // str
-    case 0xd9:
-      length = this._view.getUint8(this._offset);
-      this._offset += 1;
-      return this._str(length);
-    case 0xda:
-      length = this._view.getUint16(this._offset);
-      this._offset += 2;
-      return this._str(length);
-    case 0xdb:
-      length = this._view.getUint32(this._offset);
-      this._offset += 4;
-      return this._str(length);
-
-    // array
-    case 0xdc:
-      length = this._view.getUint16(this._offset);
-      this._offset += 2;
-      return this._array(length);
-    case 0xdd:
-      length = this._view.getUint32(this._offset);
-      this._offset += 4;
-      return this._array(length);
-
-    // map
-    case 0xde:
-      length = this._view.getUint16(this._offset);
-      this._offset += 2;
-      return this._map(length);
-    case 0xdf:
-      length = this._view.getUint32(this._offset);
-      this._offset += 4;
-      return this._map(length);
-  }
-
-  throw new Error('Could not parse');
+    throw new Error('Could not parse');
 };
-
-function decode(buffer) {
-  var decoder = new Decoder(buffer);
-  var value = decoder._parse();
-  if (decoder._offset !== buffer.byteLength) {
-    throw new Error((buffer.byteLength - decoder._offset) + ' trailing bytes');
-  }
-  return value;
+function decode(buffer, offset) {
+    if (offset === void 0) { offset = 0; }
+    var decoder = new Decoder(buffer, offset);
+    var value = decoder._parse();
+    if (decoder._offset !== buffer.byteLength) {
+        throw new Error((buffer.byteLength - decoder._offset) + ' trailing bytes');
+    }
+    return value;
 }
-
-module.exports = decode;
+exports.default = decode;
 
 
 /***/ }),
-/* 16 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
-
+/**
+ * Copyright (c) 2014 Ion Drive Software Ltd.
+ * https://github.com/darrachequesne/notepack/
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
 function utf8Write(view, offset, str) {
-  var c = 0;
-  for (var i = 0, l = str.length; i < l; i++) {
-    c = str.charCodeAt(i);
-    if (c < 0x80) {
-      view.setUint8(offset++, c);
+    var c = 0;
+    for (var i = 0, l = str.length; i < l; i++) {
+        c = str.charCodeAt(i);
+        if (c < 0x80) {
+            view.setUint8(offset++, c);
+        }
+        else if (c < 0x800) {
+            view.setUint8(offset++, 0xc0 | (c >> 6));
+            view.setUint8(offset++, 0x80 | (c & 0x3f));
+        }
+        else if (c < 0xd800 || c >= 0xe000) {
+            view.setUint8(offset++, 0xe0 | (c >> 12));
+            view.setUint8(offset++, 0x80 | (c >> 6) & 0x3f);
+            view.setUint8(offset++, 0x80 | (c & 0x3f));
+        }
+        else {
+            i++;
+            c = 0x10000 + (((c & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff));
+            view.setUint8(offset++, 0xf0 | (c >> 18));
+            view.setUint8(offset++, 0x80 | (c >> 12) & 0x3f);
+            view.setUint8(offset++, 0x80 | (c >> 6) & 0x3f);
+            view.setUint8(offset++, 0x80 | (c & 0x3f));
+        }
     }
-    else if (c < 0x800) {
-      view.setUint8(offset++, 0xc0 | (c >> 6));
-      view.setUint8(offset++, 0x80 | (c & 0x3f));
-    }
-    else if (c < 0xd800 || c >= 0xe000) {
-      view.setUint8(offset++, 0xe0 | (c >> 12));
-      view.setUint8(offset++, 0x80 | (c >> 6) & 0x3f);
-      view.setUint8(offset++, 0x80 | (c & 0x3f));
-    }
-    else {
-      i++;
-      c = 0x10000 + (((c & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff));
-      view.setUint8(offset++, 0xf0 | (c >> 18));
-      view.setUint8(offset++, 0x80 | (c >> 12) & 0x3f);
-      view.setUint8(offset++, 0x80 | (c >> 6) & 0x3f);
-      view.setUint8(offset++, 0x80 | (c & 0x3f));
-    }
-  }
 }
-
 function utf8Length(str) {
-  var c = 0, length = 0;
-  for (var i = 0, l = str.length; i < l; i++) {
-    c = str.charCodeAt(i);
-    if (c < 0x80) {
-      length += 1;
+    var c = 0, length = 0;
+    for (var i = 0, l = str.length; i < l; i++) {
+        c = str.charCodeAt(i);
+        if (c < 0x80) {
+            length += 1;
+        }
+        else if (c < 0x800) {
+            length += 2;
+        }
+        else if (c < 0xd800 || c >= 0xe000) {
+            length += 3;
+        }
+        else {
+            i++;
+            length += 4;
+        }
     }
-    else if (c < 0x800) {
-      length += 2;
-    }
-    else if (c < 0xd800 || c >= 0xe000) {
-      length += 3;
-    }
-    else {
-      i++;
-      length += 4;
-    }
-  }
-  return length;
+    return length;
 }
-
 function _encode(bytes, defers, value) {
-  var type = typeof value, i = 0, l = 0, hi = 0, lo = 0, length = 0, size = 0;
-
-  if (type === 'string') {
-    length = utf8Length(value);
-
-    // fixstr
-    if (length < 0x20) {
-      bytes.push(length | 0xa0);
-      size = 1;
+    var type = typeof value, i = 0, l = 0, hi = 0, lo = 0, length = 0, size = 0;
+    if (type === 'string') {
+        length = utf8Length(value);
+        // fixstr
+        if (length < 0x20) {
+            bytes.push(length | 0xa0);
+            size = 1;
+        }
+        // str 8
+        else if (length < 0x100) {
+            bytes.push(0xd9, length);
+            size = 2;
+        }
+        // str 16
+        else if (length < 0x10000) {
+            bytes.push(0xda, length >> 8, length);
+            size = 3;
+        }
+        // str 32
+        else if (length < 0x100000000) {
+            bytes.push(0xdb, length >> 24, length >> 16, length >> 8, length);
+            size = 5;
+        }
+        else {
+            throw new Error('String too long');
+        }
+        defers.push({ _str: value, _length: length, _offset: bytes.length });
+        return size + length;
     }
-    // str 8
-    else if (length < 0x100) {
-      bytes.push(0xd9, length);
-      size = 2;
+    if (type === 'number') {
+        // TODO: encode to float 32?
+        // float 64
+        if (Math.floor(value) !== value || !isFinite(value)) {
+            bytes.push(0xcb);
+            defers.push({ _float: value, _length: 8, _offset: bytes.length });
+            return 9;
+        }
+        if (value >= 0) {
+            // positive fixnum
+            if (value < 0x80) {
+                bytes.push(value);
+                return 1;
+            }
+            // uint 8
+            if (value < 0x100) {
+                bytes.push(0xcc, value);
+                return 2;
+            }
+            // uint 16
+            if (value < 0x10000) {
+                bytes.push(0xcd, value >> 8, value);
+                return 3;
+            }
+            // uint 32
+            if (value < 0x100000000) {
+                bytes.push(0xce, value >> 24, value >> 16, value >> 8, value);
+                return 5;
+            }
+            // uint 64
+            hi = (value / Math.pow(2, 32)) >> 0;
+            lo = value >>> 0;
+            bytes.push(0xcf, hi >> 24, hi >> 16, hi >> 8, hi, lo >> 24, lo >> 16, lo >> 8, lo);
+            return 9;
+        }
+        else {
+            // negative fixnum
+            if (value >= -0x20) {
+                bytes.push(value);
+                return 1;
+            }
+            // int 8
+            if (value >= -0x80) {
+                bytes.push(0xd0, value);
+                return 2;
+            }
+            // int 16
+            if (value >= -0x8000) {
+                bytes.push(0xd1, value >> 8, value);
+                return 3;
+            }
+            // int 32
+            if (value >= -0x80000000) {
+                bytes.push(0xd2, value >> 24, value >> 16, value >> 8, value);
+                return 5;
+            }
+            // int 64
+            hi = Math.floor(value / Math.pow(2, 32));
+            lo = value >>> 0;
+            bytes.push(0xd3, hi >> 24, hi >> 16, hi >> 8, hi, lo >> 24, lo >> 16, lo >> 8, lo);
+            return 9;
+        }
     }
-    // str 16
-    else if (length < 0x10000) {
-      bytes.push(0xda, length >> 8, length);
-      size = 3;
+    if (type === 'object') {
+        // nil
+        if (value === null) {
+            bytes.push(0xc0);
+            return 1;
+        }
+        if (Array.isArray(value)) {
+            length = value.length;
+            // fixarray
+            if (length < 0x10) {
+                bytes.push(length | 0x90);
+                size = 1;
+            }
+            // array 16
+            else if (length < 0x10000) {
+                bytes.push(0xdc, length >> 8, length);
+                size = 3;
+            }
+            // array 32
+            else if (length < 0x100000000) {
+                bytes.push(0xdd, length >> 24, length >> 16, length >> 8, length);
+                size = 5;
+            }
+            else {
+                throw new Error('Array too large');
+            }
+            for (i = 0; i < length; i++) {
+                size += _encode(bytes, defers, value[i]);
+            }
+            return size;
+        }
+        // fixext 8 / Date
+        if (value instanceof Date) {
+            var time = value.getTime();
+            hi = Math.floor(time / Math.pow(2, 32));
+            lo = time >>> 0;
+            bytes.push(0xd7, 0, hi >> 24, hi >> 16, hi >> 8, hi, lo >> 24, lo >> 16, lo >> 8, lo);
+            return 10;
+        }
+        if (value instanceof ArrayBuffer) {
+            length = value.byteLength;
+            // bin 8
+            if (length < 0x100) {
+                bytes.push(0xc4, length);
+                size = 2;
+            }
+            else 
+            // bin 16
+            if (length < 0x10000) {
+                bytes.push(0xc5, length >> 8, length);
+                size = 3;
+            }
+            else 
+            // bin 32
+            if (length < 0x100000000) {
+                bytes.push(0xc6, length >> 24, length >> 16, length >> 8, length);
+                size = 5;
+            }
+            else {
+                throw new Error('Buffer too large');
+            }
+            defers.push({ _bin: value, _length: length, _offset: bytes.length });
+            return size + length;
+        }
+        if (typeof value.toJSON === 'function') {
+            return _encode(bytes, defers, value.toJSON());
+        }
+        var keys = [], key = '';
+        var allKeys = Object.keys(value);
+        for (i = 0, l = allKeys.length; i < l; i++) {
+            key = allKeys[i];
+            if (typeof value[key] !== 'function') {
+                keys.push(key);
+            }
+        }
+        length = keys.length;
+        // fixmap
+        if (length < 0x10) {
+            bytes.push(length | 0x80);
+            size = 1;
+        }
+        // map 16
+        else if (length < 0x10000) {
+            bytes.push(0xde, length >> 8, length);
+            size = 3;
+        }
+        // map 32
+        else if (length < 0x100000000) {
+            bytes.push(0xdf, length >> 24, length >> 16, length >> 8, length);
+            size = 5;
+        }
+        else {
+            throw new Error('Object too large');
+        }
+        for (i = 0; i < length; i++) {
+            key = keys[i];
+            size += _encode(bytes, defers, key);
+            size += _encode(bytes, defers, value[key]);
+        }
+        return size;
     }
-    // str 32
-    else if (length < 0x100000000) {
-      bytes.push(0xdb, length >> 24, length >> 16, length >> 8, length);
-      size = 5;
-    } else {
-      throw new Error('String too long');
-    }
-    defers.push({ _str: value, _length: length, _offset: bytes.length });
-    return size + length;
-  }
-  if (type === 'number') {
-    // TODO: encode to float 32?
-
-    // float 64
-    if (Math.floor(value) !== value || !isFinite(value)) {
-      bytes.push(0xcb);
-      defers.push({ _float: value, _length: 8, _offset: bytes.length });
-      return 9;
-    }
-
-    if (value >= 0) {
-      // positive fixnum
-      if (value < 0x80) {
-        bytes.push(value);
+    // false/true
+    if (type === 'boolean') {
+        bytes.push(value ? 0xc3 : 0xc2);
         return 1;
-      }
-      // uint 8
-      if (value < 0x100) {
-        bytes.push(0xcc, value);
-        return 2;
-      }
-      // uint 16
-      if (value < 0x10000) {
-        bytes.push(0xcd, value >> 8, value);
+    }
+    // fixext 1 / undefined
+    if (type === 'undefined') {
+        bytes.push(0xd4, 0, 0);
         return 3;
-      }
-      // uint 32
-      if (value < 0x100000000) {
-        bytes.push(0xce, value >> 24, value >> 16, value >> 8, value);
-        return 5;
-      }
-      // uint 64
-      hi = (value / Math.pow(2, 32)) >> 0;
-      lo = value >>> 0;
-      bytes.push(0xcf, hi >> 24, hi >> 16, hi >> 8, hi, lo >> 24, lo >> 16, lo >> 8, lo);
-      return 9;
-    } else {
-      // negative fixnum
-      if (value >= -0x20) {
-        bytes.push(value);
-        return 1;
-      }
-      // int 8
-      if (value >= -0x80) {
-        bytes.push(0xd0, value);
-        return 2;
-      }
-      // int 16
-      if (value >= -0x8000) {
-        bytes.push(0xd1, value >> 8, value);
-        return 3;
-      }
-      // int 32
-      if (value >= -0x80000000) {
-        bytes.push(0xd2, value >> 24, value >> 16, value >> 8, value);
-        return 5;
-      }
-      // int 64
-      hi = Math.floor(value / Math.pow(2, 32));
-      lo = value >>> 0;
-      bytes.push(0xd3, hi >> 24, hi >> 16, hi >> 8, hi, lo >> 24, lo >> 16, lo >> 8, lo);
-      return 9;
     }
-  }
-  if (type === 'object') {
-    // nil
-    if (value === null) {
-      bytes.push(0xc0);
-      return 1;
-    }
-
-    if (Array.isArray(value)) {
-      length = value.length;
-
-      // fixarray
-      if (length < 0x10) {
-        bytes.push(length | 0x90);
-        size = 1;
-      }
-      // array 16
-      else if (length < 0x10000) {
-        bytes.push(0xdc, length >> 8, length);
-        size = 3;
-      }
-      // array 32
-      else if (length < 0x100000000) {
-        bytes.push(0xdd, length >> 24, length >> 16, length >> 8, length);
-        size = 5;
-      } else {
-        throw new Error('Array too large');
-      }
-      for (i = 0; i < length; i++) {
-        size += _encode(bytes, defers, value[i]);
-      }
-      return size;
-    }
-
-    // fixext 8 / Date
-    if (value instanceof Date) {
-      var time = value.getTime();
-      hi = Math.floor(time / Math.pow(2, 32));
-      lo = time >>> 0;
-      bytes.push(0xd7, 0, hi >> 24, hi >> 16, hi >> 8, hi, lo >> 24, lo >> 16, lo >> 8, lo);
-      return 10;
-    }
-
-    if (value instanceof ArrayBuffer) {
-      length = value.byteLength;
-
-      // bin 8
-      if (length < 0x100) {
-        bytes.push(0xc4, length);
-        size = 2;
-      } else
-      // bin 16
-      if (length < 0x10000) {
-        bytes.push(0xc5, length >> 8, length);
-        size = 3;
-      } else
-      // bin 32
-      if (length < 0x100000000) {
-        bytes.push(0xc6, length >> 24, length >> 16, length >> 8, length);
-        size = 5;
-      } else {
-        throw new Error('Buffer too large');
-      }
-      defers.push({ _bin: value, _length: length, _offset: bytes.length });
-      return size + length;
-    }
-
-    if (typeof value.toJSON === 'function') {
-      return _encode(bytes, defers, value.toJSON());
-    }
-
-    var keys = [], key = '';
-
-    var allKeys = Object.keys(value);
-    for (i = 0, l = allKeys.length; i < l; i++) {
-      key = allKeys[i];
-      if (typeof value[key] !== 'function') {
-        keys.push(key);
-      }
-    }
-    length = keys.length;
-
-    // fixmap
-    if (length < 0x10) {
-      bytes.push(length | 0x80);
-      size = 1;
-    }
-    // map 16
-    else if (length < 0x10000) {
-      bytes.push(0xde, length >> 8, length);
-      size = 3;
-    }
-    // map 32
-    else if (length < 0x100000000) {
-      bytes.push(0xdf, length >> 24, length >> 16, length >> 8, length);
-      size = 5;
-    } else {
-      throw new Error('Object too large');
-    }
-
-    for (i = 0; i < length; i++) {
-      key = keys[i];
-      size += _encode(bytes, defers, key);
-      size += _encode(bytes, defers, value[key]);
-    }
-    return size;
-  }
-  // false/true
-  if (type === 'boolean') {
-    bytes.push(value ? 0xc3 : 0xc2);
-    return 1;
-  }
-  // fixext 1 / undefined
-  if (type === 'undefined') {
-    bytes.push(0xd4, 0, 0);
-    return 3;
-  }
-  throw new Error('Could not encode');
+    throw new Error('Could not encode');
 }
-
 function encode(value) {
-  var bytes = [];
-  var defers = [];
-  var size = _encode(bytes, defers, value);
-  var buf = new ArrayBuffer(size);
-  var view = new DataView(buf);
-
-  var deferIndex = 0;
-  var deferWritten = 0;
-  var nextOffset = -1;
-  if (defers.length > 0) {
-    nextOffset = defers[0]._offset;
-  }
-
-  var defer, deferLength = 0, offset = 0;
-  for (var i = 0, l = bytes.length; i < l; i++) {
-    view.setUint8(deferWritten + i, bytes[i]);
-    if (i + 1 !== nextOffset) { continue; }
-    defer = defers[deferIndex];
-    deferLength = defer._length;
-    offset = deferWritten + nextOffset;
-    if (defer._bin) {
-      var bin = new Uint8Array(defer._bin);
-      for (var j = 0; j < deferLength; j++) {
-        view.setUint8(offset + j, bin[j]);
-      }
-    } else if (defer._str) {
-      utf8Write(view, offset, defer._str);
-    } else if (defer._float !== undefined) {
-      view.setFloat64(offset, defer._float);
+    var bytes = [];
+    var defers = [];
+    var size = _encode(bytes, defers, value);
+    var buf = new ArrayBuffer(size);
+    var view = new DataView(buf);
+    var deferIndex = 0;
+    var deferWritten = 0;
+    var nextOffset = -1;
+    if (defers.length > 0) {
+        nextOffset = defers[0]._offset;
     }
-    deferIndex++;
-    deferWritten += deferLength;
-    if (defers[deferIndex]) {
-      nextOffset = defers[deferIndex]._offset;
+    var defer, deferLength = 0, offset = 0;
+    for (var i = 0, l = bytes.length; i < l; i++) {
+        view.setUint8(deferWritten + i, bytes[i]);
+        if (i + 1 !== nextOffset) {
+            continue;
+        }
+        defer = defers[deferIndex];
+        deferLength = defer._length;
+        offset = deferWritten + nextOffset;
+        if (defer._bin) {
+            var bin = new Uint8Array(defer._bin);
+            for (var j = 0; j < deferLength; j++) {
+                view.setUint8(offset + j, bin[j]);
+            }
+        }
+        else if (defer._str) {
+            utf8Write(view, offset, defer._str);
+        }
+        else if (defer._float !== undefined) {
+            view.setFloat64(offset, defer._float);
+        }
+        deferIndex++;
+        deferWritten += deferLength;
+        if (defers[deferIndex]) {
+            nextOffset = defers[deferIndex]._offset;
+        }
     }
-  }
-  return buf;
+    return buf;
 }
-
-module.exports = encode;
+exports.default = encode;
 
 
 /***/ }),
-/* 17 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2932,7 +3719,7 @@ exports.createSignal = createSignal;
 
 
 /***/ }),
-/* 18 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2953,16 +3740,8 @@ var __extends = (this && this.__extends) || (function () {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-var websocket_1 = __importDefault(__webpack_require__(19));
-var msgpack = __importStar(__webpack_require__(3));
+var websocket_1 = __importDefault(__webpack_require__(23));
 var Connection = /** @class */ (function (_super) {
     __extends(Connection, _super);
     function Connection(url, autoConnect) {
@@ -2985,7 +3764,12 @@ var Connection = /** @class */ (function (_super) {
     };
     Connection.prototype.send = function (data) {
         if (this.ws.readyState === websocket_1.default.OPEN) {
-            return _super.prototype.send.call(this, msgpack.encode(data));
+            if (data instanceof ArrayBuffer) {
+                return _super.prototype.send.call(this, data);
+            }
+            else if (Array.isArray(data)) {
+                return _super.prototype.send.call(this, (new Uint8Array(data)).buffer);
+            }
         }
         else {
             // WebSocket not connected.
@@ -2999,11 +3783,11 @@ exports.Connection = Connection;
 
 
 /***/ }),
-/* 19 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-Object.defineProperty(exports,"__esModule",{value:true});var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||false;descriptor.configurable=true;if("value"in descriptor)descriptor.writable=true;Object.defineProperty(target,descriptor.key,descriptor);}}return function(Constructor,protoProps,staticProps){if(protoProps)defineProperties(Constructor.prototype,protoProps);if(staticProps)defineProperties(Constructor,staticProps);return Constructor;};}();function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor)){throw new TypeError("Cannot call a class as a function");}}var createBackoff=__webpack_require__(20).createBackoff;var WebSocketImpl=typeof WebSocket!=="undefined"?WebSocket:__webpack_require__(21);var WebSocketClient=function(){/**
+Object.defineProperty(exports,"__esModule",{value:true});var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||false;descriptor.configurable=true;if("value"in descriptor)descriptor.writable=true;Object.defineProperty(target,descriptor.key,descriptor);}}return function(Constructor,protoProps,staticProps){if(protoProps)defineProperties(Constructor.prototype,protoProps);if(staticProps)defineProperties(Constructor,staticProps);return Constructor;};}();function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor)){throw new TypeError("Cannot call a class as a function");}}var createBackoff=__webpack_require__(24).createBackoff;var WebSocketImpl=typeof WebSocket!=="undefined"?WebSocket:__webpack_require__(25);var WebSocketClient=function(){/**
    * @param url DOMString The URL to which to connect; this should be the URL to which the WebSocket server will respond.
    * @param protocols DOMString|DOMString[] Either a single protocol string or an array of protocol strings. These strings are used to indicate sub-protocols, so that a single server can implement multiple WebSocket sub-protocols (for example, you might want one server to be able to handle different types of interactions depending on the specified protocol). If you don't specify a protocol string, an empty string is assumed.
    */function WebSocketClient(url,protocols){var options=arguments.length>2&&arguments[2]!==undefined?arguments[2]:{};_classCallCheck(this,WebSocketClient);this.url=url;this.protocols=protocols;this.reconnectEnabled=true;this.listeners={};this.backoff=createBackoff(options.backoff||'exponential',options);this.backoff.onReady=this.onBackoffReady.bind(this);if(typeof options.connect==="undefined"||options.connect){this.open();}}_createClass(WebSocketClient,[{key:'open',value:function open(){var reconnect=arguments.length>0&&arguments[0]!==undefined?arguments[0]:false;this.isReconnect=reconnect;// keep binaryType used on previous WebSocket connection
@@ -3081,20 +3865,20 @@ this.open(true);}/**
  */WebSocketClient.CLOSED=WebSocketImpl.CLOSED;exports.default=WebSocketClient;
 
 /***/ }),
-/* 20 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(exports,"__esModule",{value:true});exports.createBackoff=createBackoff;var backoff={exponential:function exponential(attempt,delay){return Math.floor(Math.random()*Math.pow(2,attempt)*delay);},fibonacci:function fibonacci(attempt,delay){var current=1;if(attempt>current){var prev=1,current=2;for(var index=2;index<attempt;index++){var next=prev+current;prev=current;current=next;}}return Math.floor(Math.random()*current*delay);}};function createBackoff(type,options){return new Backoff(backoff[type],options);}function Backoff(func,options){this.func=func;this.attempts=0;this.delay=typeof options.initialDelay!=="undefined"?options.initialDelay:100;}Backoff.prototype.backoff=function(){setTimeout(this.onReady,this.func(++this.attempts,this.delay));};
 
 /***/ }),
-/* 21 */
+/* 25 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 22 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3145,16 +3929,17 @@ exports.getItem = getItem;
 
 
 /***/ }),
-/* 23 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -3252,7 +4037,7 @@ exports.Push = Push;
 
 
 /***/ }),
-/* 24 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3265,9 +4050,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var state_listener_1 = __webpack_require__(25);
-var fossilDelta = __importStar(__webpack_require__(28));
-var msgpack = __importStar(__webpack_require__(3));
+var state_listener_1 = __webpack_require__(29);
+var fossilDelta = __importStar(__webpack_require__(32));
+var msgpack = __importStar(__webpack_require__(5));
 var FossilDeltaSerializer = /** @class */ (function () {
     function FossilDeltaSerializer() {
         this.api = new state_listener_1.StateContainer({});
@@ -3294,24 +4079,24 @@ exports.FossilDeltaSerializer = FossilDeltaSerializer;
 
 
 /***/ }),
-/* 25 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var StateContainer_1 = __webpack_require__(26);
+var StateContainer_1 = __webpack_require__(30);
 exports.StateContainer = StateContainer_1.StateContainer;
 
 
 /***/ }),
-/* 26 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var compare_1 = __webpack_require__(27);
+var compare_1 = __webpack_require__(31);
 var StateContainer = /** @class */ (function () {
     function StateContainer(state) {
         this.listeners = [];
@@ -3435,7 +4220,7 @@ exports.StateContainer = StateContainer;
 
 
 /***/ }),
-/* 27 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3520,7 +4305,7 @@ function generate(mirror, obj, patches, path) {
 
 
 /***/ }),
-/* 28 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // Fossil SCM delta compression algorithm
@@ -3976,13 +4761,13 @@ return fossilDelta;
 
 
 /***/ }),
-/* 29 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var schema_1 = __webpack_require__(30);
+var schema_1 = __webpack_require__(12);
 var SchemaSerializer = /** @class */ (function () {
     function SchemaSerializer() {
     }
@@ -3998,11 +4783,11 @@ var SchemaSerializer = /** @class */ (function () {
     SchemaSerializer.prototype.teardown = function () {
         // this.state.onRemove
     };
-    SchemaSerializer.prototype.handshake = function (bytes) {
+    SchemaSerializer.prototype.handshake = function (bytes, it) {
         if (this.state) {
             // validate client/server definitinos
             var reflection = new schema_1.Reflection();
-            reflection.decode(bytes);
+            reflection.decode(bytes, it);
         }
         else {
             // initialize reflected state from server
@@ -4015,569 +4800,84 @@ exports.SchemaSerializer = SchemaSerializer;
 
 
 /***/ }),
-/* 30 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var Schema_1 = __webpack_require__(0);
-exports.Schema = Schema_1.Schema;
-var MapSchema_1 = __webpack_require__(2);
-exports.MapSchema = MapSchema_1.MapSchema;
-var ArraySchema_1 = __webpack_require__(1);
-exports.ArraySchema = ArraySchema_1.ArraySchema;
-// Reflection
-var Reflection_1 = __webpack_require__(33);
-exports.Reflection = Reflection_1.Reflection;
-exports.ReflectionType = Reflection_1.ReflectionType;
-exports.ReflectionField = Reflection_1.ReflectionField;
-var annotations_1 = __webpack_require__(11);
-// Annotations
-exports.type = annotations_1.type;
-exports.deprecated = annotations_1.deprecated;
-exports.filter = annotations_1.filter;
-exports.defineTypes = annotations_1.defineTypes;
-// Types
-exports.Context = annotations_1.Context;
-//# sourceMappingURL=index.js.map
-
-/***/ }),
-/* 31 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 /**
- * Copyright (c) 2018 Endel Dreyer
- * Copyright (c) 2014 Ion Drive Software Ltd.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE
+ * Extracted from https://www.npmjs.com/package/strong-events
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * msgpack implementation highly based on notepack.io
- * https://github.com/darrachequesne/notepack
- */
-function utf8Length(str) {
-    var c = 0, length = 0;
-    for (var i = 0, l = str.length; i < l; i++) {
-        c = str.charCodeAt(i);
-        if (c < 0x80) {
-            length += 1;
-        }
-        else if (c < 0x800) {
-            length += 2;
-        }
-        else if (c < 0xd800 || c >= 0xe000) {
-            length += 3;
-        }
-        else {
-            i++;
-            length += 4;
-        }
+var EventEmitter = /** @class */ (function () {
+    function EventEmitter() {
+        this.handlers = [];
     }
-    return length;
-}
-function utf8Write(view, offset, str) {
-    var c = 0;
-    for (var i = 0, l = str.length; i < l; i++) {
-        c = str.charCodeAt(i);
-        if (c < 0x80) {
-            view[offset++] = c;
+    EventEmitter.prototype.register = function (cb, once) {
+        if (once === void 0) { once = false; }
+        this.handlers.push(cb);
+        return this;
+    };
+    EventEmitter.prototype.invoke = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
         }
-        else if (c < 0x800) {
-            view[offset++] = 0xc0 | (c >> 6);
-            view[offset++] = 0x80 | (c & 0x3f);
+        this.handlers.forEach(function (handler) { return handler.apply(void 0, args); });
+    };
+    EventEmitter.prototype.invokeAsync = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
         }
-        else if (c < 0xd800 || c >= 0xe000) {
-            view[offset++] = 0xe0 | (c >> 12);
-            view[offset++] = 0x80 | (c >> 6 & 0x3f);
-            view[offset++] = 0x80 | (c & 0x3f);
-        }
-        else {
-            i++;
-            c = 0x10000 + (((c & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff));
-            view[offset++] = 0xf0 | (c >> 18);
-            view[offset++] = 0x80 | (c >> 12 & 0x3f);
-            view[offset++] = 0x80 | (c >> 6 & 0x3f);
-            view[offset++] = 0x80 | (c & 0x3f);
-        }
-    }
-}
-exports.utf8Write = utf8Write;
-function int8(bytes, value) {
-    bytes.push(value & 255);
-}
-exports.int8 = int8;
-;
-function uint8(bytes, value) {
-    bytes.push(value & 255);
-}
-exports.uint8 = uint8;
-;
-function int16(bytes, value) {
-    bytes.push(value & 255);
-    bytes.push((value >> 8) & 255);
-}
-exports.int16 = int16;
-;
-function uint16(bytes, value) {
-    bytes.push(value & 255);
-    bytes.push((value >> 8) & 255);
-}
-exports.uint16 = uint16;
-;
-function int32(bytes, value) {
-    bytes.push(value & 255);
-    bytes.push((value >> 8) & 255);
-    bytes.push((value >> 16) & 255);
-    bytes.push((value >> 24) & 255);
-}
-exports.int32 = int32;
-;
-function uint32(bytes, value) {
-    var b4 = value >> 24;
-    var b3 = value >> 16;
-    var b2 = value >> 8;
-    var b1 = value;
-    bytes.push(b1 & 255);
-    bytes.push(b2 & 255);
-    bytes.push(b3 & 255);
-    bytes.push(b4 & 255);
-}
-exports.uint32 = uint32;
-;
-function int64(bytes, value) {
-    var high = Math.floor(value / Math.pow(2, 32));
-    var low = value >>> 0;
-    uint32(bytes, low);
-    uint32(bytes, high);
-}
-exports.int64 = int64;
-;
-function uint64(bytes, value) {
-    var high = (value / Math.pow(2, 32)) >> 0;
-    var low = value >>> 0;
-    uint32(bytes, low);
-    uint32(bytes, high);
-}
-exports.uint64 = uint64;
-;
-function float32(bytes, value) {
-    writeFloat32(bytes, value);
-}
-exports.float32 = float32;
-function float64(bytes, value) {
-    writeFloat64(bytes, value);
-}
-exports.float64 = float64;
-// force little endian to facilitate decoding on multiple implementations
-var _isLittleEndian = true; // new Uint16Array(new Uint8Array([1, 0]).buffer)[0] === 1;
-var _int32 = new Int32Array(2);
-var _float32 = new Float32Array(_int32.buffer);
-var _float64 = new Float64Array(_int32.buffer);
-function writeFloat32(bytes, value) {
-    _float32[0] = value;
-    int32(bytes, _int32[0]);
-}
-exports.writeFloat32 = writeFloat32;
-;
-function writeFloat64(bytes, value) {
-    _float64[0] = value;
-    int32(bytes, _int32[_isLittleEndian ? 0 : 1]);
-    int32(bytes, _int32[_isLittleEndian ? 1 : 0]);
-}
-exports.writeFloat64 = writeFloat64;
-;
-function boolean(bytes, value) {
-    return uint8(bytes, value ? 1 : 0);
-}
-exports.boolean = boolean;
-;
-function string(bytes, value) {
-    // encode `null` strings as empty.
-    if (!value) {
-        value = "";
-    }
-    var length = utf8Length(value);
-    var size = 0;
-    // fixstr
-    if (length < 0x20) {
-        bytes.push(length | 0xa0);
-        size = 1;
-    }
-    // str 8
-    else if (length < 0x100) {
-        bytes.push(0xd9);
-        uint8(bytes, length);
-        size = 2;
-    }
-    // str 16
-    else if (length < 0x10000) {
-        bytes.push(0xda);
-        uint16(bytes, length);
-        size = 3;
-    }
-    // str 32
-    else if (length < 0x100000000) {
-        bytes.push(0xdb);
-        uint32(bytes, length);
-        size = 5;
-    }
-    else {
-        throw new Error('String too long');
-    }
-    utf8Write(bytes, bytes.length, value);
-    return size + length;
-}
-exports.string = string;
-function number(bytes, value) {
-    if (isNaN(value)) {
-        return number(bytes, 0);
-    }
-    else if (!isFinite(value)) {
-        return number(bytes, (value > 0) ? Number.MAX_SAFE_INTEGER : -Number.MAX_SAFE_INTEGER);
-    }
-    else if (value !== (value | 0)) {
-        bytes.push(0xcb);
-        writeFloat64(bytes, value);
-        return 9;
-        // TODO: encode float 32?
-        // is it possible to differentiate between float32 / float64 here?
-        // // float 32
-        // bytes.push(0xca);
-        // writeFloat32(bytes, value);
-        // return 5;
-    }
-    if (value >= 0) {
-        // positive fixnum
-        if (value < 0x80) {
-            uint8(bytes, value);
-            return 1;
-        }
-        // uint 8
-        if (value < 0x100) {
-            bytes.push(0xcc);
-            uint8(bytes, value);
-            return 2;
-        }
-        // uint 16
-        if (value < 0x10000) {
-            bytes.push(0xcd);
-            uint16(bytes, value);
-            return 3;
-        }
-        // uint 32
-        if (value < 0x100000000) {
-            bytes.push(0xce);
-            uint32(bytes, value);
-            return 5;
-        }
-        // uint 64
-        bytes.push(0xcf);
-        uint64(bytes, value);
-        return 9;
-    }
-    else {
-        // negative fixnum
-        if (value >= -0x20) {
-            bytes.push(value);
-            return 1;
-        }
-        // int 8
-        if (value >= -0x80) {
-            bytes.push(0xd0);
-            int8(bytes, value);
-            return 2;
-        }
-        // int 16
-        if (value >= -0x8000) {
-            bytes.push(0xd1);
-            int16(bytes, value);
-            return 3;
-        }
-        // int 32
-        if (value >= -0x80000000) {
-            bytes.push(0xd2);
-            int32(bytes, value);
-            return 5;
-        }
-        // int 64
-        bytes.push(0xd3);
-        int64(bytes, value);
-        return 9;
-    }
-}
-exports.number = number;
-//# sourceMappingURL=encode.js.map
+        return Promise.all(this.handlers.map(function (handler) { return handler.apply(void 0, args); }));
+    };
+    EventEmitter.prototype.remove = function (cb) {
+        var index = this.handlers.indexOf(cb);
+        this.handlers[index] = this.handlers[this.handlers.length - 1];
+        this.handlers.pop();
+    };
+    EventEmitter.prototype.clear = function () {
+        this.handlers = [];
+    };
+    return EventEmitter;
+}());
+exports.EventEmitter = EventEmitter;
+//# sourceMappingURL=EventEmitter.js.map
 
 /***/ }),
-/* 32 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var spec_1 = __webpack_require__(9);
-function utf8Read(bytes, offset, length) {
-    var string = '', chr = 0;
-    for (var i = offset, end = offset + length; i < end; i++) {
-        var byte = bytes[i];
-        if ((byte & 0x80) === 0x00) {
-            string += String.fromCharCode(byte);
-            continue;
+var _1 = __webpack_require__(12);
+var MapSchema_1 = __webpack_require__(1);
+var ArraySchema_1 = __webpack_require__(0);
+function dumpChanges(schema) {
+    var dump = {};
+    var $changes = schema.$changes;
+    var fieldsByIndex = schema['_fieldsByIndex'] || {};
+    for (var _i = 0, _a = Array.from($changes.changes); _i < _a.length; _i++) {
+        var fieldIndex = _a[_i];
+        var field = fieldsByIndex[fieldIndex] || fieldIndex;
+        if (schema[field] instanceof MapSchema_1.MapSchema ||
+            schema[field] instanceof ArraySchema_1.ArraySchema ||
+            schema[field] instanceof _1.Schema) {
+            dump[field] = dumpChanges(schema[field]);
         }
-        if ((byte & 0xe0) === 0xc0) {
-            string += String.fromCharCode(((byte & 0x1f) << 6) |
-                (bytes[++i] & 0x3f));
-            continue;
+        else {
+            dump[field] = schema[field];
         }
-        if ((byte & 0xf0) === 0xe0) {
-            string += String.fromCharCode(((byte & 0x0f) << 12) |
-                ((bytes[++i] & 0x3f) << 6) |
-                ((bytes[++i] & 0x3f) << 0));
-            continue;
-        }
-        if ((byte & 0xf8) === 0xf0) {
-            chr = ((byte & 0x07) << 18) |
-                ((bytes[++i] & 0x3f) << 12) |
-                ((bytes[++i] & 0x3f) << 6) |
-                ((bytes[++i] & 0x3f) << 0);
-            if (chr >= 0x010000) { // surrogate pair
-                chr -= 0x010000;
-                string += String.fromCharCode((chr >>> 10) + 0xD800, (chr & 0x3FF) + 0xDC00);
-            }
-            else {
-                string += String.fromCharCode(chr);
-            }
-            continue;
-        }
-        throw new Error('Invalid byte ' + byte.toString(16));
     }
-    return string;
+    return dump;
 }
-function int8(bytes, it) {
-    return uint8(bytes, it) << 24 >> 24;
-}
-exports.int8 = int8;
-;
-function uint8(bytes, it) {
-    return bytes[it.offset++];
-}
-exports.uint8 = uint8;
-;
-function int16(bytes, it) {
-    return uint16(bytes, it) << 16 >> 16;
-}
-exports.int16 = int16;
-;
-function uint16(bytes, it) {
-    return bytes[it.offset++] | bytes[it.offset++] << 8;
-}
-exports.uint16 = uint16;
-;
-function int32(bytes, it) {
-    return bytes[it.offset++] | bytes[it.offset++] << 8 | bytes[it.offset++] << 16 | bytes[it.offset++] << 24;
-}
-exports.int32 = int32;
-;
-function uint32(bytes, it) {
-    return int32(bytes, it) >>> 0;
-}
-exports.uint32 = uint32;
-;
-function float32(bytes, it) {
-    return readFloat32(bytes, it);
-}
-exports.float32 = float32;
-function float64(bytes, it) {
-    return readFloat64(bytes, it);
-}
-exports.float64 = float64;
-function int64(bytes, it) {
-    var low = uint32(bytes, it);
-    var high = int32(bytes, it) * Math.pow(2, 32);
-    return high + low;
-}
-exports.int64 = int64;
-;
-function uint64(bytes, it) {
-    var low = uint32(bytes, it);
-    var high = uint32(bytes, it) * Math.pow(2, 32);
-    return high + low;
-}
-exports.uint64 = uint64;
-;
-// force little endian to facilitate decoding on multiple implementations
-var _isLittleEndian = true; // new Uint16Array(new Uint8Array([1, 0]).buffer)[0] === 1;
-var _int32 = new Int32Array(2);
-var _float32 = new Float32Array(_int32.buffer);
-var _float64 = new Float64Array(_int32.buffer);
-function readFloat32(bytes, it) {
-    _int32[0] = int32(bytes, it);
-    return _float32[0];
-}
-exports.readFloat32 = readFloat32;
-;
-function readFloat64(bytes, it) {
-    _int32[_isLittleEndian ? 0 : 1] = int32(bytes, it);
-    _int32[_isLittleEndian ? 1 : 0] = int32(bytes, it);
-    return _float64[0];
-}
-exports.readFloat64 = readFloat64;
-;
-function boolean(bytes, it) {
-    return uint8(bytes, it) > 0;
-}
-exports.boolean = boolean;
-;
-function string(bytes, it) {
-    var prefix = bytes[it.offset++];
-    var length;
-    if (prefix < 0xc0) {
-        // fixstr
-        length = prefix & 0x1f;
-    }
-    else if (prefix === 0xd9) {
-        length = uint8(bytes, it);
-    }
-    else if (prefix === 0xda) {
-        length = uint16(bytes, it);
-    }
-    else if (prefix === 0xdb) {
-        length = uint32(bytes, it);
-    }
-    var value = utf8Read(bytes, it.offset, length);
-    it.offset += length;
-    return value;
-}
-exports.string = string;
-function stringCheck(bytes, it) {
-    var prefix = bytes[it.offset];
-    return (
-    // fixstr
-    (prefix < 0xc0 && prefix > 0xa0) ||
-        // str 8
-        prefix === 0xd9 ||
-        // str 16
-        prefix === 0xda ||
-        // str 32
-        prefix === 0xdb);
-}
-exports.stringCheck = stringCheck;
-function number(bytes, it) {
-    var prefix = bytes[it.offset++];
-    if (prefix < 0x80) {
-        // positive fixint
-        return prefix;
-    }
-    else if (prefix === 0xca) {
-        // float 32
-        return readFloat32(bytes, it);
-    }
-    else if (prefix === 0xcb) {
-        // float 64
-        return readFloat64(bytes, it);
-    }
-    else if (prefix === 0xcc) {
-        // uint 8
-        return uint8(bytes, it);
-    }
-    else if (prefix === 0xcd) {
-        // uint 16
-        return uint16(bytes, it);
-    }
-    else if (prefix === 0xce) {
-        // uint 32
-        return uint32(bytes, it);
-    }
-    else if (prefix === 0xcf) {
-        // uint 64
-        return uint64(bytes, it);
-    }
-    else if (prefix === 0xd0) {
-        // int 8
-        return int8(bytes, it);
-    }
-    else if (prefix === 0xd1) {
-        // int 16
-        return int16(bytes, it);
-    }
-    else if (prefix === 0xd2) {
-        // int 32
-        return int32(bytes, it);
-    }
-    else if (prefix === 0xd3) {
-        // int 64
-        return int64(bytes, it);
-    }
-    else if (prefix > 0xdf) {
-        // negative fixint
-        return (0xff - prefix + 1) * -1;
-    }
-}
-exports.number = number;
-;
-function numberCheck(bytes, it) {
-    var prefix = bytes[it.offset];
-    // positive fixint - 0x00 - 0x7f
-    // float 32        - 0xca
-    // float 64        - 0xcb
-    // uint 8          - 0xcc
-    // uint 16         - 0xcd
-    // uint 32         - 0xce
-    // uint 64         - 0xcf
-    // int 8           - 0xd0
-    // int 16          - 0xd1
-    // int 32          - 0xd2
-    // int 64          - 0xd3
-    return (prefix < 0x80 ||
-        (prefix >= 0xca && prefix <= 0xd3));
-}
-exports.numberCheck = numberCheck;
-function arrayCheck(bytes, it) {
-    return bytes[it.offset] < 0xa0;
-    // const prefix = bytes[it.offset] ;
-    // if (prefix < 0xa0) {
-    //   return prefix;
-    // // array
-    // } else if (prefix === 0xdc) {
-    //   it.offset += 2;
-    // } else if (0xdd) {
-    //   it.offset += 4;
-    // }
-    // return prefix;
-}
-exports.arrayCheck = arrayCheck;
-function nilCheck(bytes, it) {
-    return bytes[it.offset] === spec_1.NIL;
-}
-exports.nilCheck = nilCheck;
-function indexChangeCheck(bytes, it) {
-    return bytes[it.offset] === spec_1.INDEX_CHANGE;
-}
-exports.indexChangeCheck = indexChangeCheck;
-//# sourceMappingURL=decode.js.map
+exports.dumpChanges = dumpChanges;
+//# sourceMappingURL=utils.js.map
 
 /***/ }),
-/* 33 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4602,10 +4902,10 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var annotations_1 = __webpack_require__(11);
-var Schema_1 = __webpack_require__(0);
-var ArraySchema_1 = __webpack_require__(1);
-var MapSchema_1 = __webpack_require__(2);
+var annotations_1 = __webpack_require__(14);
+var Schema_1 = __webpack_require__(2);
+var ArraySchema_1 = __webpack_require__(0);
+var MapSchema_1 = __webpack_require__(1);
 var reflectionContext = new annotations_1.Context();
 /**
  * Reflection
