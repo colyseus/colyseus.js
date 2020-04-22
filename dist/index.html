@@ -11,8 +11,11 @@
     <strong>Messages</strong><br>
 
     <form id="form">
-      <input type="text" id="input" value="" />
-      <input type="submit" value="send" />
+      Room name: <input type="text" id="room_name" value="dummy" /> <br />
+
+      Send data: <input type="text" id="message_type" value="" placeholder="messageType" />
+                 <input type="text" id="message_data" value="" placeholder="data" />
+                 <input type="submit" value="send" />
     </form>
 
     <div id="messages"></div>
@@ -30,29 +33,10 @@
       var client = new Colyseus.Client('ws://' + host + ':2567');
       var room;
 
-      function request () {
-          var http = new XMLHttpRequest();
-          var params = '{"lorem":"ipsum","name":"binny"}';
-          http.open("POST", "http://localhost:2567/something", true);
-
-          // Send the proper header information along with the request
-          // http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-          http.setRequestHeader("Content-type", "application/json");
-
-          // Call a function when the state changes.
-          http.onreadystatechange = function() {
-              if(http.readyState == 4 && http.status == 200) {
-                  alert(http.responseText);
-              }
-          }
-
-          http.send(params);
-      }
-
       function addListeners (room) {
           console.log('joined!');
-          room.onMessage(function(message) {
-              console.log("message:", room.sessionId, message);
+          room.onMessage("*", (type, message) => {
+              console.log("received message:", type, "=>", message);
           });
 
           room.onLeave(function() {
@@ -65,7 +49,7 @@
       }
 
       function join () {
-          client.join('dummy', {}).then((r) => {
+          client.join(document.getElementById('room_name').value, { code: "one" }).then((r) => {
               room = r;
               addListeners(room);
           }).catch(e => {
@@ -74,14 +58,14 @@
       }
 
       function create () {
-          client.create('dummy').then((r) => {
+          client.create(document.getElementById('room_name').value, { code: "one" }).then((r) => {
               room = r
               addListeners(room);
           });
       }
 
       function joinOrCreate () {
-          client.joinOrCreate('dummy', {}).then((r) => {
+          client.joinOrCreate(document.getElementById('room_name').value, { code: "one" }).then((r) => {
               room = r
               addListeners(room);
           });
@@ -116,10 +100,10 @@
       document.getElementById('form').onsubmit = function(e) {
         e.preventDefault()
 
-        room.send(document.getElementById('input').value);
+        room.send(document.getElementById('message_type').value, document.getElementById('message_data').value);
 
         // room.send(document.getElementById('input').value);
-        document.getElementById('input').value = null
+        document.getElementById('message_data').value = null
       }
     </script>
 

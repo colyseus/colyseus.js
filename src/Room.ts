@@ -11,6 +11,9 @@ import { SchemaSerializer } from '.';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
 import { Context, Schema } from '@colyseus/schema';
 
+import * as encode from '@colyseus/schema/lib/encoding/encode';
+import * as decode from '@colyseus/schema/lib/encoding/decode';
+
 export interface RoomAvailable<Metadata> {
     roomId: string;
     clients: number;
@@ -27,8 +30,7 @@ export class Room<State= any> {
     // Public signals
     public onJoin = createSignal();
     public onStateChange = createSignal<(state: State) => void>();
-    public onMessage = createSignal<(data: any) => void>();
-    public onError = createSignal<(message: string) => void>();
+    public onError = createSignal<(code: number, message?: string) => void>();
     public onLeave = createSignal<(code: number) => void>();
 
     public connection: Connection;
@@ -40,6 +42,8 @@ export class Room<State= any> {
 
     // TODO: remove me on 1.0.0
     protected rootSchema: SchemaConstructor<State>;
+
+    protected onMessageHandlers: { [messageType: string]: (message: any) => void } = {};
 
     constructor(name: string, rootSchema?: SchemaConstructor<State>) {
         this.id = null;
@@ -55,7 +59,7 @@ export class Room<State= any> {
             this.serializer = new (getSerializer("fossil-delta"));
         }
 
-        this.onError((message) => message && console.error(message));
+        this.onError((code, message) => console.error(`colyseus.js - onError => (${code}) ${message}`));
         this.onLeave(() => this.removeAllListeners());
     }
 
@@ -66,7 +70,7 @@ export class Room<State= any> {
         this.connection.onclose = (e: CloseEvent) => {
             if (!this.hasJoined) {
                 console.error(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
-                this.onError.invoke(e.reason);
+                this.onError.invoke(e.code, e.reason);
                 return;
             }
 
@@ -74,7 +78,7 @@ export class Room<State= any> {
         };
         this.connection.onerror = (e: CloseEvent) => {
             console.warn(`Room, onError (${e.code}): ${e.reason}`);
-            this.onError.invoke(e.reason);
+            this.onError.invoke(e.code, e.reason);
         };
         this.connection.open();
     }
@@ -92,8 +96,49 @@ export class Room<State= any> {
         }
     }
 
-    public send(data): void {
-        this.connection.send([Protocol.ROOM_DATA, data]);
+    public onMessage<T = any>(
+        type: "*",
+        callback: (type: string | number | Schema, message: T) => void
+    )
+    public onMessage<T extends (typeof Schema & (new (...args: any[]) => any))>(
+        type: T,
+        callback: (message: InstanceType<T>) => void
+    )
+    public onMessage<T = any>(
+        type: string | number,
+        callback: (message: T) => void
+    )
+    public onMessage<T = any>(
+        type: '*' | string | number | typeof Schema,
+        callback: (...args: any[]) => void
+    ) {
+        this.onMessageHandlers[this.getMessageHandlerKey(type)] = callback;
+        return this;
+    }
+
+    public send(type: string | number, message?: any): void {
+        const initialBytes: number[] = [Protocol.ROOM_DATA];
+
+        if (typeof(type) === "string") {
+            encode.string(initialBytes, type);
+
+        } else {
+            encode.number(initialBytes, type);
+        }
+
+        let arr: Uint8Array;
+
+        if (message !== undefined) {
+            const encoded = msgpack.encode(message);
+            arr = new Uint8Array(initialBytes.length + encoded.byteLength);
+            arr.set(new Uint8Array(initialBytes), 0);
+            arr.set(new Uint8Array(encoded), initialBytes.length);
+
+        } else {
+            arr = new Uint8Array(initialBytes);
+        }
+
+        this.connection.send(arr.buffer);
     }
 
     public get state (): State {
@@ -104,7 +149,7 @@ export class Room<State= any> {
     // this method is useful only for FossilDeltaSerializer
     public listen(segments: string, callback: Function, immediate?: boolean) {
         if (this.serializerId === "schema") {
-            console.error(`'${this.serializerId}' serializer doesn't support .listen() method.`);
+            console.error(`'${this.serializerId}' serializer doesn't support .listen() method here.`);
             return;
 
         } else if (!this.serializerId) {
@@ -126,7 +171,6 @@ export class Room<State= any> {
         }
         this.onJoin.clear();
         this.onStateChange.clear();
-        this.onMessage.clear();
         this.onError.clear();
         this.onLeave.clear();
     }
@@ -162,8 +206,13 @@ export class Room<State= any> {
             // acknowledge successfull JOIN_ROOM
             this.connection.send([Protocol.JOIN_ROOM]);
 
-        } else if (code === Protocol.JOIN_ERROR) {
-            this.onError.invoke(utf8Read(bytes, 1));
+        } else if (code === Protocol.ERROR) {
+            const it: decode.Iterator = { offset: 1 };
+
+            const code = decode.number(bytes, it);
+            const message = decode.string(bytes, it);
+
+            this.onError.invoke(code, message);
 
         } else if (code === Protocol.LEAVE_ROOM) {
             this.leave();
@@ -175,7 +224,7 @@ export class Room<State= any> {
             const message: Schema = new (type as any)();
             message.decode(bytes, { offset: 2 });
 
-            this.onMessage.invoke(message);
+            this.dispatchMessage(type, message);
 
         } else if (code === Protocol.ROOM_STATE) {
             bytes.shift(); // drop `code` byte
@@ -186,7 +235,17 @@ export class Room<State= any> {
             this.patch(bytes);
 
         } else if (code === Protocol.ROOM_DATA) {
-            this.onMessage.invoke(msgpack.decode(event.data, 1));
+            const it: decode.Iterator = { offset: 1 };
+
+            const type = (decode.stringCheck(bytes, it))
+                ? decode.string(bytes, it)
+                : decode.number(bytes, it);
+
+            const message = (bytes.length > it.offset)
+                ? msgpack.decode(event.data, it.offset)
+                : undefined;
+
+            this.dispatchMessage(type, message);
         }
     }
 
@@ -198,6 +257,35 @@ export class Room<State= any> {
     protected patch(binaryPatch: number[]) {
         this.serializer.patch(binaryPatch);
         this.onStateChange.invoke(this.serializer.getState());
+    }
+
+    private dispatchMessage(type: string | number | typeof Schema, message: any) {
+        const messageType = this.getMessageHandlerKey(type);
+
+        if (this.onMessageHandlers[messageType]) {
+            this.onMessageHandlers[messageType](message);
+
+        } else if (this.onMessageHandlers['*']) {
+            (this.onMessageHandlers['*'] as any)(type, message);
+
+        } else {
+            console.warn(`onMessage not registered for type '${type}'.`);
+        }
+    }
+
+    private getMessageHandlerKey(type: string | number | typeof Schema): string {
+        switch (typeof(type)) {
+            // typeof Schema
+            case "function": return `$${(type as typeof Schema)._typeid}`;
+
+            // string
+            case "string": return type;
+
+            // number
+            case "number": return `i${type}`;
+
+            default: throw new Error("invalid message type.");
+        }
     }
 
 }
