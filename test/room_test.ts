@@ -2,12 +2,70 @@ import './util';
 import { assert } from "chai";
 import { Room } from "../src";
 
+import { Schema, type } from "@colyseus/schema";
 import * as fossilDelta from "fossil-delta";
 import * as msgpack from "../src/msgpack";
 import { FossilDeltaSerializer } from '../src/serializer/FossilDeltaSerializer';
 
 describe("Room", function() {
   let room: Room = null;
+
+  describe("onMessage / dispatchMessage", () => {
+      it("* should handle if message is not registered", (done) => {
+          room = new Room("chat");
+
+          room.onMessage("*", (type, message) => {
+              assert.equal("something", type);
+              assert.equal(1, message);
+              done();
+          });
+
+          room.onMessage("type", (message) => assert.equal(5, message));
+
+          room['dispatchMessage']("type", 5);
+          room['dispatchMessage']("something", 1);
+      });
+
+      it("should handle string message types", (done) => {
+          room = new Room("chat");
+          room.onMessage("type", (message) => {
+              assert.equal(5, message);
+              done();
+          });
+          room['dispatchMessage']("type", 5);
+      });
+
+      it("should handle number message types", (done) => {
+          room = new Room("chat");
+          room.onMessage(0, (message) => {
+              assert.equal(5, message);
+              done();
+          });
+          room['dispatchMessage'](0, 5);
+      });
+
+      it("should handle number message types", (done) => {
+          room = new Room("chat");
+          room.onMessage(0, (message) => {
+              assert.equal(5, message);
+              done();
+          });
+          room['dispatchMessage'](0, 5);
+      });
+
+      it("should handle schema message types", (done) => {
+          class MyMessage extends Schema {
+              @type("string") str: string = "hello";
+          }
+
+          room = new Room("chat");
+          room.onMessage(MyMessage, (message) => {
+              assert.equal("hello", message.str);
+              done();
+          });
+          room['dispatchMessage'](MyMessage, new MyMessage());
+      });
+  });
 
   describe("fossil-delta", () => {
 

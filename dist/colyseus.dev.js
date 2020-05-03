@@ -1,4 +1,4 @@
-/*! colyseus.js@0.13.0-alpha.10 */
+/*! colyseus.js@0.13.0 */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
@@ -356,7 +356,7 @@ var decode = __webpack_require__(9);
 var ArraySchema_1 = __webpack_require__(0);
 var MapSchema_1 = __webpack_require__(1);
 var ChangeTree_1 = __webpack_require__(13);
-var EventEmitter_1 = __webpack_require__(34);
+var EventEmitter_1 = __webpack_require__(35);
 var EncodeSchemaError = /** @class */ (function (_super) {
     __extends(EncodeSchemaError, _super);
     function EncodeSchemaError() {
@@ -1178,7 +1178,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var msgpack = __importStar(__webpack_require__(5));
 var strong_events_1 = __webpack_require__(21);
-var Connection_1 = __webpack_require__(22);
+var nanoevents_1 = __webpack_require__(22);
+var Connection_1 = __webpack_require__(23);
 var Serializer_1 = __webpack_require__(6);
 var Protocol_1 = __webpack_require__(7);
 var encode = __importStar(__webpack_require__(8));
@@ -1192,7 +1193,7 @@ var Room = /** @class */ (function () {
         this.onError = strong_events_1.createSignal();
         this.onLeave = strong_events_1.createSignal();
         this.hasJoined = false;
-        this.onMessageHandlers = {};
+        this.onMessageHandlers = nanoevents_1.createNanoEvents();
         this.id = null;
         this.name = name;
         if (rootSchema) {
@@ -1241,8 +1242,7 @@ var Room = /** @class */ (function () {
         }
     };
     Room.prototype.onMessage = function (type, callback) {
-        this.onMessageHandlers[this.getMessageHandlerKey(type)] = callback;
-        return this;
+        return this.onMessageHandlers.on(this.getMessageHandlerKey(type), callback);
     };
     Room.prototype.send = function (type, message) {
         var initialBytes = [Protocol_1.Protocol.ROOM_DATA];
@@ -1366,11 +1366,11 @@ var Room = /** @class */ (function () {
     };
     Room.prototype.dispatchMessage = function (type, message) {
         var messageType = this.getMessageHandlerKey(type);
-        if (this.onMessageHandlers[messageType]) {
-            this.onMessageHandlers[messageType](message);
+        if (this.onMessageHandlers.events[messageType]) {
+            this.onMessageHandlers.emit(messageType, message);
         }
-        else if (this.onMessageHandlers['*']) {
-            this.onMessageHandlers['*'](type, message);
+        else if (this.onMessageHandlers.events['*']) {
+            this.onMessageHandlers.emit('*', type, message);
         }
         else {
             console.warn("onMessage not registered for type '" + type + "'.");
@@ -2119,7 +2119,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var http = __importStar(__webpack_require__(3));
-var Storage_1 = __webpack_require__(26);
+var Storage_1 = __webpack_require__(27);
 var TOKEN_STORAGE = "colyseus-auth-token";
 var Platform;
 (function (Platform) {
@@ -2350,10 +2350,10 @@ exports.MapSchema = MapSchema_1.MapSchema;
 var ArraySchema_1 = __webpack_require__(0);
 exports.ArraySchema = ArraySchema_1.ArraySchema;
 // Utils
-var utils_1 = __webpack_require__(35);
+var utils_1 = __webpack_require__(36);
 exports.dumpChanges = utils_1.dumpChanges;
 // Reflection
-var Reflection_1 = __webpack_require__(36);
+var Reflection_1 = __webpack_require__(37);
 exports.Reflection = Reflection_1.Reflection;
 exports.ReflectionType = Reflection_1.ReflectionType;
 exports.ReflectionField = Reflection_1.ReflectionField;
@@ -2744,9 +2744,9 @@ exports.Platform = Auth_1.Platform;
 /*
  * Serializers
  */
-var FossilDeltaSerializer_1 = __webpack_require__(28);
+var FossilDeltaSerializer_1 = __webpack_require__(29);
 exports.FossilDeltaSerializer = FossilDeltaSerializer_1.FossilDeltaSerializer;
-var SchemaSerializer_1 = __webpack_require__(33);
+var SchemaSerializer_1 = __webpack_require__(34);
 exports.SchemaSerializer = SchemaSerializer_1.SchemaSerializer;
 var Serializer_1 = __webpack_require__(6);
 exports.registerSerializer = Serializer_1.registerSerializer;
@@ -2831,7 +2831,7 @@ var httpie_1 = __webpack_require__(3);
 var ServerError_1 = __webpack_require__(18);
 var Room_1 = __webpack_require__(4);
 var Auth_1 = __webpack_require__(11);
-var Push_1 = __webpack_require__(27);
+var Push_1 = __webpack_require__(28);
 var MatchMakeError = /** @class */ (function (_super) {
     __extends(MatchMakeError, _super);
     function MatchMakeError(message, code) {
@@ -3720,6 +3720,31 @@ exports.createSignal = createSignal;
 
 /***/ }),
 /* 22 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createNanoEvents", function() { return createNanoEvents; });
+let createNanoEvents = () => ({
+  events: { },
+  emit (event, ...args) {
+    for (let i of this.events[event] || []) {
+      i(...args)
+    }
+  },
+  on (event, cb) {
+    (this.events[event] = this.events[event] || []).push(cb)
+    return () => (
+      this.events[event] = this.events[event].filter(i => i !== cb)
+    )
+  }
+})
+
+
+
+
+/***/ }),
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3741,7 +3766,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var websocket_1 = __importDefault(__webpack_require__(23));
+var websocket_1 = __importDefault(__webpack_require__(24));
 var Connection = /** @class */ (function (_super) {
     __extends(Connection, _super);
     function Connection(url, autoConnect) {
@@ -3783,11 +3808,11 @@ exports.Connection = Connection;
 
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-Object.defineProperty(exports,"__esModule",{value:true});var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||false;descriptor.configurable=true;if("value"in descriptor)descriptor.writable=true;Object.defineProperty(target,descriptor.key,descriptor);}}return function(Constructor,protoProps,staticProps){if(protoProps)defineProperties(Constructor.prototype,protoProps);if(staticProps)defineProperties(Constructor,staticProps);return Constructor;};}();function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor)){throw new TypeError("Cannot call a class as a function");}}var createBackoff=__webpack_require__(24).createBackoff;var WebSocketImpl=typeof WebSocket!=="undefined"?WebSocket:__webpack_require__(25);var WebSocketClient=function(){/**
+Object.defineProperty(exports,"__esModule",{value:true});var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||false;descriptor.configurable=true;if("value"in descriptor)descriptor.writable=true;Object.defineProperty(target,descriptor.key,descriptor);}}return function(Constructor,protoProps,staticProps){if(protoProps)defineProperties(Constructor.prototype,protoProps);if(staticProps)defineProperties(Constructor,staticProps);return Constructor;};}();function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor)){throw new TypeError("Cannot call a class as a function");}}var createBackoff=__webpack_require__(25).createBackoff;var WebSocketImpl=typeof WebSocket!=="undefined"?WebSocket:__webpack_require__(26);var WebSocketClient=function(){/**
    * @param url DOMString The URL to which to connect; this should be the URL to which the WebSocket server will respond.
    * @param protocols DOMString|DOMString[] Either a single protocol string or an array of protocol strings. These strings are used to indicate sub-protocols, so that a single server can implement multiple WebSocket sub-protocols (for example, you might want one server to be able to handle different types of interactions depending on the specified protocol). If you don't specify a protocol string, an empty string is assumed.
    */function WebSocketClient(url,protocols){var options=arguments.length>2&&arguments[2]!==undefined?arguments[2]:{};_classCallCheck(this,WebSocketClient);this.url=url;this.protocols=protocols;this.reconnectEnabled=true;this.listeners={};this.backoff=createBackoff(options.backoff||'exponential',options);this.backoff.onReady=this.onBackoffReady.bind(this);if(typeof options.connect==="undefined"||options.connect){this.open();}}_createClass(WebSocketClient,[{key:'open',value:function open(){var reconnect=arguments.length>0&&arguments[0]!==undefined?arguments[0]:false;this.isReconnect=reconnect;// keep binaryType used on previous WebSocket connection
@@ -3865,20 +3890,20 @@ this.open(true);}/**
  */WebSocketClient.CLOSED=WebSocketImpl.CLOSED;exports.default=WebSocketClient;
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(exports,"__esModule",{value:true});exports.createBackoff=createBackoff;var backoff={exponential:function exponential(attempt,delay){return Math.floor(Math.random()*Math.pow(2,attempt)*delay);},fibonacci:function fibonacci(attempt,delay){var current=1;if(attempt>current){var prev=1,current=2;for(var index=2;index<attempt;index++){var next=prev+current;prev=current;current=next;}}return Math.floor(Math.random()*current*delay);}};function createBackoff(type,options){return new Backoff(backoff[type],options);}function Backoff(func,options){this.func=func;this.attempts=0;this.delay=typeof options.initialDelay!=="undefined"?options.initialDelay:100;}Backoff.prototype.backoff=function(){setTimeout(this.onReady,this.func(++this.attempts,this.delay));};
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3929,7 +3954,7 @@ exports.getItem = getItem;
 
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4037,7 +4062,7 @@ exports.Push = Push;
 
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4050,8 +4075,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var state_listener_1 = __webpack_require__(29);
-var fossilDelta = __importStar(__webpack_require__(32));
+var state_listener_1 = __webpack_require__(30);
+var fossilDelta = __importStar(__webpack_require__(33));
 var msgpack = __importStar(__webpack_require__(5));
 var FossilDeltaSerializer = /** @class */ (function () {
     function FossilDeltaSerializer() {
@@ -4079,24 +4104,24 @@ exports.FossilDeltaSerializer = FossilDeltaSerializer;
 
 
 /***/ }),
-/* 29 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var StateContainer_1 = __webpack_require__(30);
-exports.StateContainer = StateContainer_1.StateContainer;
-
-
-/***/ }),
 /* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var compare_1 = __webpack_require__(31);
+var StateContainer_1 = __webpack_require__(31);
+exports.StateContainer = StateContainer_1.StateContainer;
+
+
+/***/ }),
+/* 31 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var compare_1 = __webpack_require__(32);
 var StateContainer = /** @class */ (function () {
     function StateContainer(state) {
         this.listeners = [];
@@ -4220,7 +4245,7 @@ exports.StateContainer = StateContainer;
 
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4305,7 +4330,7 @@ function generate(mirror, obj, patches, path) {
 
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // Fossil SCM delta compression algorithm
@@ -4761,7 +4786,7 @@ return fossilDelta;
 
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4800,7 +4825,7 @@ exports.SchemaSerializer = SchemaSerializer;
 
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4846,7 +4871,7 @@ exports.EventEmitter = EventEmitter;
 //# sourceMappingURL=EventEmitter.js.map
 
 /***/ }),
-/* 35 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4877,7 +4902,7 @@ exports.dumpChanges = dumpChanges;
 //# sourceMappingURL=utils.js.map
 
 /***/ }),
-/* 36 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";

@@ -1,5 +1,7 @@
 import * as msgpack from './msgpack';
+
 import { createSignal } from 'strong-events';
+import { createNanoEvents } from 'nanoevents';
 
 import { Connection } from './Connection';
 import { Serializer, getSerializer } from './serializer/Serializer';
@@ -43,7 +45,7 @@ export class Room<State= any> {
     // TODO: remove me on 1.0.0
     protected rootSchema: SchemaConstructor<State>;
 
-    protected onMessageHandlers: { [messageType: string]: (message: any) => void } = {};
+    protected onMessageHandlers = createNanoEvents();
 
     constructor(name: string, rootSchema?: SchemaConstructor<State>) {
         this.id = null;
@@ -112,8 +114,7 @@ export class Room<State= any> {
         type: '*' | string | number | typeof Schema,
         callback: (...args: any[]) => void
     ) {
-        this.onMessageHandlers[this.getMessageHandlerKey(type)] = callback;
-        return this;
+        return this.onMessageHandlers.on(this.getMessageHandlerKey(type), callback);
     }
 
     public send(type: string | number, message?: any): void {
@@ -262,11 +263,11 @@ export class Room<State= any> {
     private dispatchMessage(type: string | number | typeof Schema, message: any) {
         const messageType = this.getMessageHandlerKey(type);
 
-        if (this.onMessageHandlers[messageType]) {
-            this.onMessageHandlers[messageType](message);
+        if (this.onMessageHandlers.events[messageType]) {
+            this.onMessageHandlers.emit(messageType, message);
 
-        } else if (this.onMessageHandlers['*']) {
-            (this.onMessageHandlers['*'] as any)(type, message);
+        } else if (this.onMessageHandlers.events['*']) {
+            this.onMessageHandlers.emit('*', type, message);
 
         } else {
             console.warn(`onMessage not registered for type '${type}'.`);
