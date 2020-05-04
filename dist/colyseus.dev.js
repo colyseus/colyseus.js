@@ -1,4 +1,4 @@
-/*! colyseus.js@0.13.0 */
+/*! colyseus.js@0.13.1 */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
@@ -209,8 +209,7 @@ var ArraySchema = /** @class */ (function (_super) {
     };
     ArraySchema.prototype.filter = function (callbackfn, thisArg) {
         var filtered = _super.prototype.filter.call(this, callbackfn);
-        // TODO: apply removed items on $changes
-        filtered.$changes = this.$changes;
+        filtered.$changes = this.$changes.clone();
         return filtered;
     };
     ArraySchema.prototype.splice = function (start, deleteCount) {
@@ -2484,6 +2483,9 @@ var ChangeTree = /** @class */ (function () {
         if (this.indexChange) {
             this.indexChange.clear();
         }
+    };
+    ChangeTree.prototype.clone = function () {
+        return new ChangeTree(this.fieldIndexes, this.parentField, undefined);
     };
     return ChangeTree;
 }());
