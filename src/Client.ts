@@ -1,4 +1,4 @@
-import { post, get } from "httpie";
+import { post, get } from "@colyseus/http";
 
 import { ServerError } from './errors/ServerError';
 import { Room, RoomAvailable } from './Room';

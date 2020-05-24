@@ -1,4 +1,4 @@
-import * as http from "httpie";
+import * as http from "@colyseus/http";
 import { getItem, setItem, removeItem } from "./Storage";
 
 const TOKEN_STORAGE = "colyseus-auth-token";

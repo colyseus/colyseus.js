@@ -1,3 +1,5 @@
+/// <reference path="../typings/cocos-creator.d.ts" />
+
 /**
  * We do not assign 'storage' to window.localStorage immediatelly for React
  * Native compatibility. window.localStorage is not present when this module is

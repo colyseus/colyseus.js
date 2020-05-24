@@ -25,15 +25,23 @@ declare namespace Colyseus {
 
 declare namespace Colyseus {
     enum Protocol {
-        USER_ID = 1,
+        HANDSHAKE = 9,
         JOIN_ROOM = 10,
-        JOIN_ERROR = 11,
+        ERROR = 11,
         LEAVE_ROOM = 12,
         ROOM_DATA = 13,
         ROOM_STATE = 14,
         ROOM_STATE_PATCH = 15,
-        ROOM_LIST = 20,
-        BAD_REQUEST = 50,
+        ROOM_DATA_SCHEMA = 16
+    }
+    enum ErrorCode {
+        MATCHMAKE_NO_HANDLER = 4210,
+        MATCHMAKE_INVALID_CRITERIA = 4211,
+        MATCHMAKE_INVALID_ROOM_ID = 4212,
+        MATCHMAKE_UNHANDLED = 4213,
+        MATCHMAKE_EXPIRED = 4214,
+        AUTH_FAILED = 4215,
+        APPLICATION_ERROR = 4216
     }
 }
 
@@ -72,18 +80,12 @@ declare namespace Colyseus {
             invoke(state: T): void;
             clear(): void;
         };
-        onMessage: {
-            (this: any, cb: (data: any) => void): EventEmitter<(data: any) => void>;
-            once(cb: (data: any) => void): void;
-            remove(cb: (data: any) => void): void;
-            invoke(data: any): void;
-            clear(): void;
-        };
         onError: {
-            (this: any, cb: (message: string) => void): EventEmitter<(message: string) => void>;
-            once(cb: (message: string) => void): void;
-            remove(cb: (message: string) => void): void;
-            invoke(message: string): void;
+            (this: any, cb: (code: number, message?: string) => void): EventEmitter<(code: number, message?: string) => void>;
+            once(cb: (code: number, message?: string) => void): void;
+            remove(cb: (code: number, message?: string) => void): void;
+            invoke(code: number, message?: string): void;
+            invokeAsync(code: number, message?: string): Promise<any[]>;
             clear(): void;
         };
         onLeave: {
@@ -91,13 +93,17 @@ declare namespace Colyseus {
             once(cb: (code: number) => void): void;
             remove(cb: (code: number) => void): void;
             invoke(code: number): void;
+            invokeAsync(code: number): Promise<any[]>;
             clear(): void;
         };
         connection: Connection;
         constructor(name: string);
         connect(connection: Connection): void;
         leave(): void;
-        send(data: any): void;
+        send(type: string | number, message?: any): void;
+        onMessage<T = any>(type: "*", callback: (type: string | number | any, message: T) => void): any;
+        onMessage<T extends (new (...args: any[]) => any)>(type: T, callback: (message: InstanceType<T>) => void): any;
+        onMessage<T = any>(type: string | number, callback: (message: T) => void): any;
         removeAllListeners(): void;
     }
     interface RoomAvailable {
