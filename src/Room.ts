@@ -198,7 +198,7 @@ export class Room<State= any> {
             }
 
             if (bytes.length > offset && this.serializer.handshake) {
-                this.serializer.handshake(bytes, { offset: 1 });
+                this.serializer.handshake(bytes, { offset });
             }
 
             this.hasJoined = true;
