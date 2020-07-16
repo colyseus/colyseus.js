@@ -12,8 +12,10 @@ export { Auth, Platform, Device } from "./Auth";
 
 import { FossilDeltaSerializer } from './serializer/FossilDeltaSerializer';
 import { SchemaSerializer } from "./serializer/SchemaSerializer";
+import { NoneSerializer } from "./serializer/NoneSerializer";
 import { registerSerializer } from './serializer/Serializer';
 
 export { registerSerializer, FossilDeltaSerializer, SchemaSerializer };
 registerSerializer('fossil-delta', FossilDeltaSerializer);
 registerSerializer('schema', SchemaSerializer);
+registerSerializer('none', NoneSerializer);

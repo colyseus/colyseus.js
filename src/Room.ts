@@ -55,10 +55,6 @@ export class Room<State= any> {
             this.serializer = new (getSerializer("schema"));
             this.rootSchema = rootSchema;
             (this.serializer as SchemaSerializer).state = new rootSchema();
-
-        } else {
-            // TODO: remove default serializer. it should arrive only after JOIN_ROOM.
-            this.serializer = new (getSerializer("fossil-delta"));
         }
 
         this.onError((code, message) => console.error(`colyseus.js - onError => (${code}) ${message}`));
@@ -186,14 +182,9 @@ export class Room<State= any> {
             this.serializerId = utf8Read(bytes, offset);
             offset += utf8Length(this.serializerId);
 
-            // get serializer implementation
-            const serializer = getSerializer(this.serializerId);
-            if (!serializer) {
-                throw new Error("missing serializer: " + this.serializerId);
-            }
-
-            // TODO: remove this check
-            if (this.serializerId !== "fossil-delta" && !this.rootSchema) {
+            // Instantiate serializer if not locally available.
+            if (!this.serializer) {
+                const serializer = getSerializer(this.serializerId)
                 this.serializer = new serializer();
             }
 

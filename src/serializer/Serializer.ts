@@ -15,5 +15,7 @@ export function registerSerializer (id: string, serializer: any) {
 }
 
 export function getSerializer (id: string) {
-    return serializers[id];
+    const serializer = serializers[id];
+    if (!serializer) { throw new Error("missing serializer: " + id); }
+    return serializer;
 }
