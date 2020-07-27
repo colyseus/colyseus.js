@@ -1,4 +1,4 @@
-/*! colyseus.js@0.14.0-alpha.4 */
+/*! colyseus.js@0.14.0-alpha.5 */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
@@ -140,7 +140,7 @@ var OPERATION;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChangeTree = exports.Root = void 0;
 var spec_1 = __webpack_require__(0);
-var Schema_1 = __webpack_require__(6);
+var Schema_1 = __webpack_require__(3);
 //
 // Root holds all schema references by unique id
 //
@@ -331,15 +331,29 @@ var ChangeTree = /** @class */ (function () {
         }
         this.changed = true;
         this.touchParents();
-        // this.root?.dirty(this);
     };
     ChangeTree.prototype.discard = function (changed) {
+        var _this = this;
         if (changed === void 0) { changed = false; }
+        //
+        // Map, Array, etc:
+        // Remove cached key to ensure ADD operations is unsed instead of
+        // REPLACE in case same key is used on next patches.
+        //
+        // TODO: refactor this. this is not relevant for Collection and Set.
+        //
+        if (!(this.ref instanceof Schema_1.Schema)) {
+            this.changes.forEach(function (change) {
+                if (change.op === spec_1.OPERATION.DELETE) {
+                    var index = _this.ref['getIndex'](change.index);
+                    delete _this.indexes[index];
+                }
+            });
+        }
         this.changes.clear();
         this.changed = changed;
         // re-set `currentCustomOperation`
         this.currentCustomOperation = 0;
-        // this.root?.discard(this);
     };
     /**
      * Recursively discard all changes from this, and child structures.
@@ -450,12 +464,14 @@ var MapSchema = /** @class */ (function () {
         configurable: true
     });
     MapSchema.prototype.set = function (key, value) {
-        this.$items.set(key, value);
         // get "index" for this value.
         var hasIndex = typeof (this.$changes.indexes[key]) !== "undefined";
         var index = (hasIndex)
             ? this.$changes.indexes[key]
             : this.$refId++;
+        var operation = (hasIndex)
+            ? spec_1.OPERATION.REPLACE
+            : spec_1.OPERATION.ADD;
         var isRef = (value['$changes']) !== undefined;
         if (isRef) {
             value['$changes'].setParent(this, this.$changes.root, index);
@@ -468,7 +484,12 @@ var MapSchema = /** @class */ (function () {
             this.$changes.indexes[key] = index;
             this.$indexes.set(index, key);
         }
-        this.$changes.change(key, (hasIndex) ? spec_1.OPERATION.REPLACE : spec_1.OPERATION.ADD);
+        else if (isRef && // if is schema, force ADD operation if value differ from previous one.
+            this.$items.get(key) !== value) {
+            operation = spec_1.OPERATION.ADD;
+        }
+        this.$items.set(key, value);
+        this.$changes.change(key, operation);
         return this;
     };
     MapSchema.prototype.get = function (key) {
@@ -590,845 +611,6 @@ exports.MapSchema = MapSchema;
 
 "use strict";
 
-var __read = (this && this.__read) || function (o, n) {
-    var m = typeof Symbol === "function" && o[Symbol.iterator];
-    if (!m) return o;
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
-    }
-    catch (error) { e = { error: error }; }
-    finally {
-        try {
-            if (r && !r.done && (m = i["return"])) m.call(i);
-        }
-        finally { if (e) throw e.error; }
-    }
-    return ar;
-};
-var __spread = (this && this.__spread) || function () {
-    for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
-    return ar;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ArraySchema = exports.getArrayProxy = void 0;
-var ChangeTree_1 = __webpack_require__(1);
-var spec_1 = __webpack_require__(0);
-var DEFAULT_SORT = function (a, b) {
-    var A = a.toString();
-    var B = b.toString();
-    if (A < B)
-        return -1;
-    else if (A > B)
-        return 1;
-    else
-        return 0;
-};
-function getArrayProxy(value) {
-    value['$proxy'] = true;
-    //
-    // compatibility with @colyseus/schema 0.5.x
-    // - allow `map["key"]`
-    // - allow `map["key"] = "xxx"`
-    // - allow `delete map["key"]`
-    //
-    value = new Proxy(value, {
-        get: function (obj, prop) {
-            if (typeof (prop) !== "symbol" &&
-                !isNaN(prop) // https://stackoverflow.com/a/175787/892698
-            ) {
-                return obj.at(prop);
-            }
-            else {
-                return obj[prop];
-            }
-        },
-        set: function (obj, prop, setValue) {
-            if (typeof (prop) !== "symbol" &&
-                !isNaN(prop)) {
-                var indexes = Array.from(obj['$items'].keys());
-                obj.setAt(parseInt(indexes[prop] || prop), setValue);
-            }
-            else {
-                obj[prop] = setValue;
-            }
-            return true;
-        },
-        deleteProperty: function (obj, prop) {
-            if (typeof (prop) === "number") {
-                obj.deleteAt(prop);
-            }
-            else {
-                delete obj[prop];
-            }
-            return true;
-        },
-    });
-    return value;
-}
-exports.getArrayProxy = getArrayProxy;
-var ArraySchema = /** @class */ (function () {
-    function ArraySchema() {
-        var items = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            items[_i] = arguments[_i];
-        }
-        this.$changes = new ChangeTree_1.ChangeTree(this);
-        this.$items = new Map();
-        this.$indexes = new Map();
-        this.$refId = 0;
-        this.push.apply(this, __spread(items));
-    }
-    ArraySchema.is = function (type) {
-        return Array.isArray(type);
-    };
-    Object.defineProperty(ArraySchema.prototype, "length", {
-        get: function () {
-            return this.$items.size;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    ArraySchema.prototype.push = function () {
-        var _this = this;
-        var values = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            values[_i] = arguments[_i];
-        }
-        var lastIndex;
-        values.forEach(function (value) {
-            // set "index" for reference.
-            lastIndex = _this.$refId++;
-            _this.setAt(lastIndex, value);
-        });
-        return lastIndex;
-    };
-    /**
-     * Removes the last element from an array and returns it.
-     */
-    ArraySchema.prototype.pop = function () {
-        var key = Array.from(this.$indexes.values()).pop();
-        if (key === undefined) {
-            return undefined;
-        }
-        this.$changes.delete(key);
-        this.$indexes.delete(key);
-        var value = this.$items.get(key);
-        this.$items.delete(key);
-        return value;
-    };
-    ArraySchema.prototype.at = function (index) {
-        var key = Array.from(this.$items.keys())[index];
-        return this.$items.get(key);
-    };
-    ArraySchema.prototype.setAt = function (index, value) {
-        if (value['$changes'] !== undefined) {
-            value['$changes'].setParent(this, this.$changes.root, index);
-        }
-        var operation = (this.$changes.indexes[index] !== undefined)
-            ? spec_1.OPERATION.REPLACE
-            : spec_1.OPERATION.ADD;
-        this.$changes.indexes[index] = index;
-        this.$indexes.set(index, index);
-        this.$items.set(index, value);
-        this.$changes.change(index, operation);
-    };
-    ArraySchema.prototype.deleteAt = function (index) {
-        var key = Array.from(this.$items.keys())[index];
-        if (key === undefined) {
-            return false;
-        }
-        return this.$deleteAt(key);
-    };
-    ArraySchema.prototype.$deleteAt = function (index) {
-        // delete at internal index
-        this.$changes.delete(index);
-        this.$indexes.delete(index);
-        return this.$items.delete(index);
-    };
-    ArraySchema.prototype.clear = function (isDecoding) {
-        var _this = this;
-        // discard previous operations.
-        this.$changes.discard(true);
-        // clear previous indexes
-        this.$indexes.clear();
-        // flag child items for garbage collection.
-        if (isDecoding && typeof (this.$changes.getType()) !== "string") {
-            this.$items.forEach(function (item) {
-                _this.$changes.root.removeRef(item['$changes'].refId);
-            });
-        }
-        // clear items
-        this.$items.clear();
-        this.$changes.operation({ index: 0, op: spec_1.OPERATION.CLEAR });
-        // touch all structures until reach root
-        this.$changes.touchParents();
-    };
-    /**
-     * Combines two or more arrays.
-     * @param items Additional items to add to the end of array1.
-     */
-    ArraySchema.prototype.concat = function () {
-        var _a;
-        var items = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            items[_i] = arguments[_i];
-        }
-        return new (ArraySchema.bind.apply(ArraySchema, __spread([void 0], (_a = Array.from(this.$items.values())).concat.apply(_a, __spread(items)))))();
-    };
-    /**
-     * Adds all the elements of an array separated by the specified separator string.
-     * @param separator A string used to separate one element of an array from the next in the resulting String. If omitted, the array elements are separated with a comma.
-     */
-    ArraySchema.prototype.join = function (separator) {
-        return Array.from(this.$items.values()).join(separator);
-    };
-    /**
-     * Reverses the elements in an Array.
-     */
-    ArraySchema.prototype.reverse = function () {
-        //
-        // TODO: touch `$changes`
-        //
-        // this.$items.reverse();
-        return this;
-    };
-    /**
-     * Removes the first element from an array and returns it.
-     */
-    ArraySchema.prototype.shift = function () {
-        var indexes = Array.from(this.$items.keys());
-        var shiftAt = indexes.shift();
-        if (shiftAt === undefined) {
-            return undefined;
-        }
-        var value = this.$items.get(shiftAt);
-        this.$deleteAt(shiftAt);
-        return value;
-    };
-    /**
-     * Returns a section of an array.
-     * @param start The beginning of the specified portion of the array.
-     * @param end The end of the specified portion of the array. This is exclusive of the element at the index 'end'.
-     */
-    ArraySchema.prototype.slice = function (start, end) {
-        return new (ArraySchema.bind.apply(ArraySchema, __spread([void 0], Array.from(this.$items.values()).slice(start, end))))();
-    };
-    /**
-     * Sorts an array.
-     * @param compareFn Function used to determine the order of the elements. It is expected to return
-     * a negative value if first argument is less than second argument, zero if they're equal and a positive
-     * value otherwise. If omitted, the elements are sorted in ascending, ASCII character order.
-     * ```ts
-     * [11,2,22,1].sort((a, b) => a - b)
-     * ```
-     */
-    ArraySchema.prototype.sort = function (compareFn) {
-        var _this = this;
-        if (compareFn === void 0) { compareFn = DEFAULT_SORT; }
-        var indexes = Array.from(this.$items.keys());
-        var sortedItems = Array.from(this.$items.values()).sort(compareFn);
-        sortedItems.forEach(function (item, i) {
-            _this.setAt(indexes[i], item);
-        });
-        return this;
-    };
-    /**
-     * Removes elements from an array and, if necessary, inserts new elements in their place, returning the deleted elements.
-     * @param start The zero-based location in the array from which to start removing elements.
-     * @param deleteCount The number of elements to remove.
-     * @param items Elements to insert into the array in place of the deleted elements.
-     */
-    ArraySchema.prototype.splice = function (start, deleteCount) {
-        if (deleteCount === void 0) { deleteCount = this.length - start; }
-        var items = [];
-        for (var _i = 2; _i < arguments.length; _i++) {
-            items[_i - 2] = arguments[_i];
-        }
-        var indexes = Array.from(this.$items.keys());
-        var removedItems = [];
-        for (var i = start; i < start + deleteCount; i++) {
-            removedItems.push(this.$items.get(indexes[i]));
-            this.$deleteAt(indexes[i]);
-        }
-        return removedItems;
-    };
-    /**
-     * Inserts new elements at the start of an array.
-     * @param items  Elements to insert at the start of the Array.
-     */
-    ArraySchema.prototype.unshift = function () {
-        var _this = this;
-        var items = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            items[_i] = arguments[_i];
-        }
-        var indexes = Array.from(this.$items.keys());
-        var addCount = items.length;
-        items.forEach(function (item, i) {
-            var previousIndex = indexes[i];
-            var previousValue = _this.$items.get(previousIndex);
-            _this.setAt(previousIndex, item);
-            if (previousValue)
-                _this.push();
-        });
-        return this.length;
-    };
-    /**
-     * Returns the index of the first occurrence of a value in an array.
-     * @param searchElement The value to locate in the array.
-     * @param fromIndex The array index at which to begin the search. If fromIndex is omitted, the search starts at index 0.
-     */
-    ArraySchema.prototype.indexOf = function (searchElement, fromIndex) {
-        return Array.from(this.$items.values()).indexOf(searchElement, fromIndex);
-    };
-    /**
-     * Returns the index of the last occurrence of a specified value in an array.
-     * @param searchElement The value to locate in the array.
-     * @param fromIndex The array index at which to begin the search. If fromIndex is omitted, the search starts at the last index in the array.
-     */
-    ArraySchema.prototype.lastIndexOf = function (searchElement, fromIndex) {
-        return Array.from(this.$items.values()).indexOf(searchElement, fromIndex);
-    };
-    /**
-     * Determines whether all the members of an array satisfy the specified test.
-     * @param callbackfn A function that accepts up to three arguments. The every method calls
-     * the callbackfn function for each element in the array until the callbackfn returns a value
-     * which is coercible to the Boolean value false, or until the end of the array.
-     * @param thisArg An object to which the this keyword can refer in the callbackfn function.
-     * If thisArg is omitted, undefined is used as the this value.
-     */
-    ArraySchema.prototype.every = function (callbackfn, thisArg) {
-        return Array.from(this.$items.values()).every(callbackfn, thisArg);
-    };
-    /**
-     * Determines whether the specified callback function returns true for any element of an array.
-     * @param callbackfn A function that accepts up to three arguments. The some method calls
-     * the callbackfn function for each element in the array until the callbackfn returns a value
-     * which is coercible to the Boolean value true, or until the end of the array.
-     * @param thisArg An object to which the this keyword can refer in the callbackfn function.
-     * If thisArg is omitted, undefined is used as the this value.
-     */
-    ArraySchema.prototype.some = function (callbackfn, thisArg) {
-        return Array.from(this.$items.values()).some(callbackfn, thisArg);
-    };
-    /**
-     * Performs the specified action for each element in an array.
-     * @param callbackfn  A function that accepts up to three arguments. forEach calls the callbackfn function one time for each element in the array.
-     * @param thisArg  An object to which the this keyword can refer in the callbackfn function. If thisArg is omitted, undefined is used as the this value.
-     */
-    ArraySchema.prototype.forEach = function (callbackfn, thisArg) {
-        Array.from(this.$items.values()).forEach(callbackfn, thisArg);
-    };
-    /**
-     * Calls a defined callback function on each element of an array, and returns an array that contains the results.
-     * @param callbackfn A function that accepts up to three arguments. The map method calls the callbackfn function one time for each element in the array.
-     * @param thisArg An object to which the this keyword can refer in the callbackfn function. If thisArg is omitted, undefined is used as the this value.
-     */
-    ArraySchema.prototype.map = function (callbackfn, thisArg) {
-        return Array.from(this.$items.values()).map(callbackfn, thisArg);
-    };
-    ArraySchema.prototype.filter = function (callbackfn, thisArg) {
-        return Array.from(this.$items.values()).filter(callbackfn, thisArg);
-    };
-    /**
-     * Calls the specified callback function for all the elements in an array. The return value of the callback function is the accumulated result, and is provided as an argument in the next call to the callback function.
-     * @param callbackfn A function that accepts up to four arguments. The reduce method calls the callbackfn function one time for each element in the array.
-     * @param initialValue If initialValue is specified, it is used as the initial value to start the accumulation. The first call to the callbackfn function provides this value as an argument instead of an array value.
-     */
-    ArraySchema.prototype.reduce = function (callbackfn, initialValue) {
-        return Array.from(this.$items.values()).reduce(callbackfn, initialValue);
-    };
-    /**
-     * Calls the specified callback function for all the elements in an array, in descending order. The return value of the callback function is the accumulated result, and is provided as an argument in the next call to the callback function.
-     * @param callbackfn A function that accepts up to four arguments. The reduceRight method calls the callbackfn function one time for each element in the array.
-     * @param initialValue If initialValue is specified, it is used as the initial value to start the accumulation. The first call to the callbackfn function provides this value as an argument instead of an array value.
-     */
-    ArraySchema.prototype.reduceRight = function (callbackfn, initialValue) {
-        return Array.from(this.$items.values()).reduceRight(callbackfn, initialValue);
-    };
-    /**
-     * Returns the value of the first element in the array where predicate is true, and undefined
-     * otherwise.
-     * @param predicate find calls predicate once for each element of the array, in ascending
-     * order, until it finds one where predicate returns true. If such an element is found, find
-     * immediately returns that element value. Otherwise, find returns undefined.
-     * @param thisArg If provided, it will be used as the this value for each invocation of
-     * predicate. If it is not provided, undefined is used instead.
-     */
-    ArraySchema.prototype.find = function (predicate, thisArg) {
-        return Array.from(this.$items.values()).find(predicate, thisArg);
-    };
-    /**
-     * Returns the index of the first element in the array where predicate is true, and -1
-     * otherwise.
-     * @param predicate find calls predicate once for each element of the array, in ascending
-     * order, until it finds one where predicate returns true. If such an element is found,
-     * findIndex immediately returns that element index. Otherwise, findIndex returns -1.
-     * @param thisArg If provided, it will be used as the this value for each invocation of
-     * predicate. If it is not provided, undefined is used instead.
-     */
-    ArraySchema.prototype.findIndex = function (predicate, thisArg) {
-        return Array.from(this.$items.values()).findIndex(predicate, thisArg);
-    };
-    /**
-     * Returns the this object after filling the section identified by start and end with value
-     * @param value value to fill array section with
-     * @param start index to start filling the array at. If start is negative, it is treated as
-     * length+start where length is the length of the array.
-     * @param end index to stop filling the array at. If end is negative, it is treated as
-     * length+end.
-     */
-    ArraySchema.prototype.fill = function (value, start, end) {
-        //
-        // TODO
-        //
-        throw new Error("ArraySchema#fill() not implemented");
-        // this.$items.fill(value, start, end);
-        return this;
-    };
-    /**
-     * Returns the this object after copying a section of the array identified by start and end
-     * to the same array starting at position target
-     * @param target If target is negative, it is treated as length+target where length is the
-     * length of the array.
-     * @param start If start is negative, it is treated as length+start. If end is negative, it
-     * is treated as length+end.
-     * @param end If not specified, length of the this object is used as its default value.
-     */
-    ArraySchema.prototype.copyWithin = function (target, start, end) {
-        //
-        // TODO
-        //
-        throw new Error("ArraySchema#copyWithin() not implemented");
-        return this;
-    };
-    /**
-     * Returns a string representation of an array.
-     */
-    ArraySchema.prototype.toString = function () { return this.$items.toString(); };
-    /**
-     * Returns a string representation of an array. The elements are converted to string using their toLocalString methods.
-     */
-    ArraySchema.prototype.toLocaleString = function () { return this.$items.toLocaleString(); };
-    ;
-    /** Iterator */
-    ArraySchema.prototype[Symbol.iterator] = function () {
-        return Array.from(this.$items.values())[Symbol.iterator]();
-    };
-    ArraySchema.prototype[Symbol.unscopables] = function () {
-        return this.$items[Symbol.unscopables]();
-    };
-    /**
-     * Returns an iterable of key, value pairs for every entry in the array
-     */
-    ArraySchema.prototype.entries = function () { return this.$items.entries(); };
-    /**
-     * Returns an iterable of keys in the array
-     */
-    ArraySchema.prototype.keys = function () { return this.$items.keys(); };
-    /**
-     * Returns an iterable of values in the array
-     */
-    ArraySchema.prototype.values = function () { return this.$items.values(); };
-    /**
-     * Determines whether an array includes a certain element, returning true or false as appropriate.
-     * @param searchElement The element to search for.
-     * @param fromIndex The position in this array at which to begin searching for searchElement.
-     */
-    ArraySchema.prototype.includes = function (searchElement, fromIndex) {
-        return Array.from(this.$items.values()).includes(searchElement, fromIndex);
-    };
-    Object.defineProperty(ArraySchema.prototype, "size", {
-        get: function () {
-            return this.$items.size;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    ArraySchema.prototype.setIndex = function (index, key) {
-        this.$indexes.set(index, key);
-    };
-    ArraySchema.prototype.getIndex = function (index) {
-        return this.$indexes.get(index);
-    };
-    ArraySchema.prototype.getByIndex = function (index) {
-        return this.$items.get(this.$indexes.get(index));
-    };
-    ArraySchema.prototype.deleteByIndex = function (index) {
-        var key = this.$indexes.get(index);
-        this.$items.delete(key);
-        this.$indexes.delete(index);
-    };
-    ArraySchema.prototype.toArray = function () {
-        return Array.from(this.$items.values());
-    };
-    ArraySchema.prototype.toJSON = function () {
-        return this.toArray().map(function (value) {
-            return (typeof (value['toJSON']) === "function")
-                ? value['toJSON']()
-                : value;
-        });
-    };
-    //
-    // Decoding utilities
-    //
-    ArraySchema.prototype.clone = function (isDecoding) {
-        var cloned;
-        if (isDecoding) {
-            cloned = new (ArraySchema.bind.apply(ArraySchema, __spread([void 0], Array.from(this.$items.values()))))();
-        }
-        else {
-            cloned = new (ArraySchema.bind.apply(ArraySchema, __spread([void 0], this.map(function (item) { return ((item['$changes'])
-                ? item.clone()
-                : item); }))))();
-        }
-        return cloned;
-    };
-    ;
-    ArraySchema.prototype.triggerAll = function () {
-        var _this = this;
-        if (!this.onAdd) {
-            return;
-        }
-        this.forEach(function (value, key) { return _this.onAdd(value, key); });
-    };
-    return ArraySchema;
-}());
-exports.ArraySchema = ArraySchema;
-//# sourceMappingURL=ArraySchema.js.map
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.CollectionSchema = void 0;
-var ChangeTree_1 = __webpack_require__(1);
-var spec_1 = __webpack_require__(0);
-var CollectionSchema = /** @class */ (function () {
-    function CollectionSchema(initialValues) {
-        var _this = this;
-        this.$changes = new ChangeTree_1.ChangeTree(this);
-        this.$items = new Map();
-        this.$indexes = new Map();
-        this.$refId = 0;
-        if (initialValues) {
-            initialValues.forEach(function (v) { return _this.add(v); });
-        }
-    }
-    CollectionSchema.is = function (type) {
-        return type['collection'] !== undefined;
-    };
-    CollectionSchema.prototype.add = function (value) {
-        // set "index" for reference.
-        var index = this.$refId++;
-        var isRef = (value['$changes']) !== undefined;
-        if (isRef) {
-            value['$changes'].setParent(this, this.$changes.root, index);
-        }
-        this.$changes.indexes[index] = index;
-        this.$indexes.set(index, index);
-        this.$items.set(index, value);
-        this.$changes.change(index);
-        return index;
-    };
-    CollectionSchema.prototype.at = function (index) {
-        var key = Array.from(this.$items.keys())[index];
-        return this.$items.get(key);
-    };
-    CollectionSchema.prototype.delete = function (item) {
-        var entries = this.$items.entries();
-        var index;
-        var entry;
-        while (entry = entries.next()) {
-            if (entry.done) {
-                break;
-            }
-            if (item === entry.value[1]) {
-                index = entry.value[0];
-                break;
-            }
-        }
-        if (index === undefined) {
-            return false;
-        }
-        this.$changes.delete(index);
-        this.$indexes.delete(index);
-        return this.$items.delete(index);
-    };
-    CollectionSchema.prototype.clear = function (isDecoding) {
-        var _this = this;
-        // discard previous operations.
-        this.$changes.discard(true);
-        // clear previous indexes
-        this.$indexes.clear();
-        // flag child items for garbage collection.
-        if (isDecoding && typeof (this.$changes.getType()) !== "string") {
-            this.$items.forEach(function (item) {
-                _this.$changes.root.removeRef(item['$changes'].refId);
-            });
-        }
-        // clear items
-        this.$items.clear();
-        this.$changes.operation({ index: 0, op: spec_1.OPERATION.CLEAR });
-        // touch all structures until reach root
-        this.$changes.touchParents();
-    };
-    CollectionSchema.prototype.has = function (value) {
-        return Array.from(this.$items.values()).some(function (v) { return v === value; });
-    };
-    CollectionSchema.prototype.forEach = function (callbackfn) {
-        var _this = this;
-        this.$items.forEach(function (value, key, _) { return callbackfn(value, key, _this); });
-    };
-    CollectionSchema.prototype.values = function () {
-        return this.$items.values();
-    };
-    Object.defineProperty(CollectionSchema.prototype, "size", {
-        get: function () {
-            return this.$items.size;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    CollectionSchema.prototype.setIndex = function (index, key) {
-        this.$indexes.set(index, key);
-    };
-    CollectionSchema.prototype.getIndex = function (index) {
-        return this.$indexes.get(index);
-    };
-    CollectionSchema.prototype.getByIndex = function (index) {
-        return this.$items.get(this.$indexes.get(index));
-    };
-    CollectionSchema.prototype.deleteByIndex = function (index) {
-        var key = this.$indexes.get(index);
-        this.$items.delete(key);
-        this.$indexes.delete(index);
-    };
-    CollectionSchema.prototype.toArray = function () {
-        return Array.from(this.$items.values());
-    };
-    CollectionSchema.prototype.toJSON = function () {
-        var values = [];
-        this.forEach(function (value, key) {
-            values.push((typeof (value['toJSON']) === "function")
-                ? value['toJSON']()
-                : value);
-        });
-        return values;
-    };
-    //
-    // Decoding utilities
-    //
-    CollectionSchema.prototype.clone = function (isDecoding) {
-        var cloned;
-        if (isDecoding) {
-            // client-side
-            cloned = Object.assign(new CollectionSchema(), this);
-        }
-        else {
-            // server-side
-            var cloned_1 = new CollectionSchema();
-            this.forEach(function (value) {
-                if (value['$changes']) {
-                    cloned_1.add(value['clone']());
-                }
-                else {
-                    cloned_1.add(value);
-                }
-            });
-        }
-        return cloned;
-    };
-    CollectionSchema.prototype.triggerAll = function () {
-        var _this = this;
-        if (!this.onAdd) {
-            return;
-        }
-        this.forEach(function (value, key) { return _this.onAdd(value, key); });
-    };
-    return CollectionSchema;
-}());
-exports.CollectionSchema = CollectionSchema;
-//# sourceMappingURL=CollectionSchema.js.map
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.SetSchema = void 0;
-var ChangeTree_1 = __webpack_require__(1);
-var spec_1 = __webpack_require__(0);
-var SetSchema = /** @class */ (function () {
-    function SetSchema(initialValues) {
-        var _this = this;
-        this.$changes = new ChangeTree_1.ChangeTree(this);
-        this.$items = new Map();
-        this.$indexes = new Map();
-        this.$refId = 0;
-        if (initialValues) {
-            initialValues.forEach(function (v) { return _this.add(v); });
-        }
-    }
-    SetSchema.is = function (type) {
-        return type['set'] !== undefined;
-    };
-    SetSchema.prototype.add = function (value) {
-        if (this.has(value)) {
-            return false;
-        }
-        // set "index" for reference.
-        var index = this.$refId++;
-        var isRef = (value['$changes']) !== undefined;
-        if (isRef) {
-            value['$changes'].setParent(this, this.$changes.root, index);
-        }
-        this.$changes.indexes[index] = index;
-        this.$indexes.set(index, index);
-        this.$items.set(index, value);
-        this.$changes.change(index);
-        return index;
-    };
-    SetSchema.prototype.delete = function (item) {
-        var entries = this.$items.entries();
-        var index;
-        var entry;
-        while (entry = entries.next()) {
-            if (entry.done) {
-                break;
-            }
-            if (item === entry.value[1]) {
-                index = entry.value[0];
-                break;
-            }
-        }
-        if (index === undefined) {
-            return false;
-        }
-        this.$changes.delete(index);
-        this.$indexes.delete(index);
-        return this.$items.delete(index);
-    };
-    SetSchema.prototype.clear = function (isDecoding) {
-        var _this = this;
-        // discard previous operations.
-        this.$changes.discard(true);
-        // clear previous indexes
-        this.$indexes.clear();
-        // flag child items for garbage collection.
-        if (isDecoding && typeof (this.$changes.getType()) !== "string") {
-            this.$items.forEach(function (item) {
-                _this.$changes.root.removeRef(item['$changes'].refId);
-            });
-        }
-        // clear items
-        this.$items.clear();
-        this.$changes.operation({ index: 0, op: spec_1.OPERATION.CLEAR });
-        // touch all structures until reach root
-        this.$changes.touchParents();
-    };
-    SetSchema.prototype.has = function (value) {
-        var values = this.$items.values();
-        var has = false;
-        var entry;
-        while (entry = values.next()) {
-            if (entry.done) {
-                break;
-            }
-            if (value === entry.value) {
-                has = true;
-                break;
-            }
-        }
-        return has;
-    };
-    SetSchema.prototype.forEach = function (callbackfn) {
-        var _this = this;
-        this.$items.forEach(function (value, key, _) { return callbackfn(value, key, _this); });
-    };
-    SetSchema.prototype.values = function () {
-        return this.$items.values();
-    };
-    Object.defineProperty(SetSchema.prototype, "size", {
-        get: function () {
-            return this.$items.size;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    SetSchema.prototype.setIndex = function (index, key) {
-        this.$indexes.set(index, key);
-    };
-    SetSchema.prototype.getIndex = function (index) {
-        return this.$indexes.get(index);
-    };
-    SetSchema.prototype.getByIndex = function (index) {
-        return this.$items.get(this.$indexes.get(index));
-    };
-    SetSchema.prototype.deleteByIndex = function (index) {
-        var key = this.$indexes.get(index);
-        this.$items.delete(key);
-        this.$indexes.delete(index);
-    };
-    SetSchema.prototype.toArray = function () {
-        return Array.from(this.$items.values());
-    };
-    SetSchema.prototype.toJSON = function () {
-        var values = [];
-        this.forEach(function (value, key) {
-            values.push((typeof (value['toJSON']) === "function")
-                ? value['toJSON']()
-                : value);
-        });
-        return values;
-    };
-    //
-    // Decoding utilities
-    //
-    SetSchema.prototype.clone = function (isDecoding) {
-        var cloned;
-        if (isDecoding) {
-            // client-side
-            cloned = Object.assign(new SetSchema(), this);
-        }
-        else {
-            // server-side
-            var cloned_1 = new SetSchema();
-            this.forEach(function (value) {
-                if (value['$changes']) {
-                    cloned_1.add(value['clone']());
-                }
-                else {
-                    cloned_1.add(value);
-                }
-            });
-        }
-        return cloned;
-    };
-    SetSchema.prototype.triggerAll = function () {
-        var _this = this;
-        if (!this.onAdd) {
-            return;
-        }
-        this.forEach(function (value, key) { return _this.onAdd(value, key); });
-    };
-    return SetSchema;
-}());
-exports.SetSchema = SetSchema;
-//# sourceMappingURL=SetSchema.js.map
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -1448,10 +630,10 @@ var spec_1 = __webpack_require__(0);
 var annotations_1 = __webpack_require__(7);
 var encode = __webpack_require__(13);
 var decode = __webpack_require__(14);
-var ArraySchema_1 = __webpack_require__(3);
+var ArraySchema_1 = __webpack_require__(4);
 var MapSchema_1 = __webpack_require__(2);
-var CollectionSchema_1 = __webpack_require__(4);
-var SetSchema_1 = __webpack_require__(5);
+var CollectionSchema_1 = __webpack_require__(5);
+var SetSchema_1 = __webpack_require__(6);
 var ChangeTree_1 = __webpack_require__(1);
 var EventEmitter_1 = __webpack_require__(37);
 var filters_1 = __webpack_require__(38);
@@ -1491,7 +673,7 @@ function assertType(value, type, klass, field) {
             return;
     }
     if (typeof (value) !== typeofTarget && (!allowNull || (allowNull && value !== null))) {
-        var foundValue = "'" + JSON.stringify(value) + "'" + (value && value.constructor && " (" + value.constructor.name + ")");
+        var foundValue = "'" + JSON.stringify(value) + "'" + ((value && value.constructor && " (" + value.constructor.name + ")") || '');
         throw new EncodeSchemaError("a '" + typeofTarget + "' was expected, but " + foundValue + " was provided in " + klass.constructor.name + "#" + field);
     }
 }
@@ -2330,7 +1512,8 @@ var Schema = /** @class */ (function () {
                             }
                             (_h = (_g = ref).onAdd) === null || _h === void 0 ? void 0 : _h.call(_g, change.value, change.dynamicIndex);
                         }
-                        else if (change.op === spec_1.OPERATION.REPLACE) {
+                        else if (change.op === spec_1.OPERATION.REPLACE ||
+                            change.value !== change.previousValue) {
                             (_k = (_j = ref).onChange) === null || _k === void 0 ? void 0 : _k.call(_j, change.value, change.dynamicIndex);
                         }
                     }
@@ -2372,6 +1555,871 @@ exports.Schema = Schema;
 //# sourceMappingURL=Schema.js.map
 
 /***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __read = (this && this.__read) || function (o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+};
+var __spread = (this && this.__spread) || function () {
+    for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
+    return ar;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ArraySchema = exports.getArrayProxy = void 0;
+var ChangeTree_1 = __webpack_require__(1);
+var spec_1 = __webpack_require__(0);
+var DEFAULT_SORT = function (a, b) {
+    var A = a.toString();
+    var B = b.toString();
+    if (A < B)
+        return -1;
+    else if (A > B)
+        return 1;
+    else
+        return 0;
+};
+function getArrayProxy(value) {
+    value['$proxy'] = true;
+    //
+    // compatibility with @colyseus/schema 0.5.x
+    // - allow `map["key"]`
+    // - allow `map["key"] = "xxx"`
+    // - allow `delete map["key"]`
+    //
+    value = new Proxy(value, {
+        get: function (obj, prop) {
+            if (typeof (prop) !== "symbol" &&
+                !isNaN(prop) // https://stackoverflow.com/a/175787/892698
+            ) {
+                return obj.at(prop);
+            }
+            else {
+                return obj[prop];
+            }
+        },
+        set: function (obj, prop, setValue) {
+            if (typeof (prop) !== "symbol" &&
+                !isNaN(prop)) {
+                var indexes = Array.from(obj['$items'].keys());
+                obj.setAt(parseInt(indexes[prop] || prop), setValue);
+            }
+            else {
+                obj[prop] = setValue;
+            }
+            return true;
+        },
+        deleteProperty: function (obj, prop) {
+            if (typeof (prop) === "number") {
+                obj.deleteAt(prop);
+            }
+            else {
+                delete obj[prop];
+            }
+            return true;
+        },
+    });
+    return value;
+}
+exports.getArrayProxy = getArrayProxy;
+var ArraySchema = /** @class */ (function () {
+    function ArraySchema() {
+        var items = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            items[_i] = arguments[_i];
+        }
+        this.$changes = new ChangeTree_1.ChangeTree(this);
+        this.$items = new Map();
+        this.$indexes = new Map();
+        this.$refId = 0;
+        this.push.apply(this, __spread(items));
+    }
+    ArraySchema.is = function (type) {
+        return Array.isArray(type);
+    };
+    Object.defineProperty(ArraySchema.prototype, "length", {
+        get: function () {
+            return this.$items.size;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    ArraySchema.prototype.push = function () {
+        var _this = this;
+        var values = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            values[_i] = arguments[_i];
+        }
+        var lastIndex;
+        values.forEach(function (value) {
+            // set "index" for reference.
+            lastIndex = _this.$refId++;
+            _this.setAt(lastIndex, value);
+        });
+        return lastIndex;
+    };
+    /**
+     * Removes the last element from an array and returns it.
+     */
+    ArraySchema.prototype.pop = function () {
+        var key = Array.from(this.$indexes.values()).pop();
+        if (key === undefined) {
+            return undefined;
+        }
+        this.$changes.delete(key);
+        this.$indexes.delete(key);
+        var value = this.$items.get(key);
+        this.$items.delete(key);
+        return value;
+    };
+    ArraySchema.prototype.at = function (index) {
+        var key = Array.from(this.$items.keys())[index];
+        return this.$items.get(key);
+    };
+    ArraySchema.prototype.setAt = function (index, value) {
+        if (value['$changes'] !== undefined) {
+            value['$changes'].setParent(this, this.$changes.root, index);
+        }
+        var operation = (this.$changes.indexes[index] !== undefined)
+            ? spec_1.OPERATION.REPLACE
+            : spec_1.OPERATION.ADD;
+        this.$changes.indexes[index] = index;
+        this.$indexes.set(index, index);
+        this.$items.set(index, value);
+        this.$changes.change(index, operation);
+    };
+    ArraySchema.prototype.deleteAt = function (index) {
+        var key = Array.from(this.$items.keys())[index];
+        if (key === undefined) {
+            return false;
+        }
+        return this.$deleteAt(key);
+    };
+    ArraySchema.prototype.$deleteAt = function (index) {
+        // delete at internal index
+        this.$changes.delete(index);
+        this.$indexes.delete(index);
+        return this.$items.delete(index);
+    };
+    ArraySchema.prototype.clear = function (isDecoding) {
+        var _this = this;
+        // discard previous operations.
+        this.$changes.discard(true);
+        // clear previous indexes
+        this.$indexes.clear();
+        // flag child items for garbage collection.
+        if (isDecoding && typeof (this.$changes.getType()) !== "string") {
+            this.$items.forEach(function (item) {
+                _this.$changes.root.removeRef(item['$changes'].refId);
+            });
+        }
+        // clear items
+        this.$items.clear();
+        this.$changes.operation({ index: 0, op: spec_1.OPERATION.CLEAR });
+        // touch all structures until reach root
+        this.$changes.touchParents();
+    };
+    /**
+     * Combines two or more arrays.
+     * @param items Additional items to add to the end of array1.
+     */
+    ArraySchema.prototype.concat = function () {
+        var _a;
+        var items = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            items[_i] = arguments[_i];
+        }
+        return new (ArraySchema.bind.apply(ArraySchema, __spread([void 0], (_a = Array.from(this.$items.values())).concat.apply(_a, __spread(items)))))();
+    };
+    /**
+     * Adds all the elements of an array separated by the specified separator string.
+     * @param separator A string used to separate one element of an array from the next in the resulting String. If omitted, the array elements are separated with a comma.
+     */
+    ArraySchema.prototype.join = function (separator) {
+        return Array.from(this.$items.values()).join(separator);
+    };
+    /**
+     * Reverses the elements in an Array.
+     */
+    ArraySchema.prototype.reverse = function () {
+        //
+        // TODO: touch `$changes`
+        //
+        // this.$items.reverse();
+        return this;
+    };
+    /**
+     * Removes the first element from an array and returns it.
+     */
+    ArraySchema.prototype.shift = function () {
+        var indexes = Array.from(this.$items.keys());
+        var shiftAt = indexes.shift();
+        if (shiftAt === undefined) {
+            return undefined;
+        }
+        var value = this.$items.get(shiftAt);
+        this.$deleteAt(shiftAt);
+        return value;
+    };
+    /**
+     * Returns a section of an array.
+     * @param start The beginning of the specified portion of the array.
+     * @param end The end of the specified portion of the array. This is exclusive of the element at the index 'end'.
+     */
+    ArraySchema.prototype.slice = function (start, end) {
+        return new (ArraySchema.bind.apply(ArraySchema, __spread([void 0], Array.from(this.$items.values()).slice(start, end))))();
+    };
+    /**
+     * Sorts an array.
+     * @param compareFn Function used to determine the order of the elements. It is expected to return
+     * a negative value if first argument is less than second argument, zero if they're equal and a positive
+     * value otherwise. If omitted, the elements are sorted in ascending, ASCII character order.
+     * ```ts
+     * [11,2,22,1].sort((a, b) => a - b)
+     * ```
+     */
+    ArraySchema.prototype.sort = function (compareFn) {
+        var _this = this;
+        if (compareFn === void 0) { compareFn = DEFAULT_SORT; }
+        var indexes = Array.from(this.$items.keys());
+        var sortedItems = Array.from(this.$items.values()).sort(compareFn);
+        sortedItems.forEach(function (item, i) {
+            _this.setAt(indexes[i], item);
+        });
+        return this;
+    };
+    /**
+     * Removes elements from an array and, if necessary, inserts new elements in their place, returning the deleted elements.
+     * @param start The zero-based location in the array from which to start removing elements.
+     * @param deleteCount The number of elements to remove.
+     * @param items Elements to insert into the array in place of the deleted elements.
+     */
+    ArraySchema.prototype.splice = function (start, deleteCount) {
+        if (deleteCount === void 0) { deleteCount = this.length - start; }
+        var items = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            items[_i - 2] = arguments[_i];
+        }
+        var indexes = Array.from(this.$items.keys());
+        var removedItems = [];
+        for (var i = start; i < start + deleteCount; i++) {
+            removedItems.push(this.$items.get(indexes[i]));
+            this.$deleteAt(indexes[i]);
+        }
+        return removedItems;
+    };
+    /**
+     * Inserts new elements at the start of an array.
+     * @param items  Elements to insert at the start of the Array.
+     */
+    ArraySchema.prototype.unshift = function () {
+        var _this = this;
+        var items = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            items[_i] = arguments[_i];
+        }
+        var indexes = Array.from(this.$items.keys());
+        var addCount = items.length;
+        items.forEach(function (item, i) {
+            var previousIndex = indexes[i];
+            var previousValue = _this.$items.get(previousIndex);
+            _this.setAt(previousIndex, item);
+            if (previousValue)
+                _this.push();
+        });
+        return this.length;
+    };
+    /**
+     * Returns the index of the first occurrence of a value in an array.
+     * @param searchElement The value to locate in the array.
+     * @param fromIndex The array index at which to begin the search. If fromIndex is omitted, the search starts at index 0.
+     */
+    ArraySchema.prototype.indexOf = function (searchElement, fromIndex) {
+        return Array.from(this.$items.values()).indexOf(searchElement, fromIndex);
+    };
+    /**
+     * Returns the index of the last occurrence of a specified value in an array.
+     * @param searchElement The value to locate in the array.
+     * @param fromIndex The array index at which to begin the search. If fromIndex is omitted, the search starts at the last index in the array.
+     */
+    ArraySchema.prototype.lastIndexOf = function (searchElement, fromIndex) {
+        return Array.from(this.$items.values()).indexOf(searchElement, fromIndex);
+    };
+    /**
+     * Determines whether all the members of an array satisfy the specified test.
+     * @param callbackfn A function that accepts up to three arguments. The every method calls
+     * the callbackfn function for each element in the array until the callbackfn returns a value
+     * which is coercible to the Boolean value false, or until the end of the array.
+     * @param thisArg An object to which the this keyword can refer in the callbackfn function.
+     * If thisArg is omitted, undefined is used as the this value.
+     */
+    ArraySchema.prototype.every = function (callbackfn, thisArg) {
+        return Array.from(this.$items.values()).every(callbackfn, thisArg);
+    };
+    /**
+     * Determines whether the specified callback function returns true for any element of an array.
+     * @param callbackfn A function that accepts up to three arguments. The some method calls
+     * the callbackfn function for each element in the array until the callbackfn returns a value
+     * which is coercible to the Boolean value true, or until the end of the array.
+     * @param thisArg An object to which the this keyword can refer in the callbackfn function.
+     * If thisArg is omitted, undefined is used as the this value.
+     */
+    ArraySchema.prototype.some = function (callbackfn, thisArg) {
+        return Array.from(this.$items.values()).some(callbackfn, thisArg);
+    };
+    /**
+     * Performs the specified action for each element in an array.
+     * @param callbackfn  A function that accepts up to three arguments. forEach calls the callbackfn function one time for each element in the array.
+     * @param thisArg  An object to which the this keyword can refer in the callbackfn function. If thisArg is omitted, undefined is used as the this value.
+     */
+    ArraySchema.prototype.forEach = function (callbackfn, thisArg) {
+        Array.from(this.$items.values()).forEach(callbackfn, thisArg);
+    };
+    /**
+     * Calls a defined callback function on each element of an array, and returns an array that contains the results.
+     * @param callbackfn A function that accepts up to three arguments. The map method calls the callbackfn function one time for each element in the array.
+     * @param thisArg An object to which the this keyword can refer in the callbackfn function. If thisArg is omitted, undefined is used as the this value.
+     */
+    ArraySchema.prototype.map = function (callbackfn, thisArg) {
+        return Array.from(this.$items.values()).map(callbackfn, thisArg);
+    };
+    ArraySchema.prototype.filter = function (callbackfn, thisArg) {
+        return Array.from(this.$items.values()).filter(callbackfn, thisArg);
+    };
+    /**
+     * Calls the specified callback function for all the elements in an array. The return value of the callback function is the accumulated result, and is provided as an argument in the next call to the callback function.
+     * @param callbackfn A function that accepts up to four arguments. The reduce method calls the callbackfn function one time for each element in the array.
+     * @param initialValue If initialValue is specified, it is used as the initial value to start the accumulation. The first call to the callbackfn function provides this value as an argument instead of an array value.
+     */
+    ArraySchema.prototype.reduce = function (callbackfn, initialValue) {
+        return Array.from(this.$items.values()).reduce(callbackfn, initialValue);
+    };
+    /**
+     * Calls the specified callback function for all the elements in an array, in descending order. The return value of the callback function is the accumulated result, and is provided as an argument in the next call to the callback function.
+     * @param callbackfn A function that accepts up to four arguments. The reduceRight method calls the callbackfn function one time for each element in the array.
+     * @param initialValue If initialValue is specified, it is used as the initial value to start the accumulation. The first call to the callbackfn function provides this value as an argument instead of an array value.
+     */
+    ArraySchema.prototype.reduceRight = function (callbackfn, initialValue) {
+        return Array.from(this.$items.values()).reduceRight(callbackfn, initialValue);
+    };
+    /**
+     * Returns the value of the first element in the array where predicate is true, and undefined
+     * otherwise.
+     * @param predicate find calls predicate once for each element of the array, in ascending
+     * order, until it finds one where predicate returns true. If such an element is found, find
+     * immediately returns that element value. Otherwise, find returns undefined.
+     * @param thisArg If provided, it will be used as the this value for each invocation of
+     * predicate. If it is not provided, undefined is used instead.
+     */
+    ArraySchema.prototype.find = function (predicate, thisArg) {
+        return Array.from(this.$items.values()).find(predicate, thisArg);
+    };
+    /**
+     * Returns the index of the first element in the array where predicate is true, and -1
+     * otherwise.
+     * @param predicate find calls predicate once for each element of the array, in ascending
+     * order, until it finds one where predicate returns true. If such an element is found,
+     * findIndex immediately returns that element index. Otherwise, findIndex returns -1.
+     * @param thisArg If provided, it will be used as the this value for each invocation of
+     * predicate. If it is not provided, undefined is used instead.
+     */
+    ArraySchema.prototype.findIndex = function (predicate, thisArg) {
+        return Array.from(this.$items.values()).findIndex(predicate, thisArg);
+    };
+    /**
+     * Returns the this object after filling the section identified by start and end with value
+     * @param value value to fill array section with
+     * @param start index to start filling the array at. If start is negative, it is treated as
+     * length+start where length is the length of the array.
+     * @param end index to stop filling the array at. If end is negative, it is treated as
+     * length+end.
+     */
+    ArraySchema.prototype.fill = function (value, start, end) {
+        //
+        // TODO
+        //
+        throw new Error("ArraySchema#fill() not implemented");
+        // this.$items.fill(value, start, end);
+        return this;
+    };
+    /**
+     * Returns the this object after copying a section of the array identified by start and end
+     * to the same array starting at position target
+     * @param target If target is negative, it is treated as length+target where length is the
+     * length of the array.
+     * @param start If start is negative, it is treated as length+start. If end is negative, it
+     * is treated as length+end.
+     * @param end If not specified, length of the this object is used as its default value.
+     */
+    ArraySchema.prototype.copyWithin = function (target, start, end) {
+        //
+        // TODO
+        //
+        throw new Error("ArraySchema#copyWithin() not implemented");
+        return this;
+    };
+    /**
+     * Returns a string representation of an array.
+     */
+    ArraySchema.prototype.toString = function () { return this.$items.toString(); };
+    /**
+     * Returns a string representation of an array. The elements are converted to string using their toLocalString methods.
+     */
+    ArraySchema.prototype.toLocaleString = function () { return this.$items.toLocaleString(); };
+    ;
+    /** Iterator */
+    ArraySchema.prototype[Symbol.iterator] = function () {
+        return Array.from(this.$items.values())[Symbol.iterator]();
+    };
+    ArraySchema.prototype[Symbol.unscopables] = function () {
+        return this.$items[Symbol.unscopables]();
+    };
+    /**
+     * Returns an iterable of key, value pairs for every entry in the array
+     */
+    ArraySchema.prototype.entries = function () { return this.$items.entries(); };
+    /**
+     * Returns an iterable of keys in the array
+     */
+    ArraySchema.prototype.keys = function () { return this.$items.keys(); };
+    /**
+     * Returns an iterable of values in the array
+     */
+    ArraySchema.prototype.values = function () { return this.$items.values(); };
+    /**
+     * Determines whether an array includes a certain element, returning true or false as appropriate.
+     * @param searchElement The element to search for.
+     * @param fromIndex The position in this array at which to begin searching for searchElement.
+     */
+    ArraySchema.prototype.includes = function (searchElement, fromIndex) {
+        return Array.from(this.$items.values()).includes(searchElement, fromIndex);
+    };
+    /**
+     * Calls a defined callback function on each element of an array. Then, flattens the result into
+     * a new array.
+     * This is identical to a map followed by flat with depth 1.
+     *
+     * @param callback A function that accepts up to three arguments. The flatMap method calls the
+     * callback function one time for each element in the array.
+     * @param thisArg An object to which the this keyword can refer in the callback function. If
+     * thisArg is omitted, undefined is used as the this value.
+     */
+    // @ts-ignore
+    ArraySchema.prototype.flatMap = function (callback, thisArg) {
+        // @ts-ignore
+        throw new Error("ArraySchema#flatMap() is not supported.");
+    };
+    /**
+     * Returns a new array with all sub-array elements concatenated into it recursively up to the
+     * specified depth.
+     *
+     * @param depth The maximum recursion depth
+     */
+    // @ts-ignore
+    ArraySchema.prototype.flat = function (depth) {
+        // @ts-ignore
+        throw new Error("ArraySchema#flat() is not supported.");
+    };
+    Object.defineProperty(ArraySchema.prototype, "size", {
+        get: function () {
+            return this.$items.size;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    ArraySchema.prototype.setIndex = function (index, key) {
+        this.$indexes.set(index, key);
+    };
+    ArraySchema.prototype.getIndex = function (index) {
+        return this.$indexes.get(index);
+    };
+    ArraySchema.prototype.getByIndex = function (index) {
+        return this.$items.get(this.$indexes.get(index));
+    };
+    ArraySchema.prototype.deleteByIndex = function (index) {
+        var key = this.$indexes.get(index);
+        this.$items.delete(key);
+        this.$indexes.delete(index);
+    };
+    ArraySchema.prototype.toArray = function () {
+        return Array.from(this.$items.values());
+    };
+    ArraySchema.prototype.toJSON = function () {
+        return this.toArray().map(function (value) {
+            return (typeof (value['toJSON']) === "function")
+                ? value['toJSON']()
+                : value;
+        });
+    };
+    //
+    // Decoding utilities
+    //
+    ArraySchema.prototype.clone = function (isDecoding) {
+        var cloned;
+        if (isDecoding) {
+            cloned = new (ArraySchema.bind.apply(ArraySchema, __spread([void 0], Array.from(this.$items.values()))))();
+        }
+        else {
+            cloned = new (ArraySchema.bind.apply(ArraySchema, __spread([void 0], this.map(function (item) { return ((item['$changes'])
+                ? item.clone()
+                : item); }))))();
+        }
+        return cloned;
+    };
+    ;
+    ArraySchema.prototype.triggerAll = function () {
+        var _this = this;
+        if (!this.onAdd) {
+            return;
+        }
+        this.forEach(function (value, key) { return _this.onAdd(value, key); });
+    };
+    return ArraySchema;
+}());
+exports.ArraySchema = ArraySchema;
+//# sourceMappingURL=ArraySchema.js.map
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CollectionSchema = void 0;
+var ChangeTree_1 = __webpack_require__(1);
+var spec_1 = __webpack_require__(0);
+var CollectionSchema = /** @class */ (function () {
+    function CollectionSchema(initialValues) {
+        var _this = this;
+        this.$changes = new ChangeTree_1.ChangeTree(this);
+        this.$items = new Map();
+        this.$indexes = new Map();
+        this.$refId = 0;
+        if (initialValues) {
+            initialValues.forEach(function (v) { return _this.add(v); });
+        }
+    }
+    CollectionSchema.is = function (type) {
+        return type['collection'] !== undefined;
+    };
+    CollectionSchema.prototype.add = function (value) {
+        // set "index" for reference.
+        var index = this.$refId++;
+        var isRef = (value['$changes']) !== undefined;
+        if (isRef) {
+            value['$changes'].setParent(this, this.$changes.root, index);
+        }
+        this.$changes.indexes[index] = index;
+        this.$indexes.set(index, index);
+        this.$items.set(index, value);
+        this.$changes.change(index);
+        return index;
+    };
+    CollectionSchema.prototype.at = function (index) {
+        var key = Array.from(this.$items.keys())[index];
+        return this.$items.get(key);
+    };
+    CollectionSchema.prototype.delete = function (item) {
+        var entries = this.$items.entries();
+        var index;
+        var entry;
+        while (entry = entries.next()) {
+            if (entry.done) {
+                break;
+            }
+            if (item === entry.value[1]) {
+                index = entry.value[0];
+                break;
+            }
+        }
+        if (index === undefined) {
+            return false;
+        }
+        this.$changes.delete(index);
+        this.$indexes.delete(index);
+        return this.$items.delete(index);
+    };
+    CollectionSchema.prototype.clear = function (isDecoding) {
+        var _this = this;
+        // discard previous operations.
+        this.$changes.discard(true);
+        // clear previous indexes
+        this.$indexes.clear();
+        // flag child items for garbage collection.
+        if (isDecoding && typeof (this.$changes.getType()) !== "string") {
+            this.$items.forEach(function (item) {
+                _this.$changes.root.removeRef(item['$changes'].refId);
+            });
+        }
+        // clear items
+        this.$items.clear();
+        this.$changes.operation({ index: 0, op: spec_1.OPERATION.CLEAR });
+        // touch all structures until reach root
+        this.$changes.touchParents();
+    };
+    CollectionSchema.prototype.has = function (value) {
+        return Array.from(this.$items.values()).some(function (v) { return v === value; });
+    };
+    CollectionSchema.prototype.forEach = function (callbackfn) {
+        var _this = this;
+        this.$items.forEach(function (value, key, _) { return callbackfn(value, key, _this); });
+    };
+    CollectionSchema.prototype.values = function () {
+        return this.$items.values();
+    };
+    Object.defineProperty(CollectionSchema.prototype, "size", {
+        get: function () {
+            return this.$items.size;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    CollectionSchema.prototype.setIndex = function (index, key) {
+        this.$indexes.set(index, key);
+    };
+    CollectionSchema.prototype.getIndex = function (index) {
+        return this.$indexes.get(index);
+    };
+    CollectionSchema.prototype.getByIndex = function (index) {
+        return this.$items.get(this.$indexes.get(index));
+    };
+    CollectionSchema.prototype.deleteByIndex = function (index) {
+        var key = this.$indexes.get(index);
+        this.$items.delete(key);
+        this.$indexes.delete(index);
+    };
+    CollectionSchema.prototype.toArray = function () {
+        return Array.from(this.$items.values());
+    };
+    CollectionSchema.prototype.toJSON = function () {
+        var values = [];
+        this.forEach(function (value, key) {
+            values.push((typeof (value['toJSON']) === "function")
+                ? value['toJSON']()
+                : value);
+        });
+        return values;
+    };
+    //
+    // Decoding utilities
+    //
+    CollectionSchema.prototype.clone = function (isDecoding) {
+        var cloned;
+        if (isDecoding) {
+            // client-side
+            cloned = Object.assign(new CollectionSchema(), this);
+        }
+        else {
+            // server-side
+            var cloned_1 = new CollectionSchema();
+            this.forEach(function (value) {
+                if (value['$changes']) {
+                    cloned_1.add(value['clone']());
+                }
+                else {
+                    cloned_1.add(value);
+                }
+            });
+        }
+        return cloned;
+    };
+    CollectionSchema.prototype.triggerAll = function () {
+        var _this = this;
+        if (!this.onAdd) {
+            return;
+        }
+        this.forEach(function (value, key) { return _this.onAdd(value, key); });
+    };
+    return CollectionSchema;
+}());
+exports.CollectionSchema = CollectionSchema;
+//# sourceMappingURL=CollectionSchema.js.map
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SetSchema = void 0;
+var ChangeTree_1 = __webpack_require__(1);
+var spec_1 = __webpack_require__(0);
+var SetSchema = /** @class */ (function () {
+    function SetSchema(initialValues) {
+        var _this = this;
+        this.$changes = new ChangeTree_1.ChangeTree(this);
+        this.$items = new Map();
+        this.$indexes = new Map();
+        this.$refId = 0;
+        if (initialValues) {
+            initialValues.forEach(function (v) { return _this.add(v); });
+        }
+    }
+    SetSchema.is = function (type) {
+        return type['set'] !== undefined;
+    };
+    SetSchema.prototype.add = function (value) {
+        if (this.has(value)) {
+            return false;
+        }
+        // set "index" for reference.
+        var index = this.$refId++;
+        var isRef = (value['$changes']) !== undefined;
+        if (isRef) {
+            value['$changes'].setParent(this, this.$changes.root, index);
+        }
+        this.$changes.indexes[index] = index;
+        this.$indexes.set(index, index);
+        this.$items.set(index, value);
+        this.$changes.change(index);
+        return index;
+    };
+    SetSchema.prototype.delete = function (item) {
+        var entries = this.$items.entries();
+        var index;
+        var entry;
+        while (entry = entries.next()) {
+            if (entry.done) {
+                break;
+            }
+            if (item === entry.value[1]) {
+                index = entry.value[0];
+                break;
+            }
+        }
+        if (index === undefined) {
+            return false;
+        }
+        this.$changes.delete(index);
+        this.$indexes.delete(index);
+        return this.$items.delete(index);
+    };
+    SetSchema.prototype.clear = function (isDecoding) {
+        var _this = this;
+        // discard previous operations.
+        this.$changes.discard(true);
+        // clear previous indexes
+        this.$indexes.clear();
+        // flag child items for garbage collection.
+        if (isDecoding && typeof (this.$changes.getType()) !== "string") {
+            this.$items.forEach(function (item) {
+                _this.$changes.root.removeRef(item['$changes'].refId);
+            });
+        }
+        // clear items
+        this.$items.clear();
+        this.$changes.operation({ index: 0, op: spec_1.OPERATION.CLEAR });
+        // touch all structures until reach root
+        this.$changes.touchParents();
+    };
+    SetSchema.prototype.has = function (value) {
+        var values = this.$items.values();
+        var has = false;
+        var entry;
+        while (entry = values.next()) {
+            if (entry.done) {
+                break;
+            }
+            if (value === entry.value) {
+                has = true;
+                break;
+            }
+        }
+        return has;
+    };
+    SetSchema.prototype.forEach = function (callbackfn) {
+        var _this = this;
+        this.$items.forEach(function (value, key, _) { return callbackfn(value, key, _this); });
+    };
+    SetSchema.prototype.values = function () {
+        return this.$items.values();
+    };
+    Object.defineProperty(SetSchema.prototype, "size", {
+        get: function () {
+            return this.$items.size;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    SetSchema.prototype.setIndex = function (index, key) {
+        this.$indexes.set(index, key);
+    };
+    SetSchema.prototype.getIndex = function (index) {
+        return this.$indexes.get(index);
+    };
+    SetSchema.prototype.getByIndex = function (index) {
+        return this.$items.get(this.$indexes.get(index));
+    };
+    SetSchema.prototype.deleteByIndex = function (index) {
+        var key = this.$indexes.get(index);
+        this.$items.delete(key);
+        this.$indexes.delete(index);
+    };
+    SetSchema.prototype.toArray = function () {
+        return Array.from(this.$items.values());
+    };
+    SetSchema.prototype.toJSON = function () {
+        var values = [];
+        this.forEach(function (value, key) {
+            values.push((typeof (value['toJSON']) === "function")
+                ? value['toJSON']()
+                : value);
+        });
+        return values;
+    };
+    //
+    // Decoding utilities
+    //
+    SetSchema.prototype.clone = function (isDecoding) {
+        var cloned;
+        if (isDecoding) {
+            // client-side
+            cloned = Object.assign(new SetSchema(), this);
+        }
+        else {
+            // server-side
+            var cloned_1 = new SetSchema();
+            this.forEach(function (value) {
+                if (value['$changes']) {
+                    cloned_1.add(value['clone']());
+                }
+                else {
+                    cloned_1.add(value);
+                }
+            });
+        }
+        return cloned;
+    };
+    SetSchema.prototype.triggerAll = function () {
+        var _this = this;
+        if (!this.onAdd) {
+            return;
+        }
+        this.forEach(function (value, key) { return _this.onAdd(value, key); });
+    };
+    return SetSchema;
+}());
+exports.SetSchema = SetSchema;
+//# sourceMappingURL=SetSchema.js.map
+
+/***/ }),
 /* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -2399,10 +2447,11 @@ var __spread = (this && this.__spread) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.defineTypes = exports.deprecated = exports.filterChildren = exports.filter = exports.type = exports.globalContext = exports.Context = exports.hasFilter = exports.SchemaDefinition = void 0;
-var ArraySchema_1 = __webpack_require__(3);
+var Schema_1 = __webpack_require__(3);
+var ArraySchema_1 = __webpack_require__(4);
 var MapSchema_1 = __webpack_require__(2);
-var CollectionSchema_1 = __webpack_require__(4);
-var SetSchema_1 = __webpack_require__(5);
+var CollectionSchema_1 = __webpack_require__(5);
+var SetSchema_1 = __webpack_require__(6);
 var SchemaDefinition = /** @class */ (function () {
     function SchemaDefinition() {
         //
@@ -2521,6 +2570,15 @@ function type(type, context) {
         }
         var isArray = ArraySchema_1.ArraySchema.is(type);
         var isMap = !isArray && MapSchema_1.MapSchema.is(type);
+        // TODO: refactor me.
+        // Allow abstract intermediary classes with no fields to be serialized
+        // (See "should support an inheritance with a Schema type without fields" test)
+        if (typeof (type) !== "string" && !Schema_1.Schema.is(type)) {
+            var childType = Object.values(type)[0];
+            if (typeof (childType) !== "string" && !childType._context) {
+                context.add(childType);
+            }
+        }
         var fieldCached = "_" + field;
         definition.descriptors[fieldCached] = {
             enumerable: false,
@@ -3907,15 +3965,15 @@ exports.Auth = Auth;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var Schema_1 = __webpack_require__(6);
+var Schema_1 = __webpack_require__(3);
 Object.defineProperty(exports, "Schema", { enumerable: true, get: function () { return Schema_1.Schema; } });
 var MapSchema_1 = __webpack_require__(2);
 Object.defineProperty(exports, "MapSchema", { enumerable: true, get: function () { return MapSchema_1.MapSchema; } });
-var ArraySchema_1 = __webpack_require__(3);
+var ArraySchema_1 = __webpack_require__(4);
 Object.defineProperty(exports, "ArraySchema", { enumerable: true, get: function () { return ArraySchema_1.ArraySchema; } });
-var CollectionSchema_1 = __webpack_require__(4);
+var CollectionSchema_1 = __webpack_require__(5);
 Object.defineProperty(exports, "CollectionSchema", { enumerable: true, get: function () { return CollectionSchema_1.CollectionSchema; } });
-var SetSchema_1 = __webpack_require__(5);
+var SetSchema_1 = __webpack_require__(6);
 Object.defineProperty(exports, "SetSchema", { enumerable: true, get: function () { return SetSchema_1.SetSchema; } });
 // Utils
 var utils_1 = __webpack_require__(39);
@@ -6224,11 +6282,11 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Reflection = exports.ReflectionType = exports.ReflectionField = void 0;
 var annotations_1 = __webpack_require__(7);
-var Schema_1 = __webpack_require__(6);
-var ArraySchema_1 = __webpack_require__(3);
+var Schema_1 = __webpack_require__(3);
+var ArraySchema_1 = __webpack_require__(4);
 var MapSchema_1 = __webpack_require__(2);
-var CollectionSchema_1 = __webpack_require__(4);
-var SetSchema_1 = __webpack_require__(5);
+var CollectionSchema_1 = __webpack_require__(5);
+var SetSchema_1 = __webpack_require__(6);
 var reflectionContext = new annotations_1.Context();
 /**
  * Reflection

@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.14.0-alpha.4",
+  "version": "0.14.0-alpha.5",
   "description": "Multiplayer Game Client for the Browser",
   "author": "Endel Dreyer",
   "license": "MIT",
@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@colyseus/http": "^2.0.0",
-    "@colyseus/schema": "^1.0.0-alpha.12",
+    "@colyseus/schema": "^1.0.0-alpha.29",
     "@gamestdio/signals": "^1.0.0",
     "@gamestdio/state-listener": "^3.1.0",
     "@gamestdio/websocket": "^0.3.2",
