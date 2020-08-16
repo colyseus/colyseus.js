@@ -20,7 +20,7 @@ export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
     }
 
     teardown() {
-        // this.state.onRemove
+        this.state?.['$changes']?.root.clearRefs();
     }
 
     handshake(bytes: number[], it?: Iterator) {
