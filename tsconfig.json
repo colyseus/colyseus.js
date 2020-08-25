@@ -5,11 +5,12 @@
         "lib": ["dom", "es6"],
         "allowSyntheticDefaultImports": true,
         "noImplicitAny": false,
-        "sourceMap": false,
         "esModuleInterop": true,
         "experimentalDecorators": true,
         "declaration": true,
-        "outDir": "lib"
+        "outDir": "lib",
+        "inlineSourceMap": true,
+        "inlineSources": true
     },
     "include": [
         "src/**.ts",
