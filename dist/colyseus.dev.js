@@ -1,4 +1,4 @@
-/*! colyseus.js@0.13.1 */
+/*! colyseus.js@0.13.2 */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
@@ -122,6 +122,7 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
     return r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ArraySchema = void 0;
 var ArraySchema = /** @class */ (function (_super) {
     __extends(ArraySchema, _super);
     function ArraySchema() {
@@ -186,7 +187,7 @@ var ArraySchema = /** @class */ (function (_super) {
     }
     Object.defineProperty(ArraySchema, Symbol.species, {
         get: function () { return ArraySchema; },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     ArraySchema.prototype.sort = function (compareFn) {
@@ -224,7 +225,7 @@ var ArraySchema = /** @class */ (function (_super) {
         removedItems.map(function (removedItem) {
             var $changes = removedItem && removedItem.$changes;
             // If the removed item is a schema we need to update it.
-            if ($changes) {
+            if ($changes && $changes.parent) {
                 $changes.parent.deleteIndex(removedItem);
                 delete $changes.parent;
             }
@@ -252,6 +253,7 @@ exports.ArraySchema = ArraySchema;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.MapSchema = void 0;
 var MapSchema = /** @class */ (function () {
     function MapSchema(obj) {
         var _this = this;
@@ -349,6 +351,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Schema = void 0;
 var spec_1 = __webpack_require__(10);
 var encode = __webpack_require__(8);
 var decode = __webpack_require__(9);
@@ -447,37 +450,37 @@ var Schema = /** @class */ (function () {
     };
     Object.defineProperty(Schema.prototype, "_schema", {
         get: function () { return this.constructor._schema; },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(Schema.prototype, "_descriptors", {
         get: function () { return this.constructor._descriptors; },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(Schema.prototype, "_indexes", {
         get: function () { return this.constructor._indexes; },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(Schema.prototype, "_fieldsByIndex", {
         get: function () { return this.constructor._fieldsByIndex; },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(Schema.prototype, "_filters", {
         get: function () { return this.constructor._filters; },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(Schema.prototype, "_deprecated", {
         get: function () { return this.constructor._deprecated; },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(Schema.prototype, "$changed", {
         get: function () { return this.$changes.changed; },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Schema.prototype.listen = function (attr, callback) {
@@ -997,7 +1000,7 @@ var Schema = /** @class */ (function () {
         var changes = Array.from(this.$changes.changes);
         var fieldsByIndex = this._fieldsByIndex;
         for (var index in changes) {
-            var field = fieldsByIndex[index];
+            var field = fieldsByIndex[changes[index]];
             var type = schema[field];
             var value = this[field];
             // skip unchagned fields
@@ -1084,16 +1087,8 @@ exports.Schema = Schema;
 
 /***/ }),
 /* 3 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
+/***/ (function(module, exports) {
 
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "send", function() { return send; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "get", function() { return get; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "post", function() { return post; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "patch", function() { return patch; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "del", function() { return del; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "put", function() { return put; });
 function apply(src, tar) {
 	tar.headers = src.headers || {};
 	tar.statusMessage = src.statusText;
@@ -1101,7 +1096,7 @@ function apply(src, tar) {
 	tar.data = src.response;
 }
 
-function send(method, uri, opts) {
+exports.send = function (method, uri, opts) {
 	return new Promise(function (res, rej) {
 		opts = opts || {};
 		var k, str, tmp, arr;
@@ -1154,11 +1149,11 @@ function send(method, uri, opts) {
 	});
 }
 
-var get = send.bind(send, 'GET');
-var post = send.bind(send, 'POST');
-var patch = send.bind(send, 'PATCH');
-var del = send.bind(send, 'DELETE');
-var put = send.bind(send, 'PUT');
+exports.get = exports.send.bind(exports.send, 'GET');
+exports.post = exports.send.bind(exports.send, 'POST');
+exports.patch = exports.send.bind(exports.send, 'PATCH');
+exports.del = exports.send.bind(exports.send, 'DELETE');
+exports.put = exports.send.bind(exports.send, 'PUT');
 
 
 /***/ }),
@@ -1167,14 +1162,27 @@ var put = send.bind(send, 'PUT');
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Room = void 0;
 var msgpack = __importStar(__webpack_require__(5));
 var strong_events_1 = __webpack_require__(21);
 var nanoevents_1 = __webpack_require__(22);
@@ -1204,7 +1212,7 @@ var Room = /** @class */ (function () {
             // TODO: remove default serializer. it should arrive only after JOIN_ROOM.
             this.serializer = new (Serializer_1.getSerializer("fossil-delta"));
         }
-        this.onError(function (code, message) { return console.error("colyseus.js - onError => (" + code + ") " + message); });
+        this.onError(function (code, message) { return console.warn("colyseus.js - onError => (" + code + ") " + message); });
         this.onLeave(function () { return _this.removeAllListeners(); });
     }
     Room.prototype.connect = function (endpoint) {
@@ -1214,7 +1222,7 @@ var Room = /** @class */ (function () {
         this.connection.onmessage = this.onMessageCallback.bind(this);
         this.connection.onclose = function (e) {
             if (!_this.hasJoined) {
-                console.error("Room connection was closed unexpectedly (" + e.code + "): " + e.reason);
+                console.warn("Room connection was closed unexpectedly (" + e.code + "): " + e.reason);
                 _this.onError.invoke(e.code, e.reason);
                 return;
             }
@@ -1267,14 +1275,14 @@ var Room = /** @class */ (function () {
         get: function () {
             return this.serializer.getState();
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     // TODO: deprecate / move somewhere else
     // this method is useful only for FossilDeltaSerializer
     Room.prototype.listen = function (segments, callback, immediate) {
         if (this.serializerId === "schema") {
-            console.error("'" + this.serializerId + "' serializer doesn't support .listen() method here.");
+            console.warn("'" + this.serializerId + "' serializer doesn't support .listen() method here.");
             return;
         }
         else if (!this.serializerId) {
@@ -1401,6 +1409,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.encode = exports.decode = void 0;
 var decode_1 = __importDefault(__webpack_require__(19));
 var encode_1 = __importDefault(__webpack_require__(20));
 exports.decode = decode_1.default;
@@ -1414,6 +1423,7 @@ exports.encode = encode_1.default;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getSerializer = exports.registerSerializer = void 0;
 var serializers = {};
 function registerSerializer(id, serializer) {
     serializers[id] = serializer;
@@ -1433,6 +1443,7 @@ exports.getSerializer = getSerializer;
 
 // Use codes between 0~127 for lesser throughput (1 byte)
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.utf8Length = exports.utf8Read = exports.ErrorCode = exports.Protocol = void 0;
 var Protocol;
 (function (Protocol) {
     // Room-related (10~19)
@@ -1549,6 +1560,7 @@ exports.utf8Length = utf8Length;
  * SOFTWARE
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.number = exports.string = exports.boolean = exports.writeFloat64 = exports.writeFloat32 = exports.float64 = exports.float32 = exports.uint64 = exports.int64 = exports.uint32 = exports.int32 = exports.uint16 = exports.int16 = exports.uint8 = exports.int8 = exports.utf8Write = void 0;
 /**
  * msgpack implementation highly based on notepack.io
  * https://github.com/darrachequesne/notepack
@@ -1813,6 +1825,7 @@ exports.number = number;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.indexChangeCheck = exports.nilCheck = exports.arrayCheck = exports.numberCheck = exports.number = exports.stringCheck = exports.string = exports.boolean = exports.readFloat64 = exports.readFloat32 = exports.uint64 = exports.int64 = exports.float64 = exports.float32 = exports.uint32 = exports.int32 = exports.uint16 = exports.int16 = exports.uint8 = exports.int8 = void 0;
 var spec_1 = __webpack_require__(10);
 function utf8Read(bytes, offset, length) {
     var string = '', chr = 0;
@@ -2061,6 +2074,7 @@ exports.indexChangeCheck = indexChangeCheck;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.TYPE_ID = exports.INDEX_CHANGE = exports.NIL = exports.END_OF_STRUCTURE = void 0;
 exports.END_OF_STRUCTURE = 0xc1; // (msgpack spec: never used)
 exports.NIL = 0xc0;
 exports.INDEX_CHANGE = 0xd4;
@@ -2073,6 +2087,25 @@ exports.TYPE_ID = 0xd5;
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -2109,14 +2142,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Auth = exports.Platform = void 0;
 var http = __importStar(__webpack_require__(3));
 var Storage_1 = __webpack_require__(27);
 var TOKEN_STORAGE = "colyseus-auth-token";
@@ -2157,7 +2184,7 @@ var Auth = /** @class */ (function () {
         get: function () {
             return !!this.token;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Auth.prototype.login = function (options) {
@@ -2343,27 +2370,27 @@ exports.Auth = Auth;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var Schema_1 = __webpack_require__(2);
-exports.Schema = Schema_1.Schema;
+Object.defineProperty(exports, "Schema", { enumerable: true, get: function () { return Schema_1.Schema; } });
 var MapSchema_1 = __webpack_require__(1);
-exports.MapSchema = MapSchema_1.MapSchema;
+Object.defineProperty(exports, "MapSchema", { enumerable: true, get: function () { return MapSchema_1.MapSchema; } });
 var ArraySchema_1 = __webpack_require__(0);
-exports.ArraySchema = ArraySchema_1.ArraySchema;
+Object.defineProperty(exports, "ArraySchema", { enumerable: true, get: function () { return ArraySchema_1.ArraySchema; } });
 // Utils
 var utils_1 = __webpack_require__(36);
-exports.dumpChanges = utils_1.dumpChanges;
+Object.defineProperty(exports, "dumpChanges", { enumerable: true, get: function () { return utils_1.dumpChanges; } });
 // Reflection
 var Reflection_1 = __webpack_require__(37);
-exports.Reflection = Reflection_1.Reflection;
-exports.ReflectionType = Reflection_1.ReflectionType;
-exports.ReflectionField = Reflection_1.ReflectionField;
+Object.defineProperty(exports, "Reflection", { enumerable: true, get: function () { return Reflection_1.Reflection; } });
+Object.defineProperty(exports, "ReflectionType", { enumerable: true, get: function () { return Reflection_1.ReflectionType; } });
+Object.defineProperty(exports, "ReflectionField", { enumerable: true, get: function () { return Reflection_1.ReflectionField; } });
 var annotations_1 = __webpack_require__(14);
 // Annotations
-exports.type = annotations_1.type;
-exports.deprecated = annotations_1.deprecated;
-exports.filter = annotations_1.filter;
-exports.defineTypes = annotations_1.defineTypes;
+Object.defineProperty(exports, "type", { enumerable: true, get: function () { return annotations_1.type; } });
+Object.defineProperty(exports, "deprecated", { enumerable: true, get: function () { return annotations_1.deprecated; } });
+Object.defineProperty(exports, "filter", { enumerable: true, get: function () { return annotations_1.filter; } });
+Object.defineProperty(exports, "defineTypes", { enumerable: true, get: function () { return annotations_1.defineTypes; } });
 // Types
-exports.Context = annotations_1.Context;
+Object.defineProperty(exports, "Context", { enumerable: true, get: function () { return annotations_1.Context; } });
 //# sourceMappingURL=index.js.map
 
 /***/ }),
@@ -2373,6 +2400,7 @@ exports.Context = annotations_1.Context;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ChangeTree = void 0;
 var Schema_1 = __webpack_require__(2);
 var ArraySchema_1 = __webpack_require__(0);
 var MapSchema_1 = __webpack_require__(1);
@@ -2499,6 +2527,7 @@ exports.ChangeTree = ChangeTree;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.defineTypes = exports.deprecated = exports.filter = exports.type = exports.globalContext = exports.Context = void 0;
 var ChangeTree_1 = __webpack_require__(13);
 var Schema_1 = __webpack_require__(2);
 var Context = /** @class */ (function () {
@@ -2732,26 +2761,27 @@ exports.defineTypes = defineTypes;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.SchemaSerializer = exports.FossilDeltaSerializer = exports.registerSerializer = void 0;
 __webpack_require__(16);
 var Client_1 = __webpack_require__(17);
-exports.Client = Client_1.Client;
+Object.defineProperty(exports, "Client", { enumerable: true, get: function () { return Client_1.Client; } });
 var Protocol_1 = __webpack_require__(7);
-exports.Protocol = Protocol_1.Protocol;
-exports.ErrorCode = Protocol_1.ErrorCode;
+Object.defineProperty(exports, "Protocol", { enumerable: true, get: function () { return Protocol_1.Protocol; } });
+Object.defineProperty(exports, "ErrorCode", { enumerable: true, get: function () { return Protocol_1.ErrorCode; } });
 var Room_1 = __webpack_require__(4);
-exports.Room = Room_1.Room;
+Object.defineProperty(exports, "Room", { enumerable: true, get: function () { return Room_1.Room; } });
 var Auth_1 = __webpack_require__(11);
-exports.Auth = Auth_1.Auth;
-exports.Platform = Auth_1.Platform;
+Object.defineProperty(exports, "Auth", { enumerable: true, get: function () { return Auth_1.Auth; } });
+Object.defineProperty(exports, "Platform", { enumerable: true, get: function () { return Auth_1.Platform; } });
 /*
  * Serializers
  */
 var FossilDeltaSerializer_1 = __webpack_require__(29);
-exports.FossilDeltaSerializer = FossilDeltaSerializer_1.FossilDeltaSerializer;
+Object.defineProperty(exports, "FossilDeltaSerializer", { enumerable: true, get: function () { return FossilDeltaSerializer_1.FossilDeltaSerializer; } });
 var SchemaSerializer_1 = __webpack_require__(34);
-exports.SchemaSerializer = SchemaSerializer_1.SchemaSerializer;
+Object.defineProperty(exports, "SchemaSerializer", { enumerable: true, get: function () { return SchemaSerializer_1.SchemaSerializer; } });
 var Serializer_1 = __webpack_require__(6);
-exports.registerSerializer = Serializer_1.registerSerializer;
+Object.defineProperty(exports, "registerSerializer", { enumerable: true, get: function () { return Serializer_1.registerSerializer; } });
 Serializer_1.registerSerializer('fossil-delta', FossilDeltaSerializer_1.FossilDeltaSerializer);
 Serializer_1.registerSerializer('schema', SchemaSerializer_1.SchemaSerializer);
 
@@ -2829,7 +2859,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var httpie_1 = __webpack_require__(3);
+exports.Client = exports.MatchMakeError = void 0;
+var http_1 = __webpack_require__(3);
 var ServerError_1 = __webpack_require__(18);
 var Room_1 = __webpack_require__(4);
 var Auth_1 = __webpack_require__(11);
@@ -2914,7 +2945,7 @@ var Client = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         url = this.endpoint.replace("ws", "http") + "/matchmake/" + roomName;
-                        return [4 /*yield*/, httpie_1.get(url, { headers: { 'Accept': 'application/json' } })];
+                        return [4 /*yield*/, http_1.get(url, { headers: { 'Accept': 'application/json' } })];
                     case 1: return [2 /*return*/, (_a.sent()).data];
                 }
             });
@@ -2951,7 +2982,7 @@ var Client = /** @class */ (function () {
                         if (this.auth.hasToken) {
                             options.token = this.auth.token;
                         }
-                        return [4 /*yield*/, httpie_1.post(url, {
+                        return [4 /*yield*/, http_1.post(url, {
                                 headers: {
                                     'Accept': 'application/json',
                                     'Content-Type': 'application/json'
@@ -3007,6 +3038,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ServerError = void 0;
 var ServerError = /** @class */ (function (_super) {
     __extends(ServerError, _super);
     function ServerError(code, message) {
@@ -3728,17 +3760,15 @@ exports.createSignal = createSignal;
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createNanoEvents", function() { return createNanoEvents; });
 let createNanoEvents = () => ({
-  events: { },
+  events: {},
   emit (event, ...args) {
     for (let i of this.events[event] || []) {
       i(...args)
     }
   },
   on (event, cb) {
-    (this.events[event] = this.events[event] || []).push(cb)
-    return () => (
-      this.events[event] = this.events[event].filter(i => i !== cb)
-    )
+    ;(this.events[event] = this.events[event] || []).push(cb)
+    return () => (this.events[event] = this.events[event].filter(i => i !== cb))
   }
 })
 
@@ -3768,6 +3798,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Connection = void 0;
 var websocket_1 = __importDefault(__webpack_require__(24));
 var Connection = /** @class */ (function (_super) {
     __extends(Connection, _super);
@@ -3910,12 +3941,14 @@ Object.defineProperty(exports,"__esModule",{value:true});exports.createBackoff=c
 
 "use strict";
 
+/// <reference path="../typings/cocos-creator.d.ts" />
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getItem = exports.removeItem = exports.setItem = void 0;
 /**
  * We do not assign 'storage' to window.localStorage immediatelly for React
  * Native compatibility. window.localStorage is not present when this module is
  * loaded.
  */
-Object.defineProperty(exports, "__esModule", { value: true });
 var storage;
 function getStorage() {
     if (!storage) {
@@ -3998,6 +4031,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Push = void 0;
 var Push = /** @class */ (function () {
     function Push(endpoint) {
         this.endpoint = endpoint.replace("ws", "http");
@@ -4069,14 +4103,27 @@ exports.Push = Push;
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.FossilDeltaSerializer = void 0;
 var state_listener_1 = __webpack_require__(30);
 var fossilDelta = __importStar(__webpack_require__(33));
 var msgpack = __importStar(__webpack_require__(5));
@@ -4794,6 +4841,7 @@ return fossilDelta;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.SchemaSerializer = void 0;
 var schema_1 = __webpack_require__(12);
 var SchemaSerializer = /** @class */ (function () {
     function SchemaSerializer() {
@@ -4836,6 +4884,7 @@ exports.SchemaSerializer = SchemaSerializer;
  * Extracted from https://www.npmjs.com/package/strong-events
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.EventEmitter = void 0;
 var EventEmitter = /** @class */ (function () {
     function EventEmitter() {
         this.handlers = [];
@@ -4879,6 +4928,7 @@ exports.EventEmitter = EventEmitter;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.dumpChanges = void 0;
 var _1 = __webpack_require__(12);
 var MapSchema_1 = __webpack_require__(1);
 var ArraySchema_1 = __webpack_require__(0);
@@ -4929,6 +4979,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Reflection = exports.ReflectionType = exports.ReflectionField = void 0;
 var annotations_1 = __webpack_require__(14);
 var Schema_1 = __webpack_require__(2);
 var ArraySchema_1 = __webpack_require__(0);
