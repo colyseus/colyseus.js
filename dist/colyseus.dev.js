@@ -164,6 +164,7 @@ var Root = /** @class */ (function () {
         this.refCounts[refId] = (this.refCounts[refId] || 0) + 1;
         // console.log("addRef:", { refId });
     };
+<<<<<<< HEAD
     // for decoding
     Root.prototype.removeRef = function (refId) {
         this.refCounts[refId] = this.refCounts[refId] - 1;
@@ -183,6 +184,73 @@ var Root = /** @class */ (function () {
                             ref[fieldName]['$changes']) {
                             _this.removeRef(ref[fieldName]['$changes'].refId);
                         }
+=======
+})();
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ArraySchema = void 0;
+var ArraySchema = /** @class */ (function (_super) {
+    __extends(ArraySchema, _super);
+    function ArraySchema() {
+        var items = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            items[_i] = arguments[_i];
+        }
+        var _this = _super.apply(this, items) || this;
+        Object.setPrototypeOf(_this, Object.create(ArraySchema.prototype));
+        Object.defineProperties(_this, {
+            $sorting: { value: undefined, enumerable: false, writable: true },
+            $changes: { value: undefined, enumerable: false, writable: true },
+            onAdd: { value: undefined, enumerable: false, writable: true },
+            onRemove: { value: undefined, enumerable: false, writable: true },
+            onChange: { value: undefined, enumerable: false, writable: true },
+            triggerAll: {
+                value: function () {
+                    if (!_this.onAdd) {
+                        return;
+                    }
+                    for (var i = 0; i < _this.length; i++) {
+                        _this.onAdd(_this[i], i);
+                    }
+                }
+            },
+            toJSON: {
+                value: function () {
+                    var arr = [];
+                    for (var i = 0; i < _this.length; i++) {
+                        var objAt = _this[i];
+                        arr.push((typeof (objAt.toJSON) === "function")
+                            ? objAt.toJSON()
+                            : objAt);
+                    }
+                    return arr;
+                }
+            },
+            clone: {
+                value: function (isDecoding) {
+                    var cloned;
+                    if (isDecoding) {
+                        cloned = ArraySchema.of.apply(ArraySchema, _this);
+                        cloned.onAdd = _this.onAdd;
+                        cloned.onRemove = _this.onRemove;
+                        cloned.onChange = _this.onChange;
+                    }
+                    else {
+                        cloned = new (ArraySchema.bind.apply(ArraySchema, __spreadArrays([void 0], _this.map(function (item) {
+                            if (typeof (item) === "object") {
+                                return item.clone();
+                            }
+                            else {
+                                return item;
+                            }
+                        }))))();
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
                     }
                 }
                 _this.refs.delete(refId);
@@ -205,6 +273,7 @@ var ChangeTree = /** @class */ (function () {
         this.ref = ref;
         this.setParent(parent, root);
     }
+<<<<<<< HEAD
     ChangeTree.prototype.setParent = function (parent, root, parentIndex) {
         var _this = this;
         if (!this.indexes) {
@@ -229,6 +298,24 @@ var ChangeTree = /** @class */ (function () {
                 if (value && value['$changes']) {
                     var parentIndex_1 = definition.indexes[field];
                     value['$changes'].setParent(this.ref, root, parentIndex_1);
+=======
+    Object.defineProperty(ArraySchema, Symbol.species, {
+        get: function () { return ArraySchema; },
+        enumerable: false,
+        configurable: true
+    });
+    ArraySchema.prototype.sort = function (compareFn) {
+        this.$sorting = true;
+        _super.prototype.sort.call(this, compareFn);
+        if (this.$changes) { // allow to .slice() + .sort()
+            var changes = Array.from(this.$changes.changes);
+            for (var _i = 0, changes_1 = changes; _i < changes_1.length; _i++) {
+                var key = changes_1[_i];
+                // track index change
+                var previousIndex = this.$changes.getIndex(this[key]);
+                if (previousIndex !== undefined) {
+                    this.$changes.mapIndexChange(this[key], previousIndex);
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
                 }
             }
         }
@@ -263,6 +350,7 @@ var ChangeTree = /** @class */ (function () {
                 index: index
             });
         }
+<<<<<<< HEAD
         this.allChanges.add(index);
         this.changed = true;
         this.touchParents();
@@ -364,6 +452,27 @@ var ChangeTree = /** @class */ (function () {
             var value = _this.getValue(change.index);
             if (value && value['$changes']) {
                 value['$changes'].discardAll();
+=======
+        var removedItems = Array.prototype.splice.apply(this, arguments);
+        var movedItems = Array.prototype.filter.call(this, function (item, idx) {
+            return idx >= start + deleteCount - 1;
+        });
+        removedItems.map(function (removedItem) {
+            var $changes = removedItem && removedItem.$changes;
+            // If the removed item is a schema we need to update it.
+            if ($changes && $changes.parent) {
+                $changes.parent.deleteIndex(removedItem);
+                delete $changes.parent;
+            }
+        });
+        movedItems.forEach(function (movedItem) {
+            // If the moved item is a schema we need to update it.
+            var $changes = movedItem && movedItem.$changes;
+            if ($changes) {
+                // Update current index in parent, so subsequent changes in
+                // this item's properties are correctly reflected.
+                $changes.parentField--;
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
             }
         });
         this.discard();
@@ -399,6 +508,7 @@ exports.ChangeTree = ChangeTree;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+<<<<<<< HEAD
 exports.MapSchema = exports.getMapProxy = void 0;
 var ChangeTree_1 = __webpack_require__(1);
 var spec_1 = __webpack_require__(0);
@@ -435,6 +545,9 @@ function getMapProxy(value) {
     return value;
 }
 exports.getMapProxy = getMapProxy;
+=======
+exports.MapSchema = void 0;
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 var MapSchema = /** @class */ (function () {
     function MapSchema(initialValues) {
         var _this = this;
@@ -626,6 +739,7 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Schema = void 0;
+<<<<<<< HEAD
 var spec_1 = __webpack_require__(0);
 var annotations_1 = __webpack_require__(7);
 var encode = __webpack_require__(13);
@@ -637,6 +751,15 @@ var SetSchema_1 = __webpack_require__(6);
 var ChangeTree_1 = __webpack_require__(1);
 var EventEmitter_1 = __webpack_require__(37);
 var filters_1 = __webpack_require__(38);
+=======
+var spec_1 = __webpack_require__(10);
+var encode = __webpack_require__(8);
+var decode = __webpack_require__(9);
+var ArraySchema_1 = __webpack_require__(0);
+var MapSchema_1 = __webpack_require__(1);
+var ChangeTree_1 = __webpack_require__(13);
+var EventEmitter_1 = __webpack_require__(35);
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 var EncodeSchemaError = /** @class */ (function (_super) {
     __extends(EncodeSchemaError, _super);
     function EncodeSchemaError() {
@@ -732,6 +855,7 @@ var Schema = /** @class */ (function () {
     Schema.onError = function (e) {
         console.error(e);
     };
+<<<<<<< HEAD
     Schema.is = function (type) {
         return (type['_definition'] &&
             type['_definition'].schema !== undefined);
@@ -742,6 +866,40 @@ var Schema = /** @class */ (function () {
     };
     Object.defineProperty(Schema.prototype, "_definition", {
         get: function () { return this.constructor._definition; },
+=======
+    Object.defineProperty(Schema.prototype, "_schema", {
+        get: function () { return this.constructor._schema; },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Schema.prototype, "_descriptors", {
+        get: function () { return this.constructor._descriptors; },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Schema.prototype, "_indexes", {
+        get: function () { return this.constructor._indexes; },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Schema.prototype, "_fieldsByIndex", {
+        get: function () { return this.constructor._fieldsByIndex; },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Schema.prototype, "_filters", {
+        get: function () { return this.constructor._filters; },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Schema.prototype, "_deprecated", {
+        get: function () { return this.constructor._deprecated; },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Schema.prototype, "$changed", {
+        get: function () { return this.$changes.changed; },
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
         enumerable: false,
         configurable: true
     });
@@ -2579,6 +2737,7 @@ function type(type, context) {
                 context.add(childType);
             }
         }
+<<<<<<< HEAD
         var fieldCached = "_" + field;
         definition.descriptors[fieldCached] = {
             enumerable: false,
@@ -2596,6 +2755,32 @@ function type(type, context) {
                 // skip if value is the same as cached.
                 if (value === this[fieldCached]) {
                     return;
+=======
+        return obj;
+    };
+    Schema.prototype.discardAllChanges = function () {
+        var schema = this._schema;
+        var changes = Array.from(this.$changes.changes);
+        var fieldsByIndex = this._fieldsByIndex;
+        for (var index in changes) {
+            var field = fieldsByIndex[changes[index]];
+            var type = schema[field];
+            var value = this[field];
+            // skip unchagned fields
+            if (value === undefined) {
+                continue;
+            }
+            if (type._schema) {
+                value.discardAllChanges();
+            }
+            else if (Array.isArray(type)) {
+                for (var i = 0, l = value.length; i < l; i++) {
+                    var index_1 = value[i];
+                    var item = this["_" + field][index_1];
+                    if (typeof (type[0]) !== "string" && item) { // is array of Schema
+                        item.discardAllChanges();
+                    }
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
                 }
                 if (value !== undefined &&
                     value !== null) {
@@ -2696,7 +2881,11 @@ exports.defineTypes = defineTypes;
 //# sourceMappingURL=annotations.js.map
 
 /***/ }),
+<<<<<<< HEAD
 /* 8 */
+=======
+/* 3 */
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 /***/ (function(module, exports) {
 
 function apply(src, tar) {
@@ -2793,6 +2982,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Room = void 0;
+<<<<<<< HEAD
 var msgpack = __importStar(__webpack_require__(10));
 var strong_events_1 = __webpack_require__(23);
 var nanoevents_1 = __webpack_require__(24);
@@ -2801,6 +2991,16 @@ var Serializer_1 = __webpack_require__(11);
 var Protocol_1 = __webpack_require__(12);
 var encode = __importStar(__webpack_require__(13));
 var decode = __importStar(__webpack_require__(14));
+=======
+var msgpack = __importStar(__webpack_require__(5));
+var strong_events_1 = __webpack_require__(21);
+var nanoevents_1 = __webpack_require__(22);
+var Connection_1 = __webpack_require__(23);
+var Serializer_1 = __webpack_require__(6);
+var Protocol_1 = __webpack_require__(7);
+var encode = __importStar(__webpack_require__(8));
+var decode = __importStar(__webpack_require__(9));
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 var Room = /** @class */ (function () {
     function Room(name, rootSchema) {
         var _this = this;
@@ -2818,7 +3018,15 @@ var Room = /** @class */ (function () {
             this.rootSchema = rootSchema;
             this.serializer.state = new rootSchema();
         }
+<<<<<<< HEAD
         this.onError(function (code, message) { return console.error("colyseus.js - onError => (" + code + ") " + message); });
+=======
+        else {
+            // TODO: remove default serializer. it should arrive only after JOIN_ROOM.
+            this.serializer = new (Serializer_1.getSerializer("fossil-delta"));
+        }
+        this.onError(function (code, message) { return console.warn("colyseus.js - onError => (" + code + ") " + message); });
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
         this.onLeave(function () { return _this.removeAllListeners(); });
     }
     Room.prototype.connect = function (endpoint) {
@@ -2828,7 +3036,7 @@ var Room = /** @class */ (function () {
         this.connection.onmessage = this.onMessageCallback.bind(this);
         this.connection.onclose = function (e) {
             if (!_this.hasJoined) {
-                console.error("Room connection was closed unexpectedly (" + e.code + "): " + e.reason);
+                console.warn("Room connection was closed unexpectedly (" + e.code + "): " + e.reason);
                 _this.onError.invoke(e.code, e.reason);
                 return;
             }
@@ -2888,7 +3096,7 @@ var Room = /** @class */ (function () {
     // this method is useful only for FossilDeltaSerializer
     Room.prototype.listen = function (segments, callback, immediate) {
         if (this.serializerId === "schema") {
-            console.error("'" + this.serializerId + "' serializer doesn't support .listen() method here.");
+            console.warn("'" + this.serializerId + "' serializer doesn't support .listen() method here.");
             return;
         }
         else if (!this.serializerId) {
@@ -3012,8 +3220,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.encode = exports.decode = void 0;
+<<<<<<< HEAD
 var decode_1 = __importDefault(__webpack_require__(21));
 var encode_1 = __importDefault(__webpack_require__(22));
+=======
+var decode_1 = __importDefault(__webpack_require__(19));
+var encode_1 = __importDefault(__webpack_require__(20));
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 exports.decode = decode_1.default;
 exports.encode = encode_1.default;
 
@@ -3431,8 +3644,13 @@ exports.number = number;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+<<<<<<< HEAD
 exports.indexChangeCheck = exports.switchStructureCheck = exports.nilCheck = exports.arrayCheck = exports.numberCheck = exports.number = exports.stringCheck = exports.string = exports.boolean = exports.readFloat64 = exports.readFloat32 = exports.uint64 = exports.int64 = exports.float64 = exports.float32 = exports.uint32 = exports.int32 = exports.uint16 = exports.int16 = exports.uint8 = exports.int8 = void 0;
 var spec_1 = __webpack_require__(0);
+=======
+exports.indexChangeCheck = exports.nilCheck = exports.arrayCheck = exports.numberCheck = exports.number = exports.stringCheck = exports.string = exports.boolean = exports.readFloat64 = exports.readFloat32 = exports.uint64 = exports.int64 = exports.float64 = exports.float32 = exports.uint32 = exports.int32 = exports.uint16 = exports.int16 = exports.uint8 = exports.int8 = void 0;
+var spec_1 = __webpack_require__(10);
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 function utf8Read(bytes, offset, length) {
     var string = '', chr = 0;
     for (var i = offset, end = offset + length; i < end; i++) {
@@ -3678,7 +3896,25 @@ exports.indexChangeCheck = indexChangeCheck;
 //# sourceMappingURL=decode.js.map
 
 /***/ }),
+<<<<<<< HEAD
 /* 15 */
+=======
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TYPE_ID = exports.INDEX_CHANGE = exports.NIL = exports.END_OF_STRUCTURE = void 0;
+exports.END_OF_STRUCTURE = 0xc1; // (msgpack spec: never used)
+exports.NIL = 0xc0;
+exports.INDEX_CHANGE = 0xd4;
+exports.TYPE_ID = 0xd5;
+//# sourceMappingURL=spec.js.map
+
+/***/ }),
+/* 11 */
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3740,8 +3976,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Auth = exports.Platform = void 0;
+<<<<<<< HEAD
 var http = __importStar(__webpack_require__(8));
 var Storage_1 = __webpack_require__(29);
+=======
+var http = __importStar(__webpack_require__(3));
+var Storage_1 = __webpack_require__(27);
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 var TOKEN_STORAGE = "colyseus-auth-token";
 var Platform;
 (function (Platform) {
@@ -3935,6 +4176,170 @@ var Auth = /** @class */ (function () {
                         }
                         return [4 /*yield*/, http[method]("" + this.endpoint + segments + queryString, opts)];
                     case 1: return [2 /*return*/, (_a.sent()).data];
+<<<<<<< HEAD
+=======
+                }
+            });
+        });
+    };
+    Auth.prototype.logout = function () {
+        this.token = undefined;
+        Storage_1.removeItem(TOKEN_STORAGE);
+        this.unregisterPingService();
+    };
+    Auth.prototype.registerPingService = function (timeout) {
+        var _this = this;
+        if (timeout === void 0) { timeout = 15000; }
+        this.unregisterPingService();
+        this.keepOnlineInterval = setInterval(function () { return _this.request('get', '/auth'); }, timeout);
+    };
+    Auth.prototype.unregisterPingService = function () {
+        clearInterval(this.keepOnlineInterval);
+    };
+    return Auth;
+}());
+exports.Auth = Auth;
+
+
+/***/ }),
+/* 12 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var Schema_1 = __webpack_require__(2);
+Object.defineProperty(exports, "Schema", { enumerable: true, get: function () { return Schema_1.Schema; } });
+var MapSchema_1 = __webpack_require__(1);
+Object.defineProperty(exports, "MapSchema", { enumerable: true, get: function () { return MapSchema_1.MapSchema; } });
+var ArraySchema_1 = __webpack_require__(0);
+Object.defineProperty(exports, "ArraySchema", { enumerable: true, get: function () { return ArraySchema_1.ArraySchema; } });
+// Utils
+var utils_1 = __webpack_require__(36);
+Object.defineProperty(exports, "dumpChanges", { enumerable: true, get: function () { return utils_1.dumpChanges; } });
+// Reflection
+var Reflection_1 = __webpack_require__(37);
+Object.defineProperty(exports, "Reflection", { enumerable: true, get: function () { return Reflection_1.Reflection; } });
+Object.defineProperty(exports, "ReflectionType", { enumerable: true, get: function () { return Reflection_1.ReflectionType; } });
+Object.defineProperty(exports, "ReflectionField", { enumerable: true, get: function () { return Reflection_1.ReflectionField; } });
+var annotations_1 = __webpack_require__(14);
+// Annotations
+Object.defineProperty(exports, "type", { enumerable: true, get: function () { return annotations_1.type; } });
+Object.defineProperty(exports, "deprecated", { enumerable: true, get: function () { return annotations_1.deprecated; } });
+Object.defineProperty(exports, "filter", { enumerable: true, get: function () { return annotations_1.filter; } });
+Object.defineProperty(exports, "defineTypes", { enumerable: true, get: function () { return annotations_1.defineTypes; } });
+// Types
+Object.defineProperty(exports, "Context", { enumerable: true, get: function () { return annotations_1.Context; } });
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ChangeTree = void 0;
+var Schema_1 = __webpack_require__(2);
+var ArraySchema_1 = __webpack_require__(0);
+var MapSchema_1 = __webpack_require__(1);
+var ChangeTree = /** @class */ (function () {
+    function ChangeTree(indexes, parentField, parent) {
+        if (indexes === void 0) { indexes = {}; }
+        if (parentField === void 0) { parentField = null; }
+        this.changed = false;
+        this.changes = new Set();
+        this.allChanges = new Set();
+        this.deletedKeys = {};
+        this.fieldIndexes = indexes;
+        this.parent = parent;
+        this.parentField = parentField;
+    }
+    ChangeTree.prototype.change = function (fieldName, isDelete) {
+        if (isDelete === void 0) { isDelete = false; }
+        var fieldIndex = this.fieldIndexes[fieldName];
+        var field = (typeof (fieldIndex) === "number") ? fieldIndex : fieldName;
+        if (!isDelete) {
+            this.changed = true;
+            this.changes.add(field);
+            this.allChanges.add(field);
+        }
+        else if (isDelete) {
+            // if (this.changes.has(field))  {
+            //     /**
+            //      * un-flag a change if item has been added AND removed in the same patch.
+            //      * (https://github.com/colyseus/colyseus-unity3d/issues/103)
+            //      */
+            //     this.changes.delete(field);
+            // } else {
+            this.changed = true;
+            this.changes.add(field);
+            // }
+            // discard all-changes for removed items.
+            this.allChanges.delete(field);
+        }
+        if (this.parent) {
+            this.parent.change(this.parentField);
+        }
+    };
+    ChangeTree.prototype.mapIndex = function (instance, key) {
+        if (typeof instance === "object") {
+            if (!this.indexMap) {
+                this.indexMap = new Map();
+                this.indexChange = new Map();
+            }
+            this.indexMap.set(instance, key);
+        }
+    };
+    ChangeTree.prototype.getIndex = function (instance) {
+        return this.indexMap && this.indexMap.get(instance);
+    };
+    ChangeTree.prototype.deleteIndex = function (instance) {
+        if (typeof instance === "object") {
+            this.deletedKeys[this.indexMap.get(instance)] = true;
+            this.indexMap.delete(instance);
+        }
+    };
+    ChangeTree.prototype.isDeleted = function (key) {
+        return this.deletedKeys[key] !== undefined;
+    };
+    ChangeTree.prototype.mapIndexChange = function (instance, previousKey) {
+        if (typeof instance === "object" && !this.indexChange.has(instance)) {
+            this.indexChange.set(instance, previousKey);
+        }
+    };
+    ChangeTree.prototype.getIndexChange = function (instance) {
+        return this.indexChange && this.indexChange.get(instance);
+    };
+    ChangeTree.prototype.deleteIndexChange = function (instance) {
+        if (typeof instance === "object") {
+            this.indexChange.delete(instance);
+        }
+    };
+    ChangeTree.prototype.changeAll = function (obj) {
+        if (obj instanceof Schema_1.Schema) {
+            var schema = obj['_schema'];
+            for (var field in schema) {
+                // ensure ArraySchema and MapSchema already initialized
+                // on its structure have a valid parent.
+                if ((obj[field] instanceof Schema_1.Schema ||
+                    obj[field] instanceof ArraySchema_1.ArraySchema ||
+                    obj[field] instanceof MapSchema_1.MapSchema) &&
+                    !obj[field].$changes.parent.parent) {
+                    obj[field].$changes.parent = this;
+                }
+                if (obj[field] !== undefined) {
+                    this.change(field);
+                }
+            }
+        }
+        else {
+            var keys = Object.keys(obj);
+            for (var _i = 0, keys_1 = keys; _i < keys_1.length; _i++) {
+                var key = keys_1[_i];
+                if (obj[key] !== undefined) {
+                    this.change(key);
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
                 }
             });
         });
@@ -3965,6 +4370,7 @@ exports.Auth = Auth;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+<<<<<<< HEAD
 var Schema_1 = __webpack_require__(3);
 Object.defineProperty(exports, "Schema", { enumerable: true, get: function () { return Schema_1.Schema; } });
 var MapSchema_1 = __webpack_require__(2);
@@ -3996,6 +4402,234 @@ Object.defineProperty(exports, "SchemaDefinition", { enumerable: true, get: func
 // Types
 Object.defineProperty(exports, "Context", { enumerable: true, get: function () { return annotations_1.Context; } });
 //# sourceMappingURL=index.js.map
+=======
+exports.defineTypes = exports.deprecated = exports.filter = exports.type = exports.globalContext = exports.Context = void 0;
+var ChangeTree_1 = __webpack_require__(13);
+var Schema_1 = __webpack_require__(2);
+var Context = /** @class */ (function () {
+    function Context() {
+        this.types = {};
+        this.schemas = new Map();
+    }
+    Context.prototype.has = function (schema) {
+        return this.schemas.has(schema);
+    };
+    Context.prototype.get = function (typeid) {
+        return this.types[typeid];
+    };
+    Context.prototype.add = function (schema) {
+        schema._typeid = this.schemas.size;
+        this.types[schema._typeid] = schema;
+        this.schemas.set(schema, schema._typeid);
+    };
+    return Context;
+}());
+exports.Context = Context;
+exports.globalContext = new Context();
+/**
+ * `@type()` decorator for proxies
+ */
+function type(type, context) {
+    if (context === void 0) { context = exports.globalContext; }
+    return function (target, field) {
+        var constructor = target.constructor;
+        constructor._context = context;
+        /*
+         * static schema
+         */
+        if (!context.has(constructor)) {
+            context.add(constructor);
+            // support inheritance
+            constructor._schema = Object.assign({}, constructor._schema || {});
+            constructor._indexes = Object.assign({}, constructor._indexes || {});
+            constructor._fieldsByIndex = Object.assign({}, constructor._fieldsByIndex || {});
+            constructor._descriptors = Object.assign({}, constructor._descriptors || {});
+            constructor._deprecated = Object.assign({}, constructor._deprecated || {});
+        }
+        var index = Object.keys(constructor._schema).length;
+        constructor._fieldsByIndex[index] = field;
+        constructor._indexes[field] = index;
+        constructor._schema[field] = type;
+        /**
+         * skip if descriptor already exists for this field (`@deprecated()`)
+         */
+        if (constructor._descriptors[field]) {
+            return;
+        }
+        /**
+         * TODO: `isSchema` / `isArray` / `isMap` is repeated on many places!
+         * need to refactor all of them.
+         */
+        var isArray = Array.isArray(type);
+        var isMap = !isArray && type.map;
+        var isSchema = (typeof (constructor._schema[field]) === "function");
+        var fieldCached = "_" + field;
+        constructor._descriptors[fieldCached] = {
+            enumerable: false,
+            configurable: false,
+            writable: true,
+        };
+        constructor._descriptors[field] = {
+            get: function () {
+                return this[fieldCached];
+            },
+            set: function (value) {
+                /**
+                 * Create Proxy for array or map items
+                 */
+                if (isArray || isMap) {
+                    value = new Proxy(value, {
+                        get: function (obj, prop) { return obj[prop]; },
+                        set: function (obj, prop, setValue) {
+                            if (prop !== "length" && prop.indexOf("$") !== 0) {
+                                // ensure new value has a parent
+                                var key = (isArray) ? Number(prop) : String(prop);
+                                if (!obj.$sorting) {
+                                    // track index change
+                                    var previousIndex = obj.$changes.getIndex(setValue);
+                                    if (previousIndex !== undefined) {
+                                        obj.$changes.mapIndexChange(setValue, previousIndex);
+                                    }
+                                    obj.$changes.mapIndex(setValue, key);
+                                }
+                                // if (isMap) {
+                                //     obj._indexes.delete(prop);
+                                // }
+                                if (setValue instanceof Schema_1.Schema) {
+                                    // new items are flagged with all changes
+                                    if (!setValue.$changes.parent) {
+                                        setValue.$changes = new ChangeTree_1.ChangeTree(setValue._indexes, key, obj.$changes);
+                                        setValue.$changes.changeAll(setValue);
+                                    }
+                                }
+                                else {
+                                    obj[prop] = setValue;
+                                }
+                                // apply change on ArraySchema / MapSchema
+                                obj.$changes.change(key);
+                            }
+                            else if (setValue !== obj[prop]) {
+                                // console.log("SET NEW LENGTH:", setValue);
+                                // console.log("PREVIOUS LENGTH: ", obj[prop]);
+                            }
+                            obj[prop] = setValue;
+                            return true;
+                        },
+                        deleteProperty: function (obj, prop) {
+                            var deletedValue = obj[prop];
+                            if (isMap && deletedValue !== undefined) {
+                                obj.$changes.deleteIndex(deletedValue);
+                                obj.$changes.deleteIndexChange(deletedValue);
+                                if (deletedValue.$changes) { // deletedValue may be a primitive value
+                                    delete deletedValue.$changes.parent;
+                                }
+                                // obj._indexes.delete(prop);
+                            }
+                            delete obj[prop];
+                            var key = (isArray) ? Number(prop) : String(prop);
+                            obj.$changes.change(key, true);
+                            return true;
+                        },
+                    });
+                }
+                // skip if value is the same as cached.
+                if (value === this[fieldCached]) {
+                    return;
+                }
+                this[fieldCached] = value;
+                if (isArray) {
+                    // directly assigning an array of items as value.
+                    this.$changes.change(field);
+                    value.$changes = new ChangeTree_1.ChangeTree({}, field, this.$changes);
+                    for (var i = 0; i < value.length; i++) {
+                        if (value[i] instanceof Schema_1.Schema) {
+                            value[i].$changes = new ChangeTree_1.ChangeTree(value[i]._indexes, i, value.$changes);
+                            value[i].$changes.changeAll(value[i]);
+                        }
+                        value.$changes.mapIndex(value[i], i);
+                        value.$changes.change(i);
+                    }
+                }
+                else if (isMap) {
+                    // directly assigning a map
+                    value.$changes = new ChangeTree_1.ChangeTree({}, field, this.$changes);
+                    this.$changes.change(field);
+                    for (var key in value) {
+                        if (value[key] instanceof Schema_1.Schema) {
+                            value[key].$changes = new ChangeTree_1.ChangeTree(value[key]._indexes, key, value.$changes);
+                            value[key].$changes.changeAll(value[key]);
+                        }
+                        value.$changes.mapIndex(value[key], key);
+                        value.$changes.change(key);
+                    }
+                }
+                else if (isSchema) {
+                    // directly assigning a `Schema` object
+                    // value may be set to null
+                    this.$changes.change(field);
+                    if (value) {
+                        value.$changes = new ChangeTree_1.ChangeTree(value._indexes, field, this.$changes);
+                        value.$changes.changeAll(value);
+                    }
+                }
+                else {
+                    // directly assigning a primitive type
+                    this.$changes.change(field);
+                }
+            },
+            enumerable: true,
+            configurable: true
+        };
+    };
+}
+exports.type = type;
+/**
+ * `@filter()` decorator for defining data filters per client
+ */
+function filter(cb) {
+    return function (target, field) {
+        var constructor = target.constructor;
+        /*
+         * static filters
+         */
+        if (!constructor._filters) {
+            constructor._filters = {};
+        }
+        constructor._filters[field] = cb;
+    };
+}
+exports.filter = filter;
+/**
+ * `@deprecated()` flag a field as deprecated.
+ * The previous `@type()` annotation should remain along with this one.
+ */
+function deprecated(throws, context) {
+    if (throws === void 0) { throws = true; }
+    if (context === void 0) { context = exports.globalContext; }
+    return function (target, field) {
+        var constructor = target.constructor;
+        constructor._deprecated[field] = true;
+        if (throws) {
+            constructor._descriptors[field] = {
+                get: function () { throw new Error(field + " is deprecated."); },
+                set: function (value) { },
+                enumerable: false,
+                configurable: true
+            };
+        }
+    };
+}
+exports.deprecated = deprecated;
+function defineTypes(target, fields, context) {
+    if (context === void 0) { context = exports.globalContext; }
+    for (var field in fields) {
+        type(fields[field], context)(target.prototype, field);
+    }
+    return target;
+}
+exports.defineTypes = defineTypes;
+//# sourceMappingURL=annotations.js.map
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 
 /***/ }),
 /* 17 */
@@ -4005,6 +4639,7 @@ Object.defineProperty(exports, "Context", { enumerable: true, get: function () {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SchemaSerializer = exports.FossilDeltaSerializer = exports.registerSerializer = void 0;
+<<<<<<< HEAD
 __webpack_require__(18);
 var Client_1 = __webpack_require__(19);
 Object.defineProperty(exports, "Client", { enumerable: true, get: function () { return Client_1.Client; } });
@@ -4014,17 +4649,36 @@ Object.defineProperty(exports, "ErrorCode", { enumerable: true, get: function ()
 var Room_1 = __webpack_require__(9);
 Object.defineProperty(exports, "Room", { enumerable: true, get: function () { return Room_1.Room; } });
 var Auth_1 = __webpack_require__(15);
+=======
+__webpack_require__(16);
+var Client_1 = __webpack_require__(17);
+Object.defineProperty(exports, "Client", { enumerable: true, get: function () { return Client_1.Client; } });
+var Protocol_1 = __webpack_require__(7);
+Object.defineProperty(exports, "Protocol", { enumerable: true, get: function () { return Protocol_1.Protocol; } });
+Object.defineProperty(exports, "ErrorCode", { enumerable: true, get: function () { return Protocol_1.ErrorCode; } });
+var Room_1 = __webpack_require__(4);
+Object.defineProperty(exports, "Room", { enumerable: true, get: function () { return Room_1.Room; } });
+var Auth_1 = __webpack_require__(11);
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 Object.defineProperty(exports, "Auth", { enumerable: true, get: function () { return Auth_1.Auth; } });
 Object.defineProperty(exports, "Platform", { enumerable: true, get: function () { return Auth_1.Platform; } });
 /*
  * Serializers
  */
+<<<<<<< HEAD
 var FossilDeltaSerializer_1 = __webpack_require__(31);
 Object.defineProperty(exports, "FossilDeltaSerializer", { enumerable: true, get: function () { return FossilDeltaSerializer_1.FossilDeltaSerializer; } });
 var SchemaSerializer_1 = __webpack_require__(36);
 Object.defineProperty(exports, "SchemaSerializer", { enumerable: true, get: function () { return SchemaSerializer_1.SchemaSerializer; } });
 var NoneSerializer_1 = __webpack_require__(41);
 var Serializer_1 = __webpack_require__(11);
+=======
+var FossilDeltaSerializer_1 = __webpack_require__(29);
+Object.defineProperty(exports, "FossilDeltaSerializer", { enumerable: true, get: function () { return FossilDeltaSerializer_1.FossilDeltaSerializer; } });
+var SchemaSerializer_1 = __webpack_require__(34);
+Object.defineProperty(exports, "SchemaSerializer", { enumerable: true, get: function () { return SchemaSerializer_1.SchemaSerializer; } });
+var Serializer_1 = __webpack_require__(6);
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 Object.defineProperty(exports, "registerSerializer", { enumerable: true, get: function () { return Serializer_1.registerSerializer; } });
 Serializer_1.registerSerializer('fossil-delta', FossilDeltaSerializer_1.FossilDeltaSerializer);
 Serializer_1.registerSerializer('schema', SchemaSerializer_1.SchemaSerializer);
@@ -4105,11 +4759,19 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Client = exports.MatchMakeError = void 0;
+<<<<<<< HEAD
 var http_1 = __webpack_require__(8);
 var ServerError_1 = __webpack_require__(20);
 var Room_1 = __webpack_require__(9);
 var Auth_1 = __webpack_require__(15);
 var Push_1 = __webpack_require__(30);
+=======
+var http_1 = __webpack_require__(3);
+var ServerError_1 = __webpack_require__(18);
+var Room_1 = __webpack_require__(4);
+var Auth_1 = __webpack_require__(11);
+var Push_1 = __webpack_require__(28);
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 var MatchMakeError = /** @class */ (function (_super) {
     __extends(MatchMakeError, _super);
     function MatchMakeError(message, code) {
@@ -4807,13 +5469,13 @@ function _encode(bytes, defers, value) {
                 bytes.push(0xc4, length);
                 size = 2;
             }
-            else 
+            else
             // bin 16
             if (length < 0x10000) {
                 bytes.push(0xc5, length >> 8, length);
                 size = 3;
             }
-            else 
+            else
             // bin 32
             if (length < 0x100000000) {
                 bytes.push(0xc6, length >> 24, length >> 16, length >> 8, length);
@@ -5044,7 +5706,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Connection = void 0;
+<<<<<<< HEAD
 var websocket_1 = __importDefault(__webpack_require__(26));
+=======
+var websocket_1 = __importDefault(__webpack_require__(24));
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 var Connection = /** @class */ (function (_super) {
     __extends(Connection, _super);
     function Connection(url, autoConnect) {
@@ -5369,9 +6035,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FossilDeltaSerializer = void 0;
+<<<<<<< HEAD
 var state_listener_1 = __webpack_require__(32);
 var fossilDelta = __importStar(__webpack_require__(35));
 var msgpack = __importStar(__webpack_require__(10));
+=======
+var state_listener_1 = __webpack_require__(30);
+var fossilDelta = __importStar(__webpack_require__(33));
+var msgpack = __importStar(__webpack_require__(5));
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 var FossilDeltaSerializer = /** @class */ (function () {
     function FossilDeltaSerializer() {
         this.api = new state_listener_1.StateContainer({});
@@ -6087,7 +6759,11 @@ return fossilDelta;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SchemaSerializer = void 0;
+<<<<<<< HEAD
 var schema_1 = __webpack_require__(16);
+=======
+var schema_1 = __webpack_require__(12);
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 var SchemaSerializer = /** @class */ (function () {
     function SchemaSerializer() {
     }
@@ -6193,6 +6869,7 @@ exports.EventEmitter = EventEmitter;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+<<<<<<< HEAD
 exports.ClientState = void 0;
 var ClientState = /** @class */ (function () {
     function ClientState() {
@@ -6204,6 +6881,23 @@ var ClientState = /** @class */ (function () {
         if (!this.refIds.has(changeTree)) {
             this.refIds.add(changeTree);
             this.containerIndexes.set(changeTree, new Set());
+=======
+exports.dumpChanges = void 0;
+var _1 = __webpack_require__(12);
+var MapSchema_1 = __webpack_require__(1);
+var ArraySchema_1 = __webpack_require__(0);
+function dumpChanges(schema) {
+    var dump = {};
+    var $changes = schema.$changes;
+    var fieldsByIndex = schema['_fieldsByIndex'] || {};
+    for (var _i = 0, _a = Array.from($changes.changes); _i < _a.length; _i++) {
+        var fieldIndex = _a[_i];
+        var field = fieldsByIndex[fieldIndex] || fieldIndex;
+        if (schema[field] instanceof MapSchema_1.MapSchema ||
+            schema[field] instanceof ArraySchema_1.ArraySchema ||
+            schema[field] instanceof _1.Schema) {
+            dump[field] = dumpChanges(schema[field]);
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
         }
     };
     ClientState.get = function (client) {
@@ -6281,12 +6975,19 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Reflection = exports.ReflectionType = exports.ReflectionField = void 0;
+<<<<<<< HEAD
 var annotations_1 = __webpack_require__(7);
 var Schema_1 = __webpack_require__(3);
 var ArraySchema_1 = __webpack_require__(4);
 var MapSchema_1 = __webpack_require__(2);
 var CollectionSchema_1 = __webpack_require__(5);
 var SetSchema_1 = __webpack_require__(6);
+=======
+var annotations_1 = __webpack_require__(14);
+var Schema_1 = __webpack_require__(2);
+var ArraySchema_1 = __webpack_require__(0);
+var MapSchema_1 = __webpack_require__(1);
+>>>>>>> 8fb833b... use console.warn instead of console.error for internal errors. colyseus/colyseus#363
 var reflectionContext = new annotations_1.Context();
 /**
  * Reflection

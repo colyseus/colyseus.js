@@ -57,7 +57,7 @@ export class Room<State= any> {
             (this.serializer as SchemaSerializer).state = new rootSchema();
         }
 
-        this.onError((code, message) => console.error(`colyseus.js - onError => (${code}) ${message}`));
+        this.onError((code, message) => console.warn(`colyseus.js - onError => (${code}) ${message}`));
         this.onLeave(() => this.removeAllListeners());
     }
 
@@ -67,7 +67,7 @@ export class Room<State= any> {
         this.connection.onmessage = this.onMessageCallback.bind(this);
         this.connection.onclose = (e: CloseEvent) => {
             if (!this.hasJoined) {
-                console.error(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
+                console.warn(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
                 this.onError.invoke(e.code, e.reason);
                 return;
             }
@@ -146,7 +146,7 @@ export class Room<State= any> {
     // this method is useful only for FossilDeltaSerializer
     public listen(segments: string, callback: Function, immediate?: boolean) {
         if (this.serializerId === "schema") {
-            console.error(`'${this.serializerId}' serializer doesn't support .listen() method here.`);
+            console.warn(`'${this.serializerId}' serializer doesn't support .listen() method here.`);
             return;
 
         } else if (!this.serializerId) {
