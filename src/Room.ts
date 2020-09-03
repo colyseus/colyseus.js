@@ -16,7 +16,7 @@ import { Context, Schema } from '@colyseus/schema';
 import * as encode from '@colyseus/schema/lib/encoding/encode';
 import * as decode from '@colyseus/schema/lib/encoding/decode';
 
-export interface RoomAvailable<Metadata> {
+export interface RoomAvailable<Metadata = any> {
     roomId: string;
     clients: number;
     maxClients: number;
