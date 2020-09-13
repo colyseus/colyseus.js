@@ -106,7 +106,7 @@ export class Room<State= any> {
         type: string | number,
         callback: (message: T) => void
     )
-    public onMessage<T = any>(
+    public onMessage(
         type: '*' | string | number | typeof Schema,
         callback: (...args: any[]) => void
     ) {
@@ -170,6 +170,7 @@ export class Room<State= any> {
         this.onStateChange.clear();
         this.onError.clear();
         this.onLeave.clear();
+        this.onMessageHandlers.events = {};
     }
 
     protected onMessageCallback(event: MessageEvent) {

@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.14.0-alpha.11",
+  "version": "0.14.0-alpha.12",
   "description": "Multiplayer Game Client for the Browser",
   "author": "Endel Dreyer",
   "license": "MIT",
