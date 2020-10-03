@@ -1,4 +1,5 @@
 dist/lib
+dist/colyseus*.js
 out.log
 node_modules
 npm-debug.log
