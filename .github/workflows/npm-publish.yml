@@ -1,0 +1,51 @@
+name: npm-publish
+on:
+  push:
+    branches:
+      - master
+      - dev
+jobs:
+  npm-publish:
+    name: npm-publish
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@master
+    - name: Set up Node.js
+      uses: actions/setup-node@master
+      with:
+        node-version: 12.0.0
+    - name: Install dependencies
+      run: npm install
+    - name: Publish to NPM
+      id: publish
+      uses: endel/npm-publish-action@master
+      with:
+        tag_name: "%s"
+        tag_message: "v%s"
+        commit_pattern: "^bump (\\S+)"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+    - name: Create Release
+      id: create_release
+      if: steps.publish.has_published # create release only if publish to NPM has succeeded
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.publish.tag_name }}
+        release_name: ${{ steps.publish.tag_name }}
+        draft: false
+        prerelease: ${{ steps.publish.is_tagged_release }}
+    - name: Upload release asset
+      if: steps.publish.has_published # create release only if publish to NPM has succeeded
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+        asset_path: ./my-artifact.zip
+        asset_name: colyseus-js.zip
+        asset_content_type: application/zip
+
