@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.14.0-alpha.16",
+  "version": "0.14.0-alpha.18",
   "description": "Multiplayer Game Client for the Browser",
   "author": "Endel Dreyer",
   "license": "MIT",
@@ -28,6 +28,7 @@
     "tslint": "tslint --project ."
   },
   "files": [
+    "dist",
     "lib",
     "LICENSE",
     "README.md"
