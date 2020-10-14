@@ -67,7 +67,7 @@ export class Client {
             const onError = (code, message) => reject(new ServerError(code, message));
             room.onError.once(onError);
 
-            room.onJoin.once(() => {
+            room['onJoin'].once(() => {
                 room.onError.remove(onError);
                 resolve(room);
             });

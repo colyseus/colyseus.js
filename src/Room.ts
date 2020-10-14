@@ -28,14 +28,13 @@ export class Room<State= any> {
     public sessionId: string;
 
     public name: string;
+    public connection: Connection;
 
     // Public signals
-    public onJoin = createSignal();
     public onStateChange = createSignal<(state: State) => void>();
     public onError = createSignal<(code: number, message?: string) => void>();
     public onLeave = createSignal<(code: number) => void>();
-
-    public connection: Connection;
+    protected onJoin = createSignal();
 
     public serializerId: string;
     protected serializer: Serializer<State>;
