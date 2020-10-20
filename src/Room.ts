@@ -210,11 +210,13 @@ export class Room<State= any> {
             this.leave();
 
         } else if (code === Protocol.ROOM_DATA_SCHEMA) {
+            const it = { offset: 1 };
+
             const context: Context = (this.serializer.getState() as any).constructor._context;
-            const type = context.get(bytes[1]);
+            const type = context.get(decode.number(bytes, it));
 
             const message: Schema = new (type as any)();
-            message.decode(bytes, { offset: 2 });
+            message.decode(bytes, it);
 
             this.dispatchMessage(type, message);
 
