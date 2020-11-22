@@ -2,7 +2,7 @@ export class Push {
     endpoint: string;
 
     constructor (endpoint: string) {
-        this.endpoint = endpoint.replace("ws", "http");
+        this.endpoint = endpoint;
     }
 
     public async register() {

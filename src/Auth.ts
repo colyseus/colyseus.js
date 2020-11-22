@@ -81,7 +81,7 @@ export class Auth implements IUser {
     protected keepOnlineInterval: any;
 
     constructor(endpoint: string) {
-        this.endpoint = endpoint.replace("ws", "http");
+        this.endpoint = endpoint;
         getItem(TOKEN_STORAGE, (token) => this.token = token);
     }
 
