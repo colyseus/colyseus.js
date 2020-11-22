@@ -20,15 +20,27 @@ export class MatchMakeError extends Error {
 export class Client {
     // static VERSION = process.env.VERSION;
 
+    private static buildHttpEndpoint(endpoint: string): string {
+        if (endpoint.startsWith('ws://')) {
+            return `http://${endpoint.substring(5)}`;
+        } else if (endpoint.startsWith('wss://')) {
+            return `https://${endpoint.substring(6)}`;
+        } else {
+            return endpoint;
+        }
+    }
+
     public auth: Auth;
     public push: Push;
 
-    protected endpoint: string;
+    protected httpEndpoint: string;
+    protected wsEndpoint: string;
 
-    constructor(endpoint: string = `${location.protocol.replace("http", "ws")}//${location.hostname}${(location.port && `:${location.port}`)}`) {
-        this.endpoint = endpoint;
-        this.auth = new Auth(this.endpoint);
-        this.push = new Push(this.endpoint);
+    constructor(endpoint: string = `${location.protocol.replace("http", "ws").replace("https", "wss")}//${location.hostname}${(location.port && `:${location.port}`)}`) {
+        this.wsEndpoint =  endpoint;
+        this.httpEndpoint = Client.buildHttpEndpoint(endpoint);
+        this.auth = new Auth(this.httpEndpoint);
+        this.push = new Push(this.httpEndpoint);
     }
 
     public async joinOrCreate<T>(roomName: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {
@@ -52,7 +64,7 @@ export class Client {
     }
 
     public async getAvailableRooms<Metadata= any>(roomName: string = ""): Promise<RoomAvailable<Metadata>[]> {
-        const url = `${this.endpoint.replace("ws", "http")}/matchmake/${roomName}`;
+        const url = `${this.httpEndpoint}/matchmake/${roomName}`;
         return (await get(url, { headers: { 'Accept': 'application/json' } })).data;
     }
 
@@ -80,7 +92,7 @@ export class Client {
         options: JoinOptions = {},
         rootSchema?: SchemaConstructor<T>
     ) {
-        const url = `${this.endpoint.replace("ws", "http")}/matchmake/${method}/${roomName}`;
+        const url = `${this.httpEndpoint}/matchmake/${method}/${roomName}`;
 
         // automatically forward auth token, if present
         if (this.auth.hasToken) {
@@ -118,7 +130,6 @@ export class Client {
             params.push(`${name}=${options[name]}`);
         }
 
-        return `${this.endpoint}/${room.processId}/${room.roomId}?${params.join('&')}`;
+        return `${this.wsEndpoint}/${room.processId}/${room.roomId}?${params.join('&')}`;
     }
-
 }
