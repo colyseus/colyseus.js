@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "description": "Colyseus Multiplayer Client for JavaScript/TypeScript",
   "author": "Endel Dreyer",
   "license": "MIT",

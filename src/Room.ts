@@ -71,7 +71,8 @@ export class Room<State= any> {
                 return;
             }
 
-            this.onLeave.invoke(e.code)
+            this.onLeave.invoke(e.code);
+            this.destroy();
         };
         this.connection.onerror = (e: CloseEvent) => {
             console.warn(`Room, onError (${e.code}): ${e.reason}`);
@@ -162,9 +163,6 @@ export class Room<State= any> {
     }
 
     public removeAllListeners() {
-        if (this.serializer) {
-            this.serializer.teardown();
-        }
         this.onJoin.clear();
         this.onStateChange.clear();
         this.onError.clear();
@@ -264,6 +262,12 @@ export class Room<State= any> {
 
         } else {
             console.warn(`onMessage not registered for type '${type}'.`);
+        }
+    }
+
+    private destroy () {
+        if (this.serializer) {
+            this.serializer.teardown();
         }
     }
 
