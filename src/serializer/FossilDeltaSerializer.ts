@@ -1,3 +1,9 @@
+/*
+
+// Dependencies:
+// "@gamestdio/state-listener": "^3.1.0",
+// "fossil-delta": "^1.0.0",
+
 import { Serializer } from "./Serializer";
 
 import { StateContainer } from '@gamestdio/state-listener';
@@ -29,3 +35,5 @@ export class FossilDeltaSerializer<State= any> implements Serializer<State> {
         this.api.removeAllListeners();
     }
 }
+
+*/

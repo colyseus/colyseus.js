@@ -1,6 +1,6 @@
 import './util';
 import { assert } from "chai";
-import { Client, FossilDeltaSerializer } from "../src";
+import { Client } from "../src";
 import { Schema, type } from '@colyseus/schema';
 
 describe("Client", function () {
@@ -12,7 +12,6 @@ describe("Client", function () {
 
     xit("join", function () {
         const room = client.join("chat");
-        (room as any).serializer = new FossilDeltaSerializer();
         // assert.equal(room.name, "chat")
         // assert.deepEqual(room.state, {})
     });

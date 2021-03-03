@@ -1,42 +1,24 @@
-import WebSocketClient from '@gamestdio/websocket';
-import * as msgpack from './msgpack';
+import { ITransport, ITransportEventMap } from "./transport/ITransport";
+import { WebSocketTransport } from "./transport/WebSocketTransport";
 
-export class Connection extends WebSocketClient {
-    private _enqueuedCalls: any[] = [];
+export class Connection implements ITransport {
+    transport: ITransport;
+    events: ITransportEventMap = {};
 
-    constructor(url: string, autoConnect: boolean = true) {
-        super(url, undefined, { connect: autoConnect });
+    constructor() {
+        this.transport = new WebSocketTransport(this.events);
     }
 
-    public onOpenCallback(event) {
-        super.onOpenCallback();
-
-        this.binaryType = 'arraybuffer';
-
-        if (this._enqueuedCalls.length > 0) {
-            for (const [method, args] of this._enqueuedCalls) {
-                this[method].apply(this, args);
-            }
-
-            // clear enqueued calls.
-            this._enqueuedCalls = [];
-        }
+    send(data: ArrayBuffer | Array<number>): void {
+        this.transport.send(data);
     }
 
-    public send(data: ArrayBuffer | Array<number>): void {
-        if (this.ws.readyState === WebSocketClient.OPEN) {
-            if (data instanceof ArrayBuffer) {
-                return super.send(data);
+    connect(url: string): void {
+        this.transport.connect(url);
+    }
 
-            } else if (Array.isArray(data)) {
-                return super.send((new Uint8Array(data)).buffer);
-            }
-
-        } else {
-            // WebSocket not connected.
-            // Enqueue data to be sent when readyState == OPEN
-            this._enqueuedCalls.push(['send', [data]]);
-        }
+    close(code?: number, reason?: string): void {
+        this.transport.close(code, reason);
     }
 
 }

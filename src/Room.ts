@@ -1,20 +1,14 @@
 import * as msgpack from './msgpack';
 
-import { createSignal } from 'strong-events';
 import { createNanoEvents } from 'nanoevents';
+import { createSignal } from './core/signal';
 
 import { Connection } from './Connection';
 import { Serializer, getSerializer } from './serializer/Serializer';
 import { Protocol, utf8Read, utf8Length } from './Protocol';
 
-import { FossilDeltaSerializer } from './serializer/FossilDeltaSerializer';
-import { Listener } from '@gamestdio/state-listener';
-import { SchemaSerializer } from '.';
-import { SchemaConstructor } from './serializer/SchemaSerializer';
-import { Context, Schema } from '@colyseus/schema';
-
-import * as encode from '@colyseus/schema/lib/encoding/encode';
-import * as decode from '@colyseus/schema/lib/encoding/decode';
+import { SchemaSerializer, SchemaConstructor } from './serializer/SchemaSerializer';
+import { Context, Schema, encode, decode } from '@colyseus/schema';
 
 export interface RoomAvailable<Metadata = any> {
     roomId: string;
@@ -61,10 +55,9 @@ export class Room<State= any> {
     }
 
     public connect(endpoint: string) {
-        this.connection = new Connection(endpoint, false);
-        this.connection.reconnectEnabled = false;
-        this.connection.onmessage = this.onMessageCallback.bind(this);
-        this.connection.onclose = (e: CloseEvent) => {
+        this.connection = new Connection();
+        this.connection.events.onmessage = this.onMessageCallback.bind(this);
+        this.connection.events.onclose = (e: CloseEvent) => {
             if (!this.hasJoined) {
                 console.warn(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
                 this.onError.invoke(e.code, e.reason);
@@ -74,11 +67,11 @@ export class Room<State= any> {
             this.onLeave.invoke(e.code);
             this.destroy();
         };
-        this.connection.onerror = (e: CloseEvent) => {
+        this.connection.events.onerror = (e: CloseEvent) => {
             console.warn(`Room, onError (${e.code}): ${e.reason}`);
             this.onError.invoke(e.code, e.reason);
         };
-        this.connection.open();
+        this.connection.connect(endpoint);
     }
 
     public leave(consented: boolean = true): void {
@@ -140,26 +133,6 @@ export class Room<State= any> {
 
     public get state (): State {
         return this.serializer.getState();
-    }
-
-    // TODO: deprecate / move somewhere else
-    // this method is useful only for FossilDeltaSerializer
-    public listen(segments: string, callback: Function, immediate?: boolean) {
-        if (this.serializerId === "schema") {
-            console.warn(`'${this.serializerId}' serializer doesn't support .listen() method here.`);
-            return;
-
-        } else if (!this.serializerId) {
-            console.warn("room.Listen() should be called after room.onJoin has been called (DEPRECATION WARNING)");
-        }
-
-        return (this.serializer as FossilDeltaSerializer<State>).api.listen(segments, callback, immediate);
-    }
-
-    // TODO: deprecate / move somewhere else
-    // this method is useful only for FossilDeltaSerializer
-    public removeListener(listener: Listener) {
-        return (this.serializer as FossilDeltaSerializer<State>).api.removeListener(listener)
     }
 
     public removeAllListeners() {

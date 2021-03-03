@@ -1,9 +1,8 @@
-import { post, get } from "@colyseus/http";
+import { post, get } from "httpie/fetch";
 
 import { ServerError } from './errors/ServerError';
 import { Room, RoomAvailable } from './Room';
 import { Auth } from './Auth';
-import { Push } from './Push';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
 
 export type JoinOptions = any;
@@ -21,14 +20,12 @@ export class Client {
     // static VERSION = process.env.VERSION;
 
     public auth: Auth;
-    public push: Push;
 
     protected endpoint: string;
 
     constructor(endpoint: string = `${location.protocol.replace("http", "ws")}//${location.hostname}${(location.port && `:${location.port}`)}`) {
         this.endpoint = endpoint;
         this.auth = new Auth(this.endpoint);
-        this.push = new Push(this.endpoint);
     }
 
     public async joinOrCreate<T>(roomName: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {
