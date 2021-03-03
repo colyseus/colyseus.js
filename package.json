@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.14.1",
+  "version": "0.14.2-alpha.2",
   "description": "Colyseus Multiplayer Client for JavaScript/TypeScript",
   "author": "Endel Dreyer",
   "license": "MIT",
@@ -21,7 +21,7 @@
     "README.md"
   ],
   "main": "build/cjs/index.js",
-  "module": "build/esm/index.js",
+  "module": "build/esm/index.mjs",
   "browser": "build/colyseus.js",
   "typings": "lib/index.d.ts",
   "exports": {
@@ -47,9 +47,9 @@
     "node": ">= 12.x"
   },
   "dependencies": {
-    "@colyseus/schema": "^1.0.0",
+    "@colyseus/schema": "^1.1.0-alpha.1",
     "httpie": "^2.0.0-next.13",
-    "nanoevents": "^5.1.5",
+    "nanoevents": "^5.1.12",
     "notepack.io": "^2.1.3"
   },
   "devDependencies": {

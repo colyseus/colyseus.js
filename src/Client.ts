@@ -16,14 +16,17 @@ export class MatchMakeError extends Error {
     }
 }
 
+// React Native does not provide `window.location`
+const DEFAULT_ENDPOINT = (typeof(window.location) !== "undefined") 
+    ? `${window.location.protocol.replace("http", "ws")}//${window.location.hostname}${(window.location.port && `:${window.location.port}`)}`
+    : "ws://127.0.0.1:2567";
+
 export class Client {
     // static VERSION = process.env.VERSION;
-
     public auth: Auth;
-
     protected endpoint: string;
 
-    constructor(endpoint: string = `${location.protocol.replace("http", "ws")}//${location.hostname}${(location.port && `:${location.port}`)}`) {
+    constructor(endpoint: string = DEFAULT_ENDPOINT) {
         this.endpoint = endpoint;
         this.auth = new Auth(this.endpoint);
     }
