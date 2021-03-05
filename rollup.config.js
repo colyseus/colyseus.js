@@ -1,6 +1,7 @@
 import typescript from '@rollup/plugin-typescript';
-// import nodePolyfills from 'rollup-plugin-node-polyfills';
+import commonjs from '@rollup/plugin-commonjs';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
+import alias from '@rollup/plugin-alias';
 
 import pkg from "./package.json";
 import schemapkg from "./node_modules/@colyseus/schema/package.json";
@@ -12,6 +13,7 @@ const banner = `// colyseus.js@${pkg.version}`;
 const bannerUMD = `// colyseus.js@${pkg.version} (@colyseus/schema ${schemapkg.version})`;
 
 export default [
+
     // https://github.com/microsoft/TypeScript/issues/18442#issuecomment-749896695
     {
         preserveModules: true,
@@ -21,7 +23,6 @@ export default [
             { banner, dir: 'build/cjs', format: 'cjs', entryFileNames: '[name].js', sourcemap: true }
         ],
         external,
-        
         plugins: [
             typescript({ tsconfig: './tsconfig/tsconfig.esm.json' })
         ],
@@ -40,8 +41,19 @@ export default [
             sourcemap: true 
         }],
         plugins: [
-            typescript({ tsconfig: './tsconfig/tsconfig.cjs.json' }),
+            typescript({ tsconfig: './tsconfig/tsconfig.esm.json' }),
+            alias({
+                entries: [
+                    // httpie: force fetch on browser/UMD environment
+                    { find: 'httpie', replacement: './node_modules/httpie/fetch/index.js' }, 
+
+                    // ws: force browser.js version.
+                    { find: 'ws', replacement: './node_modules/ws/browser.js' }, 
+                ]
+            }),
+            commonjs(),
             nodeResolve(),
         ],
     },
+
 ];

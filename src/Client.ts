@@ -1,4 +1,4 @@
-import { post, get } from "httpie/fetch";
+import { post, get } from "httpie";
 
 import { ServerError } from './errors/ServerError';
 import { Room, RoomAvailable } from './Room';
@@ -17,7 +17,7 @@ export class MatchMakeError extends Error {
 }
 
 // React Native does not provide `window.location`
-const DEFAULT_ENDPOINT = (typeof(window.location) !== "undefined") 
+const DEFAULT_ENDPOINT = (typeof (window) !== "undefined" && typeof (window.location) !== "undefined") 
     ? `${window.location.protocol.replace("http", "ws")}//${window.location.hostname}${(window.location.port && `:${window.location.port}`)}`
     : "ws://127.0.0.1:2567";
 

@@ -1,8 +1,8 @@
 export interface ITransportEventMap {
-    onopen?: ((ev: Event) => any) | null;
-    onmessage?: ((ev: Event) => any) | null;
-    onclose?: ((ev: Event) => any) | null;
-    onerror?: ((ev: Event) => any) | null;
+    onopen?: ((ev: any) => any) | null;
+    onmessage?: ((ev: any) => any) | null;
+    onclose?: ((ev: any) => any) | null;
+    onerror?: ((ev: any) => any) | null;
 }
 
 export interface ITransportConstructor {

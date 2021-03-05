@@ -3,6 +3,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "lib": ["dom", "es6"],
+    "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "noImplicitAny": false,
     "inlineSources": true,

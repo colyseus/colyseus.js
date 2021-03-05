@@ -1,7 +1,10 @@
+import NodeWebSocket from "ws";
 import { ITransport, ITransportEventMap } from "./ITransport";
 
+const WebSocket = globalThis.WebSocket || NodeWebSocket;
+
 export class WebSocketTransport implements ITransport {
-    ws: WebSocket;
+    ws: WebSocket | NodeWebSocket;
     protocols?: string | string[];
 
     constructor(public events: ITransportEventMap) {}
