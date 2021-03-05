@@ -20,9 +20,9 @@
     "LICENSE",
     "README.md"
   ],
+  "browser": "build/colyseus.js",
   "main": "build/cjs/index.js",
   "module": "build/esm/index.mjs",
-  "browser": "build/colyseus.js",
   "typings": "lib/index.d.ts",
   "exports": {
     ".": {

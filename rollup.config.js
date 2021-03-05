@@ -6,8 +6,7 @@ import alias from '@rollup/plugin-alias';
 import pkg from "./package.json";
 import schemapkg from "./node_modules/@colyseus/schema/package.json";
 
-const external = Object.keys(pkg.dependencies)
-    .concat(['httpie/fetch']);
+const external = Object.keys(pkg.dependencies);
 
 const banner = `// colyseus.js@${pkg.version}`;
 const bannerUMD = `// colyseus.js@${pkg.version} (@colyseus/schema ${schemapkg.version})`;
