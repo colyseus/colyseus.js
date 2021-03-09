@@ -1,11 +1,13 @@
 import * as msgpack from './msgpack';
 
-import { createNanoEvents } from 'nanoevents';
-import { createSignal } from './core/signal';
-
 import { Connection } from './Connection';
 import { Serializer, getSerializer } from './serializer/Serializer';
 import { Protocol, utf8Read, utf8Length } from './Protocol';
+
+// The unused imports here are important for better `.d.ts` file generation 
+// (Later merged with `dts-bundle-generator`)
+import { createNanoEvents, DefaultEvents, Emitter } from 'nanoevents'; 
+import { createSignal, EventEmitter } from './core/signal';
 
 import { SchemaSerializer, SchemaConstructor } from './serializer/SchemaSerializer';
 import { Context, Schema, encode, decode } from '@colyseus/schema';

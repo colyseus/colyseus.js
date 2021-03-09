@@ -30,7 +30,16 @@ export class EventEmitter<CallbackSignature extends (...args: any[]) => any> {
   }
 }
 
-export function createSignal<CallbackSignature extends (...args: any[]) => void | Promise<any>>() {
+export function createSignal<CallbackSignature extends (...args: any[]) => void | Promise<any>>()
+  : 
+   {
+    once: (cb: CallbackSignature) => void;
+    remove: (cb: CallbackSignature) => void,
+    invoke: (...args: FunctionParameters<CallbackSignature>) => void,
+    invokeAsync: (...args: FunctionParameters<CallbackSignature>) => Promise<any[]>,
+    clear: () => void,
+  } & ((this: any, cb: CallbackSignature) => EventEmitter<CallbackSignature> )
+  {
   const emitter = new EventEmitter<CallbackSignature>();
 
   function register(this: any, cb: CallbackSignature): EventEmitter<CallbackSignature> {

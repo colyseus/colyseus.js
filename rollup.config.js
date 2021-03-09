@@ -9,7 +9,7 @@ import schemapkg from "./node_modules/@colyseus/schema/package.json";
 const external = Object.keys(pkg.dependencies);
 
 const banner = `// colyseus.js@${pkg.version}`;
-const bannerUMD = `// colyseus.js@${pkg.version} (@colyseus/schema ${schemapkg.version})`;
+const bannerStatic = `// colyseus.js@${pkg.version} (@colyseus/schema ${schemapkg.version})`;
 
 export default [
 
@@ -19,7 +19,7 @@ export default [
         input: ['src/index.ts'],
         output: [
             { banner, dir: 'build/esm', format: 'esm', entryFileNames: '[name].mjs', sourcemap: true },
-            { banner, dir: 'build/cjs', format: 'cjs', entryFileNames: '[name].js', sourcemap: true }
+            { banner, dir: 'build/cjs', format: 'cjs', entryFileNames: '[name].js', sourcemap: true },
         ],
         external,
         plugins: [
@@ -31,14 +31,9 @@ export default [
     {
         preserveModules: false,
         input: ['src/index.ts'],
-        output: [{
-            banner: bannerUMD,
-            dir: 'build',
-            name: "Colyseus",
-            format: 'umd',
-            entryFileNames: 'colyseus.js',
-            sourcemap: true 
-        }],
+        output: [
+            { banner: bannerStatic, dir: 'dist', name: "Colyseus", format: 'umd', entryFileNames: 'colyseus.js', sourcemap: true },
+        ],
         plugins: [
             typescript({ tsconfig: './tsconfig/tsconfig.esm.json' }),
             alias({
