@@ -22,13 +22,16 @@ const DEFAULT_ENDPOINT = (typeof (window) !== "undefined" && typeof (window.loca
     : "ws://127.0.0.1:2567";
 
 export class Client {
-    // static VERSION = process.env.VERSION;
-    public auth: Auth;
     protected endpoint: string;
+    protected _auth: Auth;
 
     constructor(endpoint: string = DEFAULT_ENDPOINT) {
         this.endpoint = endpoint;
-        this.auth = new Auth(this.endpoint);
+    }
+
+    public get auth(): Auth {
+        if (!this._auth) { this._auth = new Auth(this.endpoint); }
+        return this._auth;
     }
 
     public async joinOrCreate<T>(roomName: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {
