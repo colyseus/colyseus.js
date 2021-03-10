@@ -46,7 +46,7 @@
     "node": ">= 12.x"
   },
   "dependencies": {
-    "@colyseus/schema": "^1.0.14",
+    "@colyseus/schema": "^1.0.15",
     "httpie": "^2.0.0-next.13",
     "nanoevents": "^5.1.12",
     "notepack.io": "^2.1.3"
