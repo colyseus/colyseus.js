@@ -1,8 +1,7 @@
 {
     "extends": "./tsconfig.all.json",
     "compilerOptions": {
-        "target": "es5",
         "module": "ESNext",
-        "moduleResolution": "node"
+        "target": "es5",
     }
 }

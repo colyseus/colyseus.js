@@ -35,7 +35,7 @@ export default [
             { banner: bannerStatic, dir: 'dist', name: "Colyseus", format: 'umd', entryFileNames: 'colyseus.js', sourcemap: true },
         ],
         plugins: [
-            typescript({ tsconfig: './tsconfig/tsconfig.esm.json' }),
+            typescript({ tsconfig: './tsconfig/tsconfig.cjs.json' }),
             alias({
                 entries: [
                     // httpie: force fetch on browser/UMD environment
@@ -43,11 +43,15 @@ export default [
 
                     // ws: force browser.js version.
                     { find: 'ws', replacement: './node_modules/ws/browser.js' }, 
+
+                    // @colyseus/schema: force browser version.
+                    { find: '@colyseus/schema', replacement: './node_modules/@colyseus/schema/build/umd/index.js' }, 
                 ]
             }),
             commonjs(),
-            nodeResolve(),
+            nodeResolve({ browser: true }), // "browser" seems to have no effect here. (why??)
         ],
+
     },
 
 ];
