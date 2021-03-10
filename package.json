@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.14.2-alpha.4",
+  "version": "0.14.2",
   "description": "Colyseus Multiplayer SDK for JavaScript/TypeScript",
   "author": "Endel Dreyer",
   "license": "MIT",
@@ -46,7 +46,7 @@
     "node": ">= 12.x"
   },
   "dependencies": {
-    "@colyseus/schema": "^1.1.0-alpha.3",
+    "@colyseus/schema": "^1.0.14",
     "httpie": "^2.0.0-next.13",
     "nanoevents": "^5.1.12",
     "notepack.io": "^2.1.3"
