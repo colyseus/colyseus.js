@@ -1,4 +1,4 @@
-import * as http from "@colyseus/http";
+import * as http from "httpie";
 import { getItem, setItem, removeItem } from "./Storage";
 
 const TOKEN_STORAGE = "colyseus-auth-token";
@@ -181,7 +181,7 @@ export class Auth implements IUser {
             ? `?${queryParams.join("&")}`
             : '';
 
-        const opts: Partial<http.HttpieOptions> = { headers };
+        const opts: Partial<http.Options> = { headers };
         if (body) { opts.body = body; }
 
         return (await http[method](`${this.endpoint}${segments}${queryString}`, opts)).data;

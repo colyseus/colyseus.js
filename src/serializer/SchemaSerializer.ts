@@ -1,6 +1,5 @@
 import { Serializer } from "./Serializer";
-import { Schema, Reflection } from "@colyseus/schema";
-import { Iterator } from "@colyseus/schema/lib/encoding/decode";
+import { Schema, Reflection, Iterator } from "@colyseus/schema";
 
 export type SchemaConstructor<T = Schema> = new (...args: any[]) => T;
 

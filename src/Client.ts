@@ -1,9 +1,8 @@
-import { post, get } from "@colyseus/http";
+import { post, get } from "httpie";
 
 import { ServerError } from './errors/ServerError';
 import { Room, RoomAvailable } from './Room';
 import { Auth } from './Auth';
-import { Push } from './Push';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
 
 export type JoinOptions = any;
@@ -17,18 +16,22 @@ export class MatchMakeError extends Error {
     }
 }
 
+// React Native does not provide `window.location`
+const DEFAULT_ENDPOINT = (typeof (window) !== "undefined" && typeof (window.location) !== "undefined") 
+    ? `${window.location.protocol.replace("http", "ws")}//${window.location.hostname}${(window.location.port && `:${window.location.port}`)}`
+    : "ws://127.0.0.1:2567";
+
 export class Client {
-    // static VERSION = process.env.VERSION;
-
-    public auth: Auth;
-    public push: Push;
-
     protected endpoint: string;
+    protected _auth: Auth;
 
-    constructor(endpoint: string = `${location.protocol.replace("http", "ws")}//${location.hostname}${(location.port && `:${location.port}`)}`) {
+    constructor(endpoint: string = DEFAULT_ENDPOINT) {
         this.endpoint = endpoint;
-        this.auth = new Auth(this.endpoint);
-        this.push = new Push(this.endpoint);
+    }
+
+    public get auth(): Auth {
+        if (!this._auth) { this._auth = new Auth(this.endpoint); }
+        return this._auth;
     }
 
     public async joinOrCreate<T>(roomName: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {

@@ -3,9 +3,11 @@ import { assert } from "chai";
 import { Room } from "../src";
 
 import { Schema, type } from "@colyseus/schema";
-import * as fossilDelta from "fossil-delta";
+console.log(Schema);
+
+// import * as fossilDelta from "fossil-delta";
 import * as msgpack from "../src/msgpack";
-import { FossilDeltaSerializer } from '../src/serializer/FossilDeltaSerializer';
+// import { FossilDeltaSerializer } from '../src/serializer/FossilDeltaSerializer';
 
 describe("Room", function() {
   let room: Room = null;
@@ -67,6 +69,8 @@ describe("Room", function() {
       });
   });
 
+  /*
+  // FossilDeltaSerializer has been deprecated as of 0.14.2
   describe("fossil-delta", () => {
 
     beforeEach(function() {
@@ -131,5 +135,6 @@ describe("Room", function() {
         }, 1);
     });
   });
+  */
 
 });

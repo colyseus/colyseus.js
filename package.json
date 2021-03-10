@@ -1,9 +1,35 @@
 {
   "name": "colyseus.js",
-  "version": "0.14.1",
-  "description": "Colyseus Multiplayer Client for JavaScript/TypeScript",
+  "version": "0.14.2",
+  "description": "Colyseus Multiplayer SDK for JavaScript/TypeScript",
   "author": "Endel Dreyer",
   "license": "MIT",
+  "scripts": {
+    "test": "mocha test/*.ts --require ts-node/register",
+    "build": "rollup -c rollup.config.js",
+    "build-dist-dts": "dts-bundle-generator --config dts-generator.json",
+    "build-all": "tsc && npm run build && npm run build-dist-dts",
+    "watch": "tsc -w",
+    "tslint": "tslint --project .",
+    "prepublishOnly": "tsc && npm run build"
+  },
+  "files": [
+    "build",
+    "lib",
+    "LICENSE",
+    "README.md"
+  ],
+  "browser": "dist/colyseus.js",
+  "main": "build/cjs/index.js",
+  "module": "build/esm/index.mjs",
+  "typings": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "browser": "./dist/colyseus.js",
+      "import": "./build/esm/index.mjs",
+      "require": "./build/cjs/index.js"
+    }
+  },
   "keywords": [
     "colyseus",
     "multiplayer",
@@ -16,60 +42,37 @@
     "type": "git",
     "url": "git://github.com/colyseus/colyseus.js.git"
   },
-  "main": "lib/index.js",
-  "typings": "lib/index.d.ts",
-  "scripts": {
-    "test": "mocha test/*.ts --require ts-node/register",
-    "build": "webpack --env.production",
-    "build-dev": "webpack",
-    "build-all": "npm run build && npm run build-dev",
-    "watch": "tsc -w",
-    "prepublish": "tsc && npm run build",
-    "tslint": "tslint --project ."
-  },
-  "files": [
-    "dist",
-    "lib",
-    "LICENSE",
-    "README.md"
-  ],
-  "funding": {
-    "type": "patreon",
-    "url": "https://www.patreon.com/endel"
-  },
   "engines": {
-    "node": ">= 5.x"
+    "node": ">= 12.x"
   },
   "dependencies": {
-    "@colyseus/http": "^2.0.0",
-    "@colyseus/schema": "^1.0.0",
-    "@gamestdio/signals": "^1.0.0",
-    "@gamestdio/state-listener": "^3.1.0",
-    "@gamestdio/websocket": "^0.3.2",
-    "fossil-delta": "^1.0.0",
-    "nanoevents": "^5.1.5",
-    "notepack.io": "^2.1.3",
-    "strong-events": "^1.0.5"
+    "@colyseus/schema": "^1.0.15",
+    "httpie": "^2.0.0-next.13",
+    "nanoevents": "^5.1.12",
+    "notepack.io": "^2.1.3"
   },
   "devDependencies": {
+    "@rollup/plugin-alias": "^3.1.2",
+    "@rollup/plugin-commonjs": "^17.1.0",
+    "@rollup/plugin-node-resolve": "^11.2.0",
+    "@rollup/plugin-typescript": "^8.2.0",
     "@types/chai": "^3.4.34",
-    "@types/fossil-delta": "^1.0.0",
     "@types/mocha": "^2.2.44",
+    "@types/ws": "^7.4.0",
     "benchmark": "^2.1.4",
     "chai": "^3.5.0",
+    "dts-bundle-generator": "^5.7.0",
     "install": "^0.12.2",
     "mocha": "^5.1.1",
     "nanoid": "^2.0.1",
     "node-localstorage": "^1.3.1",
-    "nodemon": "^1.17.4",
     "npm": "^6.9.0",
+    "rollup": "^2.40.0",
+    "rollup-plugin-node-polyfills": "^0.2.1",
     "ts-loader": "^6.2.1",
     "ts-node": "^6.0.3",
     "tslint": "^5.9.1",
-    "typescript": "^3.8.3",
-    "uglify-js": "^2.6.1",
-    "webpack": "^4.42.1",
-    "webpack-cli": "^3.3.11",
-    "ws": "^6.1.2"
+    "typescript": "^4.2.3",
+    "ws": "^7.4.3"
   }
 }
