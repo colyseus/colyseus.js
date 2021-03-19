@@ -17,13 +17,20 @@ export default [
     {
         preserveModules: true,
         input: ['src/index.ts'],
-        output: [
-            { banner, dir: 'build/esm', format: 'esm', entryFileNames: '[name].mjs', sourcemap: true },
-            { banner, dir: 'build/cjs', format: 'cjs', entryFileNames: '[name].js', sourcemap: true },
-        ],
+        output: [{ banner, dir: 'build/esm', format: 'esm', entryFileNames: '[name].mjs', sourcemap: true },],
         external,
         plugins: [
             typescript({ tsconfig: './tsconfig/tsconfig.esm.json' })
+        ],
+    },
+
+    {
+        preserveModules: true,
+        input: ['src/index.ts'],
+        output: [{ banner, dir: 'build/cjs', format: 'cjs', entryFileNames: '[name].js', sourcemap: true },],
+        external,
+        plugins: [
+            typescript({ tsconfig: './tsconfig/tsconfig.cjs.json' })
         ],
     },
 
