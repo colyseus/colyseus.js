@@ -21,14 +21,14 @@
     "README.md"
   ],
   "browser": "dist/colyseus.js",
-  "main": "build/cjs/index.js",
+  "main": "build/cjs/src/index.js",
   "module": "build/esm/index.mjs",
   "typings": "lib/index.d.ts",
   "exports": {
     ".": {
       "browser": "./dist/colyseus.js",
       "import": "./build/esm/index.mjs",
-      "require": "./build/cjs/index.js"
+      "require": "./build/cjs/src/index.js"
     }
   },
   "keywords": [
