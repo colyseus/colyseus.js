@@ -86,8 +86,8 @@ export class Client {
         const url = `${this.endpoint.replace("ws", "http")}/matchmake/${method}/${roomName}`;
 
         // automatically forward auth token, if present
-        if (this.auth.hasToken) {
-            options.token = this.auth.token;
+        if (this._auth && this._auth.hasToken) {
+            options.token = this._auth.token;
         }
 
         const response = (
