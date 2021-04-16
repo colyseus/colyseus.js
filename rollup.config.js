@@ -39,7 +39,15 @@ export default [
         preserveModules: false,
         input: ['src/index.ts'],
         output: [
-            { banner: bannerStatic, dir: 'dist', name: "Colyseus", format: 'umd', entryFileNames: 'colyseus.js', sourcemap: true },
+            {
+                banner: bannerStatic,
+                dir: 'dist',
+                name: "Colyseus",
+                format: 'umd',
+                entryFileNames: 'colyseus.js',
+                sourcemap: true,
+                amd: { id: pkg.name }
+            },
         ],
         plugins: [
             typescript({ tsconfig: './tsconfig/tsconfig.cjs.json' }),
