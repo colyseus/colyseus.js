@@ -53,8 +53,8 @@ export default [
             typescript({ tsconfig: './tsconfig/tsconfig.cjs.json' }),
             alias({
                 entries: [
-                    // httpie: force fetch on browser/UMD environment
-                    { find: 'httpie', replacement: './node_modules/httpie/fetch/index.js' }, 
+                    // httpie: force XHR implementation on browser/UMD environment
+                    { find: 'httpie', replacement: './node_modules/httpie/xhr/index.js' }, 
 
                     // ws: force browser.js version.
                     { find: 'ws', replacement: './node_modules/ws/browser.js' }, 

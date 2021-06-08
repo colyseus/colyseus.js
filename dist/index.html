@@ -79,7 +79,7 @@
       }
 
       function getAvailableRooms() {
-          client.getAvailableRooms().then((rooms) => {
+          client.getAvailableRooms(document.getElementById('room_name').value).then((rooms) => {
               console.log(rooms);
           }).catch(e => {
               console.error(e);
