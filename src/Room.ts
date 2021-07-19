@@ -4,9 +4,9 @@ import { Connection } from './Connection';
 import { Serializer, getSerializer } from './serializer/Serializer';
 import { Protocol, utf8Read, utf8Length } from './Protocol';
 
-// The unused imports here are important for better `.d.ts` file generation 
+// The unused imports here are important for better `.d.ts` file generation
 // (Later merged with `dts-bundle-generator`)
-import { createNanoEvents, DefaultEvents, Emitter } from 'nanoevents'; 
+import { createNanoEvents, DefaultEvents, Emitter } from 'nanoevents';
 import { createSignal, EventEmitter } from './core/signal';
 
 import { SchemaSerializer, SchemaConstructor } from './serializer/SchemaSerializer';
@@ -76,17 +76,22 @@ export class Room<State= any> {
         this.connection.connect(endpoint);
     }
 
-    public leave(consented: boolean = true): void {
-        if (this.connection) {
-            if (consented) {
-                this.connection.send([Protocol.LEAVE_ROOM]);
+    public leave(consented: boolean = true): Promise<number> {
+        return new Promise((resolve) => {
+            this.onLeave((code) => resolve(code));
+
+            if (this.connection) {
+                if (consented) {
+                    this.connection.send([Protocol.LEAVE_ROOM]);
+
+                } else {
+                    this.connection.close();
+                }
 
             } else {
-                this.connection.close();
+                this.onLeave.invoke(4000); // "consented" code
             }
-        } else {
-            this.onLeave.invoke(4000); // "consented" code
-        }
+        });
     }
 
     public onMessage<T = any>(
@@ -236,7 +241,7 @@ export class Room<State= any> {
             this.onMessageHandlers.emit('*', type, message);
 
         } else {
-            console.warn(`onMessage not registered for type '${type}'.`);
+            console.warn(`colyseus.js: onMessage() not registered for type '${type}'.`);
         }
     }
 
