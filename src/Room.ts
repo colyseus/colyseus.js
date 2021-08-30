@@ -20,7 +20,7 @@ export interface RoomAvailable<Metadata = any> {
 }
 
 export class Room<State= any> {
-    public id: string;
+    public roomId: string;
     public sessionId: string;
 
     public name: string;
@@ -43,7 +43,7 @@ export class Room<State= any> {
     protected onMessageHandlers = createNanoEvents();
 
     constructor(name: string, rootSchema?: SchemaConstructor<State>) {
-        this.id = null;
+        this.roomId = null;
         this.name = name;
 
         if (rootSchema) {
@@ -55,6 +55,9 @@ export class Room<State= any> {
         this.onError((code, message) => console.warn(`colyseus.js - onError => (${code}) ${message}`));
         this.onLeave(() => this.removeAllListeners());
     }
+
+    // TODO: deprecate me on version 1.0
+    get id() { return this.roomId; }
 
     public connect(endpoint: string) {
         this.connection = new Connection();

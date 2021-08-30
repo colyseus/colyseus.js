@@ -17,8 +17,8 @@ export class MatchMakeError extends Error {
 }
 
 // - React Native does not provide `window.location`
-// - Cocos Creator (Native) does not provide `window.location.hostname` 
-const DEFAULT_ENDPOINT = (typeof (window) !== "undefined" &&  typeof (window?.location?.hostname) !== "undefined") 
+// - Cocos Creator (Native) does not provide `window.location.hostname`
+const DEFAULT_ENDPOINT = (typeof (window) !== "undefined" &&  typeof (window?.location?.hostname) !== "undefined")
     ? `${window.location.protocol.replace("http", "ws")}//${window.location.hostname}${(window.location.port && `:${window.location.port}`)}`
     : "ws://127.0.0.1:2567";
 
@@ -62,7 +62,7 @@ export class Client {
 
     public async consumeSeatReservation<T>(response: any, rootSchema?: SchemaConstructor<T>): Promise<Room<T>> {
         const room = this.createRoom<T>(response.room.name, rootSchema);
-        room.id = response.room.roomId;
+        room.roomId = response.room.roomId;
         room.sessionId = response.sessionId;
 
         room.connect(this.buildEndpoint(response.room, { sessionId: room.sessionId }));
