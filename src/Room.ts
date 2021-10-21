@@ -116,19 +116,28 @@ export class Room<State= any> {
         return this.onMessageHandlers.on(this.getMessageHandlerKey(type), callback);
     }
 
-    public send(type: string | number, message?: any): void {
-        const initialBytes: number[] = [Protocol.ROOM_DATA];
+    public send<T extends Schema>(type: T);
+    public send<T = string | number>(type: T, message?: any);
+    public send<T = any>(type: string | number | Schema, message?: any): void {
+        const initialBytes: number[] = type instanceof Schema ? [Protocol.ROOM_DATA_SCHEMA] : [Protocol.ROOM_DATA];
 
-        if (typeof(type) === "string") {
+        if (type instanceof Schema) {
+            encode.string(initialBytes, type.constructor.name);
+
+        } else if (typeof(type) === "string") {
             encode.string(initialBytes, type);
-
         } else {
             encode.number(initialBytes, type);
         }
 
         let arr: Uint8Array;
 
-        if (message !== undefined) {
+        if (type instanceof Schema) {
+            const encoded = new Uint8Array(type.encode(true))
+            arr = new Uint8Array(initialBytes.length + encoded.byteLength);
+            arr.set(new Uint8Array(initialBytes), 0);
+            arr.set(new Uint8Array(encoded), initialBytes.length);
+        } else if (message !== undefined) {
             const encoded = msgpack.encode(message);
             arr = new Uint8Array(initialBytes.length + encoded.byteLength);
             arr.set(new Uint8Array(initialBytes), 0);
