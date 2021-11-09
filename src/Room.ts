@@ -26,6 +26,8 @@ export class Room<State= any> {
     public name: string;
     public connection: Connection;
 
+    public reconnectionToken: string;
+
     // Public signals
     public onStateChange = createSignal<(state: State) => void>();
     public onError = createSignal<(code: number, message?: string) => void>();
