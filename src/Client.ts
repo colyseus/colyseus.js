@@ -55,6 +55,10 @@ export class Client {
         return await this.createMatchMakeRequest<T>('joinById', roomId, { sessionId }, rootSchema);
     }
 
+    public async reconnectByToken<T>(reconnectionToken: string, rootSchema?: SchemaConstructor<T>) {
+        return await this.createMatchMakeRequest<T>('joinByToken', '', { reconnectionToken }, rootSchema);
+    }
+
     public async getAvailableRooms<Metadata= any>(roomName: string = ""): Promise<RoomAvailable<Metadata>[]> {
         const url = `${this.endpoint.replace("ws", "http")}/matchmake/${roomName}`;
         return (await get(url, { headers: { 'Accept': 'application/json' } })).data;
@@ -62,6 +66,7 @@ export class Client {
 
     public async consumeSeatReservation<T>(response: any, rootSchema?: SchemaConstructor<T>): Promise<Room<T>> {
         const room = this.createRoom<T>(response.room.name, rootSchema);
+        room.reconnectionToken = response.reconnectionToken;
         room.roomId = response.room.roomId;
         room.sessionId = response.sessionId;
 
@@ -82,10 +87,9 @@ export class Client {
         method: string,
         roomName: string,
         options: JoinOptions = {},
-        rootSchema?: SchemaConstructor<T>
+        rootSchema?: SchemaConstructor<T>,
     ) {
-        const url = `${this.endpoint.replace("ws", "http")}/matchmake/${method}/${roomName}`;
-
+        const url = `${this.endpoint.replace('ws', 'http')}/matchmake/${method}/${roomName}`;
         // automatically forward auth token, if present
         if (this._auth && this._auth.hasToken) {
             options.token = this._auth.token;
@@ -93,11 +97,11 @@ export class Client {
 
         const response = (
             await post(url, {
+                body: JSON.stringify(options),
                 headers: {
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(options)
             })
         ).data;
 
