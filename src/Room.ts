@@ -6,8 +6,8 @@ import { Protocol, utf8Read, utf8Length } from './Protocol';
 
 // The unused imports here are important for better `.d.ts` file generation
 // (Later merged with `dts-bundle-generator`)
-import { createNanoEvents, DefaultEvents, Emitter } from 'nanoevents';
-import { createSignal, EventEmitter } from './core/signal';
+import { createNanoEvents } from 'nanoevents';
+import { createSignal } from './core/signal';
 
 import { SchemaSerializer, SchemaConstructor } from './serializer/SchemaSerializer';
 import { Context, Schema, encode, decode } from '@colyseus/schema';
@@ -22,6 +22,7 @@ export interface RoomAvailable<Metadata = any> {
 export class Room<State= any> {
     public roomId: string;
     public sessionId: string;
+    public reconnectionToken: string;
 
     public name: string;
     public connection: Connection;
@@ -160,6 +161,9 @@ export class Room<State= any> {
         if (code === Protocol.JOIN_ROOM) {
             let offset = 1;
 
+            const reconnectionToken = utf8Read(bytes, offset);
+            offset += utf8Length(reconnectionToken);
+
             this.serializerId = utf8Read(bytes, offset);
             offset += utf8Length(this.serializerId);
 
@@ -172,6 +176,8 @@ export class Room<State= any> {
             if (bytes.length > offset && this.serializer.handshake) {
                 this.serializer.handshake(bytes, { offset });
             }
+
+            this.reconnectionToken = `${this.roomId}:${reconnectionToken}`;
 
             this.hasJoined = true;
             this.onJoin.invoke();

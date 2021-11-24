@@ -6,8 +6,8 @@ export type SchemaConstructor<T = Schema> = new (...args: any[]) => T;
 export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
     state: T;
 
-    setState(rawState: any): void {
-        this.state.decode(rawState);
+    setState(rawState: any) {
+        return this.state.decode(rawState);
     }
 
     getState() {
@@ -15,7 +15,7 @@ export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
     }
 
     patch(patches) {
-        this.state.decode(patches);
+        return this.state.decode(patches);
     }
 
     teardown() {
