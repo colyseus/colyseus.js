@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.15.0-preview.0",
+  "version": "0.15.0",
   "description": "Colyseus Multiplayer SDK for JavaScript/TypeScript",
   "author": "Endel Dreyer",
   "license": "MIT",
@@ -8,7 +8,8 @@
     "test": "mocha test/*.ts --require ts-node/register",
     "build": "rollup -c rollup.config.js",
     "build-dist-dts": "dts-bundle-generator --config dts-generator.json",
-    "build-all": "tsc && npm run build && npm run build-dist-dts",
+    "build-all": "tsc && npm run build && npm run build-dist-dts && npm run cocos-creator-extension-files",
+    "cocos-creator-extension-files": "cp dist/colyseus.js cocos-creator-3-extension/colyseus-sdk/runtime && cp dist/colyseus.d.ts cocos-creator-3-extension/colyseus-sdk/runtime",
     "watch": "tsc -w",
     "tslint": "tslint --project .",
     "prepublishOnly": "tsc && npm run build"
