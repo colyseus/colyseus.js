@@ -35,10 +35,11 @@ export class Client {
         if (typeof (settings) === "string") {
             const url = new URL(settings);
             const useSSL = (url.protocol === "https:" || url.protocol === "wss:");
+            const port = Number(url.port || (useSSL ? 443 : 80));
 
             this.settings = {
                 hostname: url.hostname,
-                port: Number(url.port),
+                port,
                 useSSL
             };
 
