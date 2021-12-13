@@ -33,7 +33,7 @@
       var room;
 
       function getClient() {
-        return new Colyseus.Client('ws://' + document.getElementById('endpoint').value);
+        return new Colyseus.Client(document.getElementById('endpoint').value);
       }
 
       function addListeners (room) {

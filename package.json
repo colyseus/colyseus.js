@@ -8,8 +8,9 @@
     "test": "mocha test/*.ts --require ts-node/register",
     "build": "rollup -c rollup.config.js",
     "build-dist-dts": "dts-bundle-generator --config dts-generator.json",
-    "build-all": "tsc && npm run build && npm run build-dist-dts && npm run cocos-creator-extension-files",
-    "cocos-creator-extension-files": "cp dist/colyseus.js cocos-creator-3-extension/colyseus-sdk/runtime && cp dist/colyseus.d.ts cocos-creator-3-extension/colyseus-sdk/runtime",
+    "build-all": "tsc && npm run build && npm run build-dist-dts && npm run copy-cocos-creator-files && npm run copy-construct3-files",
+    "copy-construct3-files": "cp dist/colyseus.js ../colyseus-construct3/plugin/colyseus.js",
+    "copy-cocos-creator-files": "cp dist/colyseus.js cocos-creator-3-extension/colyseus-sdk/runtime && cp dist/colyseus.d.ts cocos-creator-3-extension/colyseus-sdk/runtime",
     "watch": "tsc -w",
     "tslint": "tslint --project .",
     "prepublishOnly": "tsc && npm run build"
