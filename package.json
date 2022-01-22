@@ -71,7 +71,7 @@
     "dts-bundle-generator": "^5.7.0",
     "install": "^0.12.2",
     "mocha": "^5.1.1",
-    "nanoid": "^2.0.1",
+    "nanoid": "^3.1.31",
     "node-localstorage": "^1.3.1",
     "npm": "^6.9.0",
     "rollup": "^2.40.0",
