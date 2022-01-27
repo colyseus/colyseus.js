@@ -102,7 +102,9 @@ export class Auth implements IUser {
             bodyParams.token = this.token;
         }
 
-        const data = await this.request('post', '/auth', {}, bodyParams);
+        const data = await this.request('post', '/auth', {}, bodyParams, {
+            'Content-Type': 'application/json',
+        });
 
         // set & cache token
         this.token = data.token;
