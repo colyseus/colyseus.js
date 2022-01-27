@@ -96,13 +96,13 @@ export class Auth implements IUser {
         email?: string,
         password?: string,
     } = {}) {
-        const queryParams: any = Object.assign({}, options);
+        const bodyParams: any = Object.assign({}, options);
 
         if (this.hasToken) {
-            queryParams.token = this.token;
+            bodyParams.token = this.token;
         }
 
-        const data = await this.request('post', '/auth', queryParams);
+        const data = await this.request('post', '/auth', {}, bodyParams);
 
         // set & cache token
         this.token = data.token;
