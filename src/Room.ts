@@ -142,6 +142,24 @@ export class Room<State= any> {
         this.connection.send(arr.buffer);
     }
 
+    public sendBytes(type: string | number, bytes: number[] | ArrayBufferLike) {
+        const initialBytes: number[] = [Protocol.ROOM_DATA_BYTES];
+
+        if (typeof(type) === "string") {
+            encode.string(initialBytes, type);
+
+        } else {
+            encode.number(initialBytes, type);
+        }
+
+        let arr: Uint8Array;
+        arr = new Uint8Array(initialBytes.length + ((bytes as ArrayBufferLike).byteLength || (bytes as number[]).length));
+        arr.set(new Uint8Array(initialBytes), 0);
+        arr.set(new Uint8Array(bytes), initialBytes.length);
+
+        this.connection.send(arr.buffer);
+    }
+
     public get state (): State {
         return this.serializer.getState();
     }
@@ -227,6 +245,15 @@ export class Room<State= any> {
                 : undefined;
 
             this.dispatchMessage(type, message);
+
+        } else if (code === Protocol.ROOM_DATA_BYTES) {
+            const it: decode.Iterator = { offset: 1 };
+
+            const type = (decode.stringCheck(bytes, it))
+                ? decode.string(bytes, it)
+                : decode.number(bytes, it);
+
+            this.dispatchMessage(type, bytes.slice(it.offset));
         }
     }
 
