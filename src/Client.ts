@@ -7,6 +7,8 @@ import { SchemaConstructor } from './serializer/SchemaSerializer';
 
 export type JoinOptions = any;
 
+export let devMode: boolean = false;
+
 export class MatchMakeError extends Error {
     code: number;
     constructor(message: string, code: number) {
@@ -137,6 +139,11 @@ export class Client {
         // forward reconnection token during "reconnect" methods.
         if (method === "reconnect") {
             response.reconnectionToken = options.reconnectionToken;
+        }
+
+        // Set dev mode properties
+        if (response.hasOwnProperty('devMode')) {
+            devMode = response.devMode;
         }
 
         return this.consumeSeatReservation<T>(response, rootSchema);
