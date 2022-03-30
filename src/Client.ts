@@ -93,6 +93,11 @@ export class Client {
     }
 
     public async consumeSeatReservation<T>(response: any, rootSchema?: SchemaConstructor<T>, preventRecursion?: boolean): Promise<Room<T>> {
+        // Prevent from dev mode recursive calls.
+        if (preventRecursion) {
+            return;
+        }
+
         const room = this.createRoom<T>(response.room.name, rootSchema);
         room.roomId = response.room.roomId;
         room.sessionId = response.sessionId;
@@ -104,21 +109,31 @@ export class Client {
             options.reconnectionToken = response.reconnectionToken;
         }
 
-        if (response.devMode && !preventRecursion) {
+        if (response.devMode) {
             room.connect(this.buildEndpoint(response.room, options), async (e: CloseEvent) => {
                 console.info('DEV MODE: Reestablishing client/server reconnection!');
+                const maximumRetryCount = 10;
+                let retryAttempt = 1;
+
                 const reconnectionCallback = async () => {
-                    try {
-                        await this.consumeSeatReservation(response, rootSchema, true);
-                        console.info('DEV MODE: Reconnection successful!');
+                    if (retryAttempt < maximumRetryCount) {
+                        try {
+                            if (await this.consumeSeatReservation(response, rootSchema, true)) {
+                                console.info('DEV MODE: Reconnection successful!');
+                                clearInterval(timer);
+                            }
+                        } catch (err) {
+                            console.error(err);
+                        }
+                    } else {
+                        console.warn('DEV MODE: Maximum number of reconnection attempts exceeded!');
                         clearInterval(timer);
-                    } catch (err) {
-                        console.error(err);
                     }
+                    retryAttempt++;
                 };
-                const timer = setInterval(reconnectionCallback, 1500);
+                const timer = setInterval(reconnectionCallback, 1000);
             });
-        } else {
+        } else  {
             room.connect(this.buildEndpoint(response.room, options));
         }
 
