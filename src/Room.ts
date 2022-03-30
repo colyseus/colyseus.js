@@ -1,4 +1,3 @@
-import {devMode} from './Client';
 import * as msgpack from './msgpack';
 
 import { Connection } from './Connection';
@@ -61,26 +60,22 @@ export class Room<State= any> {
     // TODO: deprecate me on version 1.0
     get id() { return this.roomId; }
 
-    public connect(endpoint: string) {
+    public connect(endpoint: string, oncloseCallback?: any) {
         this.connection = new Connection();
         this.connection.events.onmessage = this.onMessageCallback.bind(this);
-        this.connection.events.onclose = (e: CloseEvent) => {
-            if (devMode) {
-                setInterval(() => {
-                    this.connection = new Connection();
-                    this.connection.connect(endpoint);
-                }, 1000);
-            } else {
+        if (oncloseCallback) {
+            this.connection.events.onclose = oncloseCallback;
+        } else {
+            this.connection.events.onclose = (e: CloseEvent) => {
                 if (!this.hasJoined) {
                     console.warn(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
                     this.onError.invoke(e.code, e.reason);
                     return;
                 }
-
                 this.onLeave.invoke(e.code);
                 this.destroy();
-            }
-        };
+            };
+        }
         this.connection.events.onerror = (e: CloseEvent) => {
             console.warn(`Room, onError (${e.code}): ${e.reason}`);
             this.onError.invoke(e.code, e.reason);

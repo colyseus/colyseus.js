@@ -1,4 +1,5 @@
 import { post, get } from "httpie";
+import {getAndCacheOutputJSFileName} from 'ts-loader/dist/utils';
 
 import { ServerError } from './errors/ServerError';
 import { Room, RoomAvailable } from './Room';
@@ -7,7 +8,7 @@ import { SchemaConstructor } from './serializer/SchemaSerializer';
 
 export type JoinOptions = any;
 
-export let devMode: boolean = false;
+let devMode: boolean = false;
 
 export class MatchMakeError extends Error {
     code: number;
@@ -91,7 +92,7 @@ export class Client {
         ).data;
     }
 
-    public async consumeSeatReservation<T>(response: any, rootSchema?: SchemaConstructor<T>): Promise<Room<T>> {
+    public async consumeSeatReservation<T>(response: any, rootSchema?: SchemaConstructor<T>, preventRecursion?: boolean): Promise<Room<T>> {
         const room = this.createRoom<T>(response.room.name, rootSchema);
         room.roomId = response.room.roomId;
         room.sessionId = response.sessionId;
@@ -103,7 +104,23 @@ export class Client {
             options.reconnectionToken = response.reconnectionToken;
         }
 
-        room.connect(this.buildEndpoint(response.room, options));
+        if (response.devMode && !preventRecursion) {
+            room.connect(this.buildEndpoint(response.room, options), async (e: CloseEvent) => {
+                console.info('DEV MODE: Reestablishing client/server reconnection!');
+                const reconnectionCallback = async () => {
+                    try {
+                        await this.consumeSeatReservation(response, rootSchema, true);
+                        console.info('DEV MODE: Reconnection successful!');
+                        clearInterval(timer);
+                    } catch (err) {
+                        console.error(err);
+                    }
+                };
+                const timer = setInterval(reconnectionCallback, 1500);
+            });
+        } else {
+            room.connect(this.buildEndpoint(response.room, options));
+        }
 
         return new Promise((resolve, reject) => {
             const onError = (code, message) => reject(new ServerError(code, message));
@@ -146,7 +163,7 @@ export class Client {
             devMode = response.devMode;
         }
 
-        return this.consumeSeatReservation<T>(response, rootSchema);
+        return await this.consumeSeatReservation<T>(response, rootSchema);
     }
 
     protected createRoom<T>(roomName: string, rootSchema?: SchemaConstructor<T>) {
