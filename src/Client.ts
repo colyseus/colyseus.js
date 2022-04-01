@@ -5,6 +5,7 @@ import { ServerError } from './errors/ServerError';
 import { Room, RoomAvailable } from './Room';
 import { Auth } from './Auth';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
+import {WebSocketTransport} from './transport/WebSocketTransport';
 
 export type JoinOptions = any;
 
@@ -92,12 +93,7 @@ export class Client {
         ).data;
     }
 
-    public async consumeSeatReservation<T>(response: any, rootSchema?: SchemaConstructor<T>, preventRecursion?: boolean): Promise<Room<T>> {
-        // Prevent from dev mode recursive calls.
-        if (preventRecursion) {
-            return;
-        }
-
+    public async consumeSeatReservation<T>(response: any, rootSchema?: SchemaConstructor<T>, preventRecursion: boolean = false): Promise<Room<T>> {
         const room = this.createRoom<T>(response.room.name, rootSchema);
         room.roomId = response.room.roomId;
         room.sessionId = response.sessionId;
@@ -109,7 +105,7 @@ export class Client {
             options.reconnectionToken = response.reconnectionToken;
         }
 
-        if (response.devMode) {
+        if (response.devMode && !preventRecursion) {
             room.connect(this.buildEndpoint(response.room, options), async (e: CloseEvent) => {
                 console.info('DEV MODE: Reestablishing client/server reconnection!');
                 const maximumRetryCount = 10;
@@ -118,7 +114,9 @@ export class Client {
                 const reconnectionCallback = async () => {
                     if (retryAttempt < maximumRetryCount) {
                         try {
-                            if (await this.consumeSeatReservation(response, rootSchema, true)) {
+                            const result = await this.consumeSeatReservation(response, rootSchema, true);
+                            if (result) {
+                                room.connection = result.connection;
                                 console.info('DEV MODE: Reconnection successful!');
                                 clearInterval(timer);
                             }
@@ -131,9 +129,9 @@ export class Client {
                     }
                     retryAttempt++;
                 };
-                const timer = setInterval(reconnectionCallback, 1000);
+                const timer = setInterval(reconnectionCallback.bind(this), 1500);
             });
-        } else  {
+        } else {
             room.connect(this.buildEndpoint(response.room, options));
         }
 
