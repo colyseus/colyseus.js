@@ -34,7 +34,7 @@ export class Room<State= any> {
     protected onJoin = createSignal();
 
     public serializerId: string;
-    protected serializer: Serializer<State>;
+    public serializer: Serializer<State>;
 
     protected hasJoined: boolean = false;
 
