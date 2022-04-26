@@ -1,16 +1,16 @@
 import * as msgpack from './msgpack';
 
 import { Connection } from './Connection';
-import { Serializer, getSerializer } from './serializer/Serializer';
-import { Protocol, utf8Read, utf8Length } from './Protocol';
+import { Protocol, utf8Length, utf8Read } from './Protocol';
+import { getSerializer, Serializer } from './serializer/Serializer';
 
 // The unused imports here are important for better `.d.ts` file generation
 // (Later merged with `dts-bundle-generator`)
-import { createNanoEvents, DefaultEvents, Emitter } from 'nanoevents';
-import { createSignal, EventEmitter } from './core/signal';
+import { createNanoEvents } from 'nanoevents';
+import { createSignal } from './core/signal';
 
-import { SchemaSerializer, SchemaConstructor } from './serializer/SchemaSerializer';
-import { Context, Schema, encode, decode } from '@colyseus/schema';
+import { Context, decode, encode, Schema } from '@colyseus/schema';
+import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializer';
 
 export interface RoomAvailable<Metadata = any> {
     roomId: string;
@@ -60,13 +60,13 @@ export class Room<State= any> {
     // TODO: deprecate me on version 1.0
     get id() { return this.roomId; }
 
-    public connect(endpoint: string, oncloseCallback?: any) {
+    public connect(endpoint: string, devMode?: boolean, oncloseCallback?: any) {
         this.connection = new Connection();
         this.connection.events.onmessage = this.onMessageCallback.bind(this);
-        if (oncloseCallback) {
-            this.connection.events.onclose = oncloseCallback;
-        } else {
-            this.connection.events.onclose = (e: CloseEvent) => {
+        this.connection.events.onclose = (e: CloseEvent) => {
+            if (devMode && oncloseCallback && e.code !== 1000) {
+                oncloseCallback(e);
+            } else {
                 if (!this.hasJoined) {
                     console.warn(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
                     this.onError.invoke(e.code, e.reason);
@@ -74,8 +74,8 @@ export class Room<State= any> {
                 }
                 this.onLeave.invoke(e.code);
                 this.destroy();
-            };
-        }
+            }
+        };
         this.connection.events.onerror = (e: CloseEvent) => {
             console.warn(`Room, onError (${e.code}): ${e.reason}`);
             this.onError.invoke(e.code, e.reason);

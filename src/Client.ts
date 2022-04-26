@@ -1,15 +1,10 @@
 import { post, get } from "httpie";
-import {getAndCacheOutputJSFileName} from 'ts-loader/dist/utils';
 
 import { ServerError } from './errors/ServerError';
 import { Room, RoomAvailable } from './Room';
-import { Auth } from './Auth';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
-import {WebSocketTransport} from './transport/WebSocketTransport';
 
 export type JoinOptions = any;
-
-let devMode: boolean = false;
 
 export class MatchMakeError extends Error {
     code: number;
@@ -34,6 +29,8 @@ export interface EndpointSettings {
 
 export class Client {
     protected settings: EndpointSettings;
+
+    private stopMatchMakeRequest: boolean;
 
     constructor(settings: string | EndpointSettings = DEFAULT_ENDPOINT) {
         if (typeof (settings) === "string") {
@@ -93,7 +90,7 @@ export class Client {
         ).data;
     }
 
-    public async consumeSeatReservation<T>(response: any, rootSchema?: SchemaConstructor<T>, preventRecursion: boolean = false): Promise<Room<T>> {
+    public async consumeSeatReservation<T>(response: any, rootSchema?: SchemaConstructor<T>, depth: number = 1): Promise<Room<T>> {
         const room = this.createRoom<T>(response.room.name, rootSchema);
         room.roomId = response.room.roomId;
         room.sessionId = response.sessionId;
@@ -105,35 +102,29 @@ export class Client {
             options.reconnectionToken = response.reconnectionToken;
         }
 
-        if (response.devMode && !preventRecursion) {
-            room.connect(this.buildEndpoint(response.room, options), async (e: CloseEvent) => {
-                console.info('DEV MODE: Reestablishing client/server reconnection!');
-                const maximumRetryCount = 10;
-                let retryAttempt = 1;
+        room.connect(this.buildEndpoint(response.room, options), response.devMode, async (e: CloseEvent) => {
+            console.info('DEV MODE: Reestablishing client/server reconnection!');
 
-                const reconnectionCallback = async () => {
-                    if (retryAttempt < maximumRetryCount) {
-                        try {
-                            const result = await this.consumeSeatReservation(response, rootSchema, true);
-                            if (result) {
-                                room.connection = result.connection;
-                                console.info('DEV MODE: Reconnection successful!');
-                                clearInterval(timer);
-                            }
-                        } catch (err) {
-                            console.error(err);
+            const reconnectionCallback = async () => {
+                if (depth < 2) {
+                    try {
+                        await this.sleep(1000);
+                        const result = await this.consumeSeatReservation(response, rootSchema, depth++);
+                        if (result) {
+                            room.connection = result.connection;
+                            console.info('DEV MODE: Reconnection successful!');
+                            clearInterval(timer);
                         }
-                    } else {
-                        console.warn('DEV MODE: Maximum number of reconnection attempts exceeded!');
-                        clearInterval(timer);
+                    } catch (err) {
+                        console.error(err);
                     }
-                    retryAttempt++;
-                };
-                const timer = setInterval(reconnectionCallback.bind(this), 1500);
-            });
-        } else {
-            room.connect(this.buildEndpoint(response.room, options));
-        }
+                } else {
+                    console.warn('DEV MODE: Maximum number of reconnection attempts exceeded!');
+                    clearInterval(timer);
+                }
+            };
+            const timer = setInterval(reconnectionCallback.bind(this), 1500);
+        });
 
         return new Promise((resolve, reject) => {
             const onError = (code, message) => reject(new ServerError(code, message));
@@ -169,11 +160,6 @@ export class Client {
         // forward reconnection token during "reconnect" methods.
         if (method === "reconnect") {
             response.reconnectionToken = options.reconnectionToken;
-        }
-
-        // Set dev mode properties
-        if (response.hasOwnProperty('devMode')) {
-            devMode = response.devMode;
         }
 
         return await this.consumeSeatReservation<T>(response, rootSchema);
@@ -217,4 +203,7 @@ export class Client {
             : "";
     }
 
+    private async sleep(msec) {
+        return new Promise((resolve) => setTimeout(resolve, msec));
+    }
 }
