@@ -30,8 +30,6 @@ export interface EndpointSettings {
 export class Client {
     protected settings: EndpointSettings;
 
-    private stopMatchMakeRequest: boolean;
-
     constructor(settings: string | EndpointSettings = DEFAULT_ENDPOINT) {
         if (typeof (settings) === "string") {
             const url = new URL(settings);
@@ -114,7 +112,7 @@ export class Client {
                         clearInterval(timer);
                     }
                 };
-                const timer = setInterval(reconnectionCallback, 3000);
+                const timer = setInterval(reconnectionCallback.bind(room), 3000);
             });
 
             return new Promise((resolve, reject) => {
@@ -193,9 +191,5 @@ export class Client {
         return (this.settings.port !== 80 && this.settings.port !== 443)
             ? `:${this.settings.port}`
             : "";
-    }
-
-    private async sleep(msec) {
-        return new Promise((resolve) => setTimeout(resolve, msec));
     }
 }
