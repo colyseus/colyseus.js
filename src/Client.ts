@@ -45,6 +45,8 @@ export class Client {
         } else {
             this.settings = settings;
         }
+
+        console.log("SETTINGS:", this.settings);
     }
 
     public async joinOrCreate<T>(roomName: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {
@@ -88,43 +90,59 @@ export class Client {
         ).data;
     }
 
-    public async consumeSeatReservation<T>(response: any, rootSchema?: SchemaConstructor<T>, executionDepth: number = 1): Promise<Room<T>> {
-        if (executionDepth < 2) {
-            const room = this.createRoom<T>(response.room.name, rootSchema);
-            room.roomId = response.room.roomId;
-            room.sessionId = response.sessionId;
+    public async consumeSeatReservation<T>(
+        response: any,
+        rootSchema?: SchemaConstructor<T>,
+        previousRoom?: Room // used in devMode
+    ): Promise<Room<T>> {
+        const room = this.createRoom<T>(response.room.name, rootSchema);
+        room.roomId = response.room.roomId;
+        room.sessionId = response.sessionId;
 
-            const options: any = { sessionId: room.sessionId };
+        const options: any = { sessionId: room.sessionId };
 
-            // forward "reconnection token" in case of reconnection.
-            if (response.reconnectionToken) {
-                options.reconnectionToken = response.reconnectionToken;
-            }
-
-            room.connect(this.buildEndpoint(response.room, options), response.devMode, async (e: CloseEvent) => {
-                console.info('DEV MODE: Reestablishing client/server reconnection!');
-
-                const reconnectionCallback = async () => {
-                    const result = await this.consumeSeatReservation(response, rootSchema, executionDepth++);
-                    if (result) {
-                        room.connection = result.connection;
-                        console.info('DEV MODE: Reconnection successful!');
-                        clearInterval(timer);
-                    }
-                };
-                const timer = setInterval(reconnectionCallback.bind(room), 3000);
-            });
-
-            return new Promise((resolve, reject) => {
-                const onError = (code, message) => reject(new ServerError(code, message));
-                room.onError.once(onError);
-
-                room['onJoin'].once(() => {
-                    room.onError.remove(onError);
-                    resolve(room);
-                });
-            });
+        // forward "reconnection token" in case of reconnection.
+        if (response.reconnectionToken) {
+            options.reconnectionToken = response.reconnectionToken;
         }
+
+        const targetRoom = previousRoom || room;
+        room.connect(this.buildEndpoint(response.room, options), response.devMode && (async () => {
+            console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x1F504)} Re-establishing connection with room id '${room.roomId}'...`); // 🔄
+
+            let retryCount = 0;
+            let retryMaxRetries = 8;
+
+            const retryReconnection = async () => {
+                retryCount++;
+
+                try {
+                    await this.consumeSeatReservation(response, rootSchema, targetRoom);
+                    console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x2705)} Successfully re-established connection with room '${room.roomId}'`); // ✅
+
+                } catch (e) {
+                    if (retryCount < retryMaxRetries) {
+                        console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x1F504)} retrying... (${retryCount} out of ${retryMaxRetries})`); // 🔄
+                        setTimeout(retryReconnection, 2000);
+
+                    } else {
+                        console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x274C)} Failed to reconnect. Is your server running? Please check server logs.`); // ❌
+                    }
+                }
+            };
+
+            setTimeout(retryReconnection, 2000);
+        }), targetRoom);
+
+        return new Promise((resolve, reject) => {
+            const onError = (code, message) => reject(new ServerError(code, message));
+            targetRoom.onError.once(onError);
+
+            targetRoom['onJoin'].once(() => {
+                targetRoom.onError.remove(onError);
+                resolve(targetRoom);
+            });
+        });
     }
 
     protected async createMatchMakeRequest<T>(

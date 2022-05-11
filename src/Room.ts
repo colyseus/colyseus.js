@@ -11,6 +11,7 @@ import { createSignal } from './core/signal';
 
 import { Context, decode, encode, Schema } from '@colyseus/schema';
 import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializer';
+import { CloseCode } from './errors/ServerError';
 
 export interface RoomAvailable<Metadata = any> {
     roomId: string;
@@ -60,27 +61,33 @@ export class Room<State= any> {
     // TODO: deprecate me on version 1.0
     get id() { return this.roomId; }
 
-    public connect(endpoint: string, devMode?: boolean, oncloseCallback?: any) {
-        this.connection = new Connection();
-        this.connection.events.onmessage = this.onMessageCallback.bind(this);
-        this.connection.events.onclose = (e: CloseEvent) => {
-            if (devMode && oncloseCallback && e.code !== 1000) {
-                oncloseCallback(e);
+    public connect(
+        endpoint: string,
+        devModeCloseCallback?: () => void,
+        room: Room = this // when reconnecting on devMode, re-use previous room intance for handling events.
+    ) {
+        const connection = new Connection();
+        room.connection = connection;
+
+        connection.events.onmessage = Room.prototype.onMessageCallback.bind(room);
+        connection.events.onclose = function (e: CloseEvent) {
+            if (!room.hasJoined) {
+                console.warn(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
+                room.onError.invoke(e.code, e.reason);
+                return;
+            }
+            if (e.code === CloseCode.DEVMODE_RESTART && devModeCloseCallback) {
+                devModeCloseCallback();
             } else {
-                if (!this.hasJoined) {
-                    console.warn(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
-                    this.onError.invoke(e.code, e.reason);
-                    return;
-                }
-                this.onLeave.invoke(e.code);
-                this.destroy();
+                room.onLeave.invoke(e.code);
+                room.destroy();
             }
         };
-        this.connection.events.onerror = (e: CloseEvent) => {
+        connection.events.onerror = function (e: CloseEvent) {
             console.warn(`Room, onError (${e.code}): ${e.reason}`);
-            this.onError.invoke(e.code, e.reason);
+            room.onError.invoke(e.code, e.reason);
         };
-        this.connection.connect(endpoint);
+        connection.connect(endpoint);
     }
 
     public leave(consented: boolean = true): Promise<number> {
@@ -96,7 +103,7 @@ export class Room<State= any> {
                 }
 
             } else {
-                this.onLeave.invoke(4000); // "consented" code
+                this.onLeave.invoke(CloseCode.CONSENTED);
             }
         });
     }

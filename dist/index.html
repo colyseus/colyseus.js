@@ -11,7 +11,7 @@
     <strong>Messages</strong><br>
 
     <form id="form">
-      Endpoint: <input type="text" id="endpoint" value="localhost:2567" /> <br />
+      Endpoint: <input type="text" id="endpoint" value="ws://localhost:2567" /> <br />
       Room name: <input type="text" id="room_name" value="my_room" /> <br />
 
       Send data: <input type="text" id="message_type" value="" placeholder="messageType" />
@@ -74,14 +74,12 @@
               room = r
               addListeners(room);
 
-              console.log(room.state.toJSON());
-
-              room.state.networkedUsers.onAdd((player) => {
+              room.state.players.onAdd((player) => {
                   console.log("PLAYER ADDED!");
                 //   player.onChange((changes) => console.log("PLAYER CHANGED:", changes));
               });
 
-              room.state.networkedUsers.onChange((player) => console.log("Player changed..."));
+              room.state.players.onChange((player) => console.log("Player changed..."));
           });
       }
 
