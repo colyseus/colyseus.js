@@ -70,7 +70,7 @@
     "@types/ws": "^7.4.0",
     "benchmark": "^2.1.4",
     "chai": "^3.5.0",
-    "dts-bundle-generator": "^5.7.0",
+    "dts-bundle-generator": "^6.9.0",
     "install": "^0.12.2",
     "mocha": "^5.1.1",
     "nanoid": "^2.0.1",
