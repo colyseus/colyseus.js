@@ -24,7 +24,7 @@ export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
 
     handshake(bytes: number[], it?: Iterator) {
         if (this.state) {
-            // validate client/server definitinos
+            // TODO: validate client/server definitinos
             const reflection = new Reflection();
             reflection.decode(bytes, it);
 
