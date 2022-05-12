@@ -45,8 +45,6 @@ export class Client {
         } else {
             this.settings = settings;
         }
-
-        console.log("SETTINGS:", this.settings);
     }
 
     public async joinOrCreate<T>(roomName: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {
