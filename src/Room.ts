@@ -14,6 +14,7 @@ import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializ
 import { CloseCode } from './errors/ServerError';
 
 export interface RoomAvailable<Metadata = any> {
+    name: string;
     roomId: string;
     clients: number;
     maxClients: number;
