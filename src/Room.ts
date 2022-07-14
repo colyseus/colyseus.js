@@ -264,7 +264,7 @@ export class Room<State= any> {
                 ? decode.string(bytes, it)
                 : decode.number(bytes, it);
 
-            this.dispatchMessage(type, bytes.slice(it.offset));
+            this.dispatchMessage(type, new Uint8Array(bytes.slice(it.offset)));
         }
     }
 
