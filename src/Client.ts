@@ -26,9 +26,10 @@ export class Client {
     protected endpoint: string;
     protected _auth: Auth;
 
-    constructor(endpoint: string = DEFAULT_ENDPOINT) {
-        this.endpoint = endpoint;
-    }
+   constructor(endpoint: string = DEFAULT_ENDPOINT, options: Any) {
+    this.endpoint = endpoint;
+    this.transport = options.transport;
+  }
 
     public get auth(): Auth {
         if (!this._auth) { this._auth = new Auth(this.endpoint); }
