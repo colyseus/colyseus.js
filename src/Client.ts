@@ -27,7 +27,9 @@ export class Client {
     protected endpoint: string;
     protected _auth: Auth;
     protected transport: ITransport;
-   constructor(endpoint: string = DEFAULT_ENDPOINT, options: Any) {
+
+    
+   constructor(endpoint: string = DEFAULT_ENDPOINT, options: any) {
     this.endpoint = endpoint;
     this.transport = options.transport;
   }
