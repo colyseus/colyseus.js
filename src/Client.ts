@@ -31,7 +31,7 @@ export class Client {
     
    constructor(endpoint: string = DEFAULT_ENDPOINT, options: any) {
     this.endpoint = endpoint;
-    this.transport = options.transport;
+    this.transport = options?.transport;
   }
 
     public get auth(): Auth {
