@@ -64,7 +64,7 @@ export class Room<State= any> {
     get id() { return this.roomId; }
 
     public connect(endpoint: string) {
-        this.connection = new Connection();
+        this.connection = new Connection(this.transport);
         this.connection.events.onmessage = this.onMessageCallback.bind(this);
         this.connection.events.onclose = (e: CloseEvent) => {
             if (!this.hasJoined) {
