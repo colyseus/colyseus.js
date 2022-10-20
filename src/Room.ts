@@ -12,7 +12,7 @@ import { createSignal, EventEmitter } from './core/signal';
 import { SchemaSerializer, SchemaConstructor } from './serializer/SchemaSerializer';
 import { Context, Schema, encode, decode } from '@colyseus/schema';
 
-import { ITransport, ITransportEventMap } from "./transport/ITransport";
+import { ITransport, ITransportConstructor, ITransportEventMap } from "./transport/ITransport";
 import { WebSocketTransport } from "./transport/WebSocketTransport";
 
 export interface RoomAvailable<Metadata = any> {
@@ -26,7 +26,7 @@ export class Room<State= any> {
     public roomId: string;
     public sessionId: string;
 
-    public transport: ITransport;
+    public transport: ITransportConstructor;
     public name: string;;
     public connection: Connection;
 
@@ -46,7 +46,7 @@ export class Room<State= any> {
 
     protected onMessageHandlers = createNanoEvents();
 
-    constructor(name: string, rootSchema?: SchemaConstructor<State>, transport?: ITransport ) {
+    constructor(name: string, rootSchema?: SchemaConstructor<State>, transport?: ITransportConstructor ) {
         this.roomId = null;
         this.name = name;
         this.transport = transport
