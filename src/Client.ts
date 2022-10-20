@@ -113,7 +113,7 @@ export class Client {
     }
 
     protected createRoom<T>(roomName: string, rootSchema?: SchemaConstructor<T>) {
-        return new Room<T>(roomName, rootSchema);
+        return new Room<T>(roomName, rootSchema, this.transport);
     }
 
     protected buildEndpoint(room: any, options: any = {}) {
