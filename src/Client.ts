@@ -4,7 +4,7 @@ import { ServerError } from './errors/ServerError';
 import { Room, RoomAvailable } from './Room';
 import { Auth } from './Auth';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
-import { ITransport, ITransportEventMap } from "./transport/ITransport";
+import { ITransportConstructor, ITransportEventMap } from "./transport/ITransport";
 
 export type JoinOptions = any;
 
@@ -26,7 +26,7 @@ const DEFAULT_ENDPOINT = (typeof (window) !== "undefined" &&  typeof (window?.lo
 export class Client {
     protected endpoint: string;
     protected _auth: Auth;
-    protected transport: ITransport;
+    protected transport: ITransportConstructor;
 
     
    constructor(endpoint: string = DEFAULT_ENDPOINT, options: any) {
