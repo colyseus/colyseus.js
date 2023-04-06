@@ -54,13 +54,48 @@ export default [
             alias({
                 entries: [
                     // httpie: force XHR implementation on browser/UMD environment
-                    { find: 'httpie', replacement: './node_modules/httpie/xhr/index.js' }, 
+                    { find: 'httpie', replacement: './node_modules/httpie/xhr/index.js' },
 
                     // ws: force browser.js version.
-                    { find: 'ws', replacement: './node_modules/ws/browser.js' }, 
+                    { find: 'ws', replacement: './node_modules/ws/browser.js' },
 
                     // @colyseus/schema: force browser version.
-                    { find: '@colyseus/schema', replacement: './node_modules/@colyseus/schema/build/umd/index.js' }, 
+                    { find: '@colyseus/schema', replacement: './node_modules/@colyseus/schema/build/umd/index.js' },
+                ]
+            }),
+            commonjs(),
+            nodeResolve({ browser: true }), // "browser" seems to have no effect here. (why??)
+        ],
+
+    },
+
+    // Decentraland SDK (same as browser/embedded, but use FETCH instead of XHR)
+    {
+        preserveModules: false,
+        input: ['src/index.ts'],
+        output: [
+            {
+                banner: bannerStatic,
+                dir: 'dist',
+                name: "Colyseus",
+                format: 'umd',
+                entryFileNames: 'colyseus-decentraland.js',
+                sourcemap: true,
+                amd: { id: pkg.name }
+            },
+        ],
+        plugins: [
+            typescript({ tsconfig: './tsconfig/tsconfig.cjs.json' }),
+            alias({
+                entries: [
+                    // httpie: force XHR implementation on browser/UMD environment
+                    { find: 'httpie', replacement: './node_modules/httpie/fetch/index.js' },
+
+                    // ws: force browser.js version.
+                    { find: 'ws', replacement: './node_modules/ws/browser.js' },
+
+                    // @colyseus/schema: force browser version.
+                    { find: '@colyseus/schema', replacement: './node_modules/@colyseus/schema/build/umd/index.js' },
                 ]
             }),
             commonjs(),

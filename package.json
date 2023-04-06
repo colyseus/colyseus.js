@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.15.0-preview.6",
+  "version": "0.15.0-preview.7",
   "description": "Colyseus Multiplayer SDK for JavaScript/TypeScript",
   "author": "Endel Dreyer",
   "license": "MIT",
@@ -35,7 +35,7 @@
     "./package.json": "./package.json"
   },
   "decentralandLibrary": {
-    "main": "./dist/colyseus.js",
+    "main": "./dist/colyseus-decentraland.js",
     "typings": "./dist/colyseus.d.ts"
   },
   "keywords": [
