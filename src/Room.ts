@@ -1,18 +1,20 @@
 import * as msgpack from './msgpack';
 
 import { Connection } from './Connection';
-import { Serializer, getSerializer } from './serializer/Serializer';
-import { Protocol, utf8Read, utf8Length } from './Protocol';
+import { Protocol, utf8Length, utf8Read } from './Protocol';
+import { getSerializer, Serializer } from './serializer/Serializer';
 
 // The unused imports here are important for better `.d.ts` file generation
 // (Later merged with `dts-bundle-generator`)
-import { createNanoEvents, DefaultEvents, Emitter } from 'nanoevents';
-import { createSignal, EventEmitter } from './core/signal';
+import { createNanoEvents } from 'nanoevents';
+import { createSignal } from './core/signal';
 
-import { SchemaSerializer, SchemaConstructor } from './serializer/SchemaSerializer';
-import { Context, Schema, encode, decode } from '@colyseus/schema';
+import { Context, decode, encode, Schema } from '@colyseus/schema';
+import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializer';
+import { CloseCode } from './errors/ServerError';
 
 export interface RoomAvailable<Metadata = any> {
+    name: string;
     roomId: string;
     clients: number;
     maxClients: number;
@@ -22,6 +24,7 @@ export interface RoomAvailable<Metadata = any> {
 export class Room<State= any> {
     public roomId: string;
     public sessionId: string;
+    public reconnectionToken: string;
 
     public name: string;
     public connection: Connection;
@@ -33,7 +36,7 @@ export class Room<State= any> {
     protected onJoin = createSignal();
 
     public serializerId: string;
-    protected serializer: Serializer<State>;
+    public serializer: Serializer<State>;
 
     protected hasJoined: boolean = false;
 
@@ -59,24 +62,33 @@ export class Room<State= any> {
     // TODO: deprecate me on version 1.0
     get id() { return this.roomId; }
 
-    public connect(endpoint: string) {
-        this.connection = new Connection();
-        this.connection.events.onmessage = this.onMessageCallback.bind(this);
-        this.connection.events.onclose = (e: CloseEvent) => {
-            if (!this.hasJoined) {
+    public connect(
+        endpoint: string,
+        devModeCloseCallback?: () => void,
+        room: Room = this // when reconnecting on devMode, re-use previous room intance for handling events.
+    ) {
+        const connection = new Connection();
+        room.connection = connection;
+
+        connection.events.onmessage = Room.prototype.onMessageCallback.bind(room);
+        connection.events.onclose = function (e: CloseEvent) {
+            if (!room.hasJoined) {
                 console.warn(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
-                this.onError.invoke(e.code, e.reason);
+                room.onError.invoke(e.code, e.reason);
                 return;
             }
-
-            this.onLeave.invoke(e.code);
-            this.destroy();
+            if (e.code === CloseCode.DEVMODE_RESTART && devModeCloseCallback) {
+                devModeCloseCallback();
+            } else {
+                room.onLeave.invoke(e.code);
+                room.destroy();
+            }
         };
-        this.connection.events.onerror = (e: CloseEvent) => {
+        connection.events.onerror = function (e: CloseEvent) {
             console.warn(`Room, onError (${e.code}): ${e.reason}`);
-            this.onError.invoke(e.code, e.reason);
+            room.onError.invoke(e.code, e.reason);
         };
-        this.connection.connect(endpoint);
+        connection.connect(endpoint);
     }
 
     public leave(consented: boolean = true): Promise<number> {
@@ -92,7 +104,7 @@ export class Room<State= any> {
                 }
 
             } else {
-                this.onLeave.invoke(4000); // "consented" code
+                this.onLeave.invoke(CloseCode.CONSENTED);
             }
         });
     }
@@ -141,6 +153,24 @@ export class Room<State= any> {
         this.connection.send(arr.buffer);
     }
 
+    public sendBytes(type: string | number, bytes: number[] | ArrayBufferLike) {
+        const initialBytes: number[] = [Protocol.ROOM_DATA_BYTES];
+
+        if (typeof(type) === "string") {
+            encode.string(initialBytes, type);
+
+        } else {
+            encode.number(initialBytes, type);
+        }
+
+        let arr: Uint8Array;
+        arr = new Uint8Array(initialBytes.length + ((bytes as ArrayBufferLike).byteLength || (bytes as number[]).length));
+        arr.set(new Uint8Array(initialBytes), 0);
+        arr.set(new Uint8Array(bytes), initialBytes.length);
+
+        this.connection.send(arr.buffer);
+    }
+
     public get state (): State {
         return this.serializer.getState();
     }
@@ -160,6 +190,9 @@ export class Room<State= any> {
         if (code === Protocol.JOIN_ROOM) {
             let offset = 1;
 
+            const reconnectionToken = utf8Read(bytes, offset);
+            offset += utf8Length(reconnectionToken);
+
             this.serializerId = utf8Read(bytes, offset);
             offset += utf8Length(this.serializerId);
 
@@ -172,6 +205,8 @@ export class Room<State= any> {
             if (bytes.length > offset && this.serializer.handshake) {
                 this.serializer.handshake(bytes, { offset });
             }
+
+            this.reconnectionToken = `${this.roomId}:${reconnectionToken}`;
 
             this.hasJoined = true;
             this.onJoin.invoke();
@@ -221,6 +256,15 @@ export class Room<State= any> {
                 : undefined;
 
             this.dispatchMessage(type, message);
+
+        } else if (code === Protocol.ROOM_DATA_BYTES) {
+            const it: decode.Iterator = { offset: 1 };
+
+            const type = (decode.stringCheck(bytes, it))
+                ? decode.string(bytes, it)
+                : decode.number(bytes, it);
+
+            this.dispatchMessage(type, new Uint8Array(bytes.slice(it.offset)));
         }
     }
 

@@ -2,7 +2,6 @@ import { post, get } from "httpie";
 
 import { ServerError } from './errors/ServerError';
 import { Room, RoomAvailable } from './Room';
-import { Auth } from './Auth';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
 
 export type JoinOptions = any;
@@ -22,17 +21,30 @@ const DEFAULT_ENDPOINT = (typeof (window) !== "undefined" &&  typeof (window?.lo
     ? `${window.location.protocol.replace("http", "ws")}//${window.location.hostname}${(window.location.port && `:${window.location.port}`)}`
     : "ws://127.0.0.1:2567";
 
+export interface EndpointSettings {
+    hostname: string,
+    port: number,
+    useSSL: boolean,
+}
+
 export class Client {
-    protected endpoint: string;
-    protected _auth: Auth;
+    protected settings: EndpointSettings;
 
-    constructor(endpoint: string = DEFAULT_ENDPOINT) {
-        this.endpoint = endpoint;
-    }
+    constructor(settings: string | EndpointSettings = DEFAULT_ENDPOINT) {
+        if (typeof (settings) === "string") {
+            const url = new URL(settings);
+            const useSSL = (url.protocol === "https:" || url.protocol === "wss:");
+            const port = Number(url.port || (useSSL ? 443 : 80));
 
-    public get auth(): Auth {
-        if (!this._auth) { this._auth = new Auth(this.endpoint); }
-        return this._auth;
+            this.settings = {
+                hostname: url.hostname,
+                port,
+                useSSL
+            };
+
+        } else {
+            this.settings = settings;
+        }
     }
 
     public async joinOrCreate<T>(roomName: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {
@@ -51,29 +63,82 @@ export class Client {
         return await this.createMatchMakeRequest<T>('joinById', roomId, options, rootSchema);
     }
 
-    public async reconnect<T>(roomId: string, sessionId: string, rootSchema?: SchemaConstructor<T>) {
-        return await this.createMatchMakeRequest<T>('joinById', roomId, { sessionId }, rootSchema);
+    /**
+     * Re-establish connection with a room this client was previously connected to.
+     *
+     * @param reconnectionToken The `room.reconnectionToken` from previously connected room.
+     * @param rootSchema (optional) Concrete root schema definition
+     * @returns Promise<Room>
+     */
+    public async reconnect<T>(reconnectionToken: string, rootSchema?: SchemaConstructor<T>) {
+        if (typeof (reconnectionToken) === "string" && typeof (rootSchema) === "string") {
+            throw new Error("DEPRECATED: .reconnect() now only accepts 'reconnectionToken' as argument.\nYou can get this token from previously connected `room.reconnectionToken`");
+        }
+        const [roomId, token] = reconnectionToken.split(":");
+        return await this.createMatchMakeRequest<T>('reconnect', roomId, { reconnectionToken: token }, rootSchema);
     }
 
-    public async getAvailableRooms<Metadata= any>(roomName: string = ""): Promise<RoomAvailable<Metadata>[]> {
-        const url = `${this.endpoint.replace("ws", "http")}/matchmake/${roomName}`;
-        return (await get(url, { headers: { 'Accept': 'application/json' } })).data;
+    public async getAvailableRooms<Metadata = any>(roomName: string = ""): Promise<RoomAvailable<Metadata>[]> {
+        return (
+            await get(this.getHttpEndpoint(`${roomName}`), {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+        ).data;
     }
 
-    public async consumeSeatReservation<T>(response: any, rootSchema?: SchemaConstructor<T>): Promise<Room<T>> {
+    public async consumeSeatReservation<T>(
+        response: any,
+        rootSchema?: SchemaConstructor<T>,
+        previousRoom?: Room // used in devMode
+    ): Promise<Room<T>> {
         const room = this.createRoom<T>(response.room.name, rootSchema);
         room.roomId = response.room.roomId;
         room.sessionId = response.sessionId;
 
-        room.connect(this.buildEndpoint(response.room, { sessionId: room.sessionId }));
+        const options: any = { sessionId: room.sessionId };
+
+        // forward "reconnection token" in case of reconnection.
+        if (response.reconnectionToken) {
+            options.reconnectionToken = response.reconnectionToken;
+        }
+
+        const targetRoom = previousRoom || room;
+        room.connect(this.buildEndpoint(response.room, options), response.devMode && (async () => {
+            console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x1F504)} Re-establishing connection with room id '${room.roomId}'...`); // 🔄
+
+            let retryCount = 0;
+            let retryMaxRetries = 8;
+
+            const retryReconnection = async () => {
+                retryCount++;
+
+                try {
+                    await this.consumeSeatReservation(response, rootSchema, targetRoom);
+                    console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x2705)} Successfully re-established connection with room '${room.roomId}'`); // ✅
+
+                } catch (e) {
+                    if (retryCount < retryMaxRetries) {
+                        console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x1F504)} retrying... (${retryCount} out of ${retryMaxRetries})`); // 🔄
+                        setTimeout(retryReconnection, 2000);
+
+                    } else {
+                        console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x274C)} Failed to reconnect. Is your server running? Please check server logs.`); // ❌
+                    }
+                }
+            };
+
+            setTimeout(retryReconnection, 2000);
+        }), targetRoom);
 
         return new Promise((resolve, reject) => {
             const onError = (code, message) => reject(new ServerError(code, message));
-            room.onError.once(onError);
+            targetRoom.onError.once(onError);
 
-            room['onJoin'].once(() => {
-                room.onError.remove(onError);
-                resolve(room);
+            targetRoom['onJoin'].once(() => {
+                targetRoom.onError.remove(onError);
+                resolve(targetRoom);
             });
         });
     }
@@ -84,15 +149,8 @@ export class Client {
         options: JoinOptions = {},
         rootSchema?: SchemaConstructor<T>
     ) {
-        const url = `${this.endpoint.replace("ws", "http")}/matchmake/${method}/${roomName}`;
-
-        // automatically forward auth token, if present
-        if (this._auth && this._auth.hasToken) {
-            options.token = this._auth.token;
-        }
-
         const response = (
-            await post(url, {
+            await post(this.getHttpEndpoint(`${method}/${roomName}`), {
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
@@ -105,7 +163,12 @@ export class Client {
             throw new MatchMakeError(response.error, response.code);
         }
 
-        return this.consumeSeatReservation<T>(response, rootSchema);
+        // forward reconnection token during "reconnect" methods.
+        if (method === "reconnect") {
+            response.reconnectionToken = options.reconnectionToken;
+        }
+
+        return await this.consumeSeatReservation<T>(response, rootSchema);
     }
 
     protected createRoom<T>(roomName: string, rootSchema?: SchemaConstructor<T>) {
@@ -122,7 +185,27 @@ export class Client {
             params.push(`${name}=${options[name]}`);
         }
 
-        return `${this.endpoint}/${room.processId}/${room.roomId}?${params.join('&')}`;
+        let endpoint = (this.settings.useSSL)
+            ? "wss://"
+            : "ws://"
+
+        if (room.publicAddress) {
+            endpoint += `${room.publicAddress}`;
+
+        } else {
+            endpoint += `${this.settings.hostname}${this.getEndpointPort()}`;
+        }
+
+        return `${endpoint}/${room.processId}/${room.roomId}?${params.join('&')}`;
     }
 
+    protected getHttpEndpoint(segments: string) {
+        return `${(this.settings.useSSL) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}/matchmake/${segments}`;
+    }
+
+    protected getEndpointPort() {
+        return (this.settings.port !== 80 && this.settings.port !== 443)
+            ? `:${this.settings.port}`
+            : "";
+    }
 }

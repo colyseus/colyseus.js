@@ -1,3 +1,7 @@
+export enum CloseCode {
+    CONSENTED = 4000,
+    DEVMODE_RESTART = 4010
+}
 
 export class ServerError extends Error {
   public code: number;

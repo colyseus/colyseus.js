@@ -11,7 +11,8 @@
     <strong>Messages</strong><br>
 
     <form id="form">
-      Room name: <input type="text" id="room_name" value="dummy" /> <br />
+      Endpoint: <input type="text" id="endpoint" value="ws://localhost:2567" /> <br />
+      Room name: <input type="text" id="room_name" value="my_room" /> <br />
 
       Send data: <input type="text" id="message_type" value="" placeholder="messageType" />
                  <input type="text" id="message_data" value="" placeholder="data" />
@@ -29,27 +30,31 @@
     <button onclick="reconnect()">Re-join last closed connection</button>
 
     <script>
-      var host = (window.document.location.host || "localhost").replace(/:.*/, '');
-      var client = new Colyseus.Client('ws://' + host + ':2567');
       var room;
+
+      function getClient() {
+        return new Colyseus.Client(document.getElementById('endpoint').value);
+      }
 
       function addListeners (room) {
           console.log('joined!');
-          room.onMessage("*", (type, message) => {
-              console.log("received message:", type, "=>", message);
-          });
+        //   room.onMessage("*", (type, message) => {
+        //       console.log("received message:", type, "=>", message);
+        //   });
+
+          room.onMessage("onJoin", () => {});
 
           room.onLeave(function() {
               console.log("LEFT ROOM", arguments);
           });
 
-          room.onStateChange(function(state) {
-              console.log("state change: ", state.toJSON());
-          });
+        //   room.onStateChange(function(state) {
+        //       console.log("state change: ", state.toJSON());
+        //   });
       }
 
       function join () {
-          client.join(document.getElementById('room_name').value, { code: "one" }).then((r) => {
+          getClient().join(document.getElementById('room_name').value, { code: "one" }).then((r) => {
               room = r;
               addListeners(room);
           }).catch(e => {
@@ -58,28 +63,35 @@
       }
 
       function create () {
-          client.create(document.getElementById('room_name').value, { code: "one" }).then((r) => {
+          getClient().create(document.getElementById('room_name').value, { code: "one" }).then((r) => {
               room = r
               addListeners(room);
           });
       }
 
       function joinOrCreate () {
-          client.joinOrCreate(document.getElementById('room_name').value, { code: "one" }).then((r) => {
+          getClient().joinOrCreate(document.getElementById('room_name').value, { code: "one" }).then((r) => {
               room = r
               addListeners(room);
+
+              room.state.players.onAdd((player) => {
+                  console.log("PLAYER ADDED!");
+                //   player.onChange((changes) => console.log("PLAYER CHANGED:", changes));
+              });
+
+              room.state.players.onChange((player) => console.log("Player changed..."));
           });
       }
 
       function joinByLastId () {
-          client.joinById(room.id).then(r => {
+          getClient().joinById(room.id).then(r => {
             room = r;
             addListeners(room);
           });
       }
 
       function getAvailableRooms() {
-          client.getAvailableRooms(document.getElementById('room_name').value).then((rooms) => {
+          getClient().getAvailableRooms(document.getElementById('room_name').value).then((rooms) => {
               console.log(rooms);
           }).catch(e => {
               console.error(e);
@@ -87,7 +99,12 @@
       }
 
       function reconnect() {
-        client.reconnect(room.id, room.sessionId).then(r => {
+          console.log("reconnect!", {
+            reconnectionToken: room.reconnectionToken,
+            roomId: room.roomId,
+            sessionId: room.sessionId,
+          })
+        getClient().reconnect(room.reconnectionToken).then(r => {
             room = r;
             addListeners(room);
         });
