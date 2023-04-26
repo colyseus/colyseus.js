@@ -1,4 +1,4 @@
-import * as msgpack from './msgpack';
+import { pack, unpack } from 'msgpackr';
 
 import { Connection } from './Connection';
 import { Protocol, utf8Length, utf8Read } from './Protocol';
@@ -10,8 +10,8 @@ import { createNanoEvents } from 'nanoevents';
 import { createSignal } from './core/signal';
 
 import { Context, decode, encode, Schema } from '@colyseus/schema';
-import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializer';
 import { CloseCode } from './errors/ServerError';
+import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializer';
 
 export interface RoomAvailable<Metadata = any> {
     name: string;
@@ -141,7 +141,7 @@ export class Room<State= any> {
         let arr: Uint8Array;
 
         if (message !== undefined) {
-            const encoded = msgpack.encode(message);
+            const encoded = pack(message);
             arr = new Uint8Array(initialBytes.length + encoded.byteLength);
             arr.set(new Uint8Array(initialBytes), 0);
             arr.set(new Uint8Array(encoded), initialBytes.length);
@@ -171,7 +171,7 @@ export class Room<State= any> {
         this.connection.send(arr.buffer);
     }
 
-    public get state (): State {
+    public get state(): State {
         return this.serializer.getState();
     }
 
@@ -184,7 +184,7 @@ export class Room<State= any> {
     }
 
     protected onMessageCallback(event: MessageEvent) {
-        const bytes = Array.from(new Uint8Array(event.data))
+        const bytes = Array.from(new Uint8Array(event.data));
         const code = bytes[0];
 
         if (code === Protocol.JOIN_ROOM) {
@@ -252,7 +252,7 @@ export class Room<State= any> {
                 : decode.number(bytes, it);
 
             const message = (bytes.length > it.offset)
-                ? msgpack.decode(event.data, it.offset)
+                ? unpack(new Uint8Array(event.data.slice(it.offset, bytes.length)))
                 : undefined;
 
             this.dispatchMessage(type, message);
