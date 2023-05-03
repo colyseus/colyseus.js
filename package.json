@@ -15,6 +15,7 @@
     "tslint": "tslint --project .",
     "prepublishOnly": "tsc && npm run build"
   },
+  "funding": "https://github.com/sponsors/endel",
   "files": [
     "dist",
     "build",
