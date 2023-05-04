@@ -24,18 +24,6 @@
   "main": "build/cjs/index.js",
   "module": "build/esm/index.mjs",
   "typings": "lib/index.d.ts",
-  "exports": {
-    ".": {
-      "browser": "./dist/colyseus.js",
-      "import": "./build/esm/index.mjs",
-      "require": "./build/cjs/index.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "decentralandLibrary": {
-    "main": "./dist/colyseus-decentraland.js",
-    "typings": "./dist/colyseus.d.ts"
-  },
   "keywords": [
     "colyseus",
     "multiplayer",
