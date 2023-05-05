@@ -18,7 +18,7 @@ jobs:
     - name: Install dependencies
       run: |
         npm ci
-        npm run build-all
+        npm run build-ci
         zip --junk-paths colyseus-js-client dist/*
     - name: Publish to NPM
       id: publish
