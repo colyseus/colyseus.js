@@ -24,7 +24,7 @@ const DEFAULT_ENDPOINT = (typeof (window) !== "undefined" &&  typeof (window?.lo
 export interface EndpointSettings {
     hostname: string,
     port: number,
-    useSSL: boolean,
+    secure: boolean,
 }
 
 export class Client {
@@ -33,13 +33,13 @@ export class Client {
     constructor(settings: string | EndpointSettings = DEFAULT_ENDPOINT) {
         if (typeof (settings) === "string") {
             const url = new URL(settings);
-            const useSSL = (url.protocol === "https:" || url.protocol === "wss:");
-            const port = Number(url.port || (useSSL ? 443 : 80));
+            const secure = (url.protocol === "https:" || url.protocol === "wss:");
+            const port = Number(url.port || (secure ? 443 : 80));
 
             this.settings = {
                 hostname: url.hostname,
                 port,
-                useSSL
+                secure
             };
 
         } else {
@@ -185,7 +185,7 @@ export class Client {
             params.push(`${name}=${options[name]}`);
         }
 
-        let endpoint = (this.settings.useSSL)
+        let endpoint = (this.settings.secure)
             ? "wss://"
             : "ws://"
 
@@ -200,7 +200,7 @@ export class Client {
     }
 
     protected getHttpEndpoint(segments: string) {
-        return `${(this.settings.useSSL) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}/matchmake/${segments}`;
+        return `${(this.settings.secure) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}/matchmake/${segments}`;
     }
 
     protected getEndpointPort() {
