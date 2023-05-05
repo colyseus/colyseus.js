@@ -23,6 +23,7 @@ const DEFAULT_ENDPOINT = (typeof (window) !== "undefined" &&  typeof (window?.lo
 
 export interface EndpointSettings {
     hostname: string,
+    pathname: string,
     secure: boolean,
     port?: number,
 }
@@ -38,6 +39,7 @@ export class Client {
 
             this.settings = {
                 hostname: url.hostname,
+                pathname: url.pathname !== "/" ? url.pathname : "",
                 port,
                 secure
             };
@@ -196,14 +198,14 @@ export class Client {
             endpoint += `${room.publicAddress}`;
 
         } else {
-            endpoint += `${this.settings.hostname}${this.getEndpointPort()}`;
+            endpoint += `${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}`;
         }
 
         return `${endpoint}/${room.processId}/${room.roomId}?${params.join('&')}`;
     }
 
     protected getHttpEndpoint(segments: string) {
-        return `${(this.settings.secure) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}/matchmake/${segments}`;
+        return `${(this.settings.secure) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}/matchmake/${segments}`;
     }
 
     protected getEndpointPort() {
