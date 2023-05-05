@@ -23,8 +23,8 @@ const DEFAULT_ENDPOINT = (typeof (window) !== "undefined" &&  typeof (window?.lo
 
 export interface EndpointSettings {
     hostname: string,
-    port: number,
     secure: boolean,
+    port?: number,
 }
 
 export class Client {
@@ -43,6 +43,9 @@ export class Client {
             };
 
         } else {
+            if (settings.port === undefined) {
+                settings.port = (settings.secure) ? 443 : 80;
+            }
             this.settings = settings;
         }
     }
