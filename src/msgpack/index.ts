@@ -24,14 +24,15 @@
 /**
  * Patch for Colyseus:
  * -------------------
+ * notepack.io@3.0.1
  *
  * added `offset` on Decoder constructor, for messages arriving with a code
  * before actual msgpack data
  */
 
-// 
+//
 // DECODER
-// 
+//
 
 function Decoder(buffer, offset) {
     this._offset = offset;
@@ -143,17 +144,17 @@ Decoder.prototype._parse = function () {
     }
 
     switch (prefix) {
-        // nil
+            // nil
         case 0xc0:
             return null;
-        // false
+            // false
         case 0xc2:
             return false;
-        // true
+            // true
         case 0xc3:
             return true;
 
-        // bin
+            // bin
         case 0xc4:
             length = this._view.getUint8(this._offset);
             this._offset += 1;
@@ -167,11 +168,19 @@ Decoder.prototype._parse = function () {
             this._offset += 4;
             return this._bin(length);
 
-        // ext
+            // ext
         case 0xc7:
             length = this._view.getUint8(this._offset);
             type = this._view.getInt8(this._offset + 1);
             this._offset += 2;
+            if (type === -1) {
+                // timestamp 96
+                var ns = this._view.getUint32(this._offset);
+                hi = this._view.getInt32(this._offset + 4);
+                lo = this._view.getUint32(this._offset + 8);
+                this._offset += 12;
+                return new Date((hi * 0x100000000 + lo) * 1e3 + ns / 1e6);
+            }
             return [type, this._bin(length)];
         case 0xc8:
             length = this._view.getUint16(this._offset);
@@ -184,7 +193,7 @@ Decoder.prototype._parse = function () {
             this._offset += 5;
             return [type, this._bin(length)];
 
-        // float
+            // float
         case 0xca:
             value = this._view.getFloat32(this._offset);
             this._offset += 4;
@@ -194,7 +203,7 @@ Decoder.prototype._parse = function () {
             this._offset += 8;
             return value;
 
-        // uint
+            // uint
         case 0xcc:
             value = this._view.getUint8(this._offset);
             this._offset += 1;
@@ -213,7 +222,7 @@ Decoder.prototype._parse = function () {
             this._offset += 8;
             return hi + lo;
 
-        // int
+            // int
         case 0xd0:
             value = this._view.getInt8(this._offset);
             this._offset += 1;
@@ -232,11 +241,12 @@ Decoder.prototype._parse = function () {
             this._offset += 8;
             return hi + lo;
 
-        // fixext
+            // fixext
         case 0xd4:
             type = this._view.getInt8(this._offset);
             this._offset += 1;
             if (type === 0x00) {
+                // custom encoding for 'undefined' (kept for backward-compatibility)
                 this._offset += 1;
                 return void 0;
             }
@@ -248,15 +258,30 @@ Decoder.prototype._parse = function () {
         case 0xd6:
             type = this._view.getInt8(this._offset);
             this._offset += 1;
+            if (type === -1) {
+                // timestamp 32
+                value = this._view.getUint32(this._offset);
+                this._offset += 4;
+                return new Date(value * 1e3);
+            }
             return [type, this._bin(4)];
         case 0xd7:
             type = this._view.getInt8(this._offset);
             this._offset += 1;
             if (type === 0x00) {
+                // custom date encoding (kept for backward-compatibility)
                 hi = this._view.getInt32(this._offset) * Math.pow(2, 32);
                 lo = this._view.getUint32(this._offset + 4);
                 this._offset += 8;
                 return new Date(hi + lo);
+            }
+            if (type === -1) {
+                // timestamp 64
+                hi = this._view.getUint32(this._offset);
+                lo = this._view.getUint32(this._offset + 4);
+                this._offset += 8;
+                var s = (hi & 0x3) * 0x100000000 + lo;
+                return new Date(s * 1e3 + (hi >>> 2) / 1e6);
             }
             return [type, this._bin(8)];
         case 0xd8:
@@ -264,7 +289,7 @@ Decoder.prototype._parse = function () {
             this._offset += 1;
             return [type, this._bin(16)];
 
-        // str
+            // str
         case 0xd9:
             length = this._view.getUint8(this._offset);
             this._offset += 1;
@@ -278,7 +303,7 @@ Decoder.prototype._parse = function () {
             this._offset += 4;
             return this._str(length);
 
-        // array
+            // array
         case 0xdc:
             length = this._view.getUint16(this._offset);
             this._offset += 2;
@@ -288,7 +313,7 @@ Decoder.prototype._parse = function () {
             this._offset += 4;
             return this._array(length);
 
-        // map
+            // map
         case 0xde:
             length = this._view.getUint16(this._offset);
             this._offset += 2;
@@ -311,9 +336,12 @@ function decode(buffer, offset = 0) {
     return value;
 }
 
-// 
+//
 // ENCODER
-// 
+//
+
+var TIMESTAMP32_MAX_SEC = 0x100000000 - 1; // 32-bit unsigned int
+var TIMESTAMP64_MAX_SEC = 0x400000000 - 1; // 34-bit unsigned int
 
 function utf8Write(view, offset, str) {
     var c = 0;
@@ -491,13 +519,30 @@ function _encode(bytes, defers, value) {
             return size;
         }
 
-        // fixext 8 / Date
         if (value instanceof Date) {
-            var time = value.getTime();
-            hi = Math.floor(time / Math.pow(2, 32));
-            lo = time >>> 0;
-            bytes.push(0xd7, 0, hi >> 24, hi >> 16, hi >> 8, hi, lo >> 24, lo >> 16, lo >> 8, lo);
-            return 10;
+            var ms = value.getTime();
+            var s = Math.floor(ms / 1e3);
+            var ns = (ms - s * 1e3) * 1e6;
+
+            if (s >= 0 && ns >= 0 && s <= TIMESTAMP64_MAX_SEC) {
+                if (ns === 0 && s <= TIMESTAMP32_MAX_SEC) {
+                    // timestamp 32
+                    bytes.push(0xd6, 0xff, s >> 24, s >> 16, s >> 8, s);
+                    return 6;
+                } else {
+                    // timestamp 64
+                    hi = s / 0x100000000;
+                    lo = s & 0xffffffff;
+                    bytes.push(0xd7, 0xff, ns >> 22, ns >> 14, ns >> 6, hi, lo >> 24, lo >> 16, lo >> 8, lo);
+                    return 10;
+                }
+            } else {
+                // timestamp 96
+                hi = Math.floor(s / 0x100000000);
+                lo = s >>> 0;
+                bytes.push(0xc7, 0x0c, 0xff, ns >> 24, ns >> 16, ns >> 8, ns, hi >> 24, hi >> 16, hi >> 8, hi, lo >> 24, lo >> 16, lo >> 8, lo);
+                return 15;
+            }
         }
 
         if (value instanceof ArrayBuffer) {
@@ -513,13 +558,13 @@ function _encode(bytes, defers, value) {
                     bytes.push(0xc5, length >> 8, length);
                     size = 3;
                 } else
-                    // bin 32
-                    if (length < 0x100000000) {
-                        bytes.push(0xc6, length >> 24, length >> 16, length >> 8, length);
-                        size = 5;
-                    } else {
-                        throw new Error('Buffer too large');
-                    }
+                // bin 32
+                if (length < 0x100000000) {
+                    bytes.push(0xc6, length >> 24, length >> 16, length >> 8, length);
+                    size = 5;
+                } else {
+                    throw new Error('Buffer too large');
+                }
             defers.push({ _bin: value, _length: length, _offset: bytes.length });
             return size + length;
         }
@@ -533,7 +578,7 @@ function _encode(bytes, defers, value) {
         var allKeys = Object.keys(value);
         for (i = 0, l = allKeys.length; i < l; i++) {
             key = allKeys[i];
-            if (typeof value[key] !== 'function') {
+            if (value[key] !== undefined && typeof value[key] !== 'function') {
                 keys.push(key);
             }
         }
@@ -569,10 +614,13 @@ function _encode(bytes, defers, value) {
         bytes.push(value ? 0xc3 : 0xc2);
         return 1;
     }
-    // fixext 1 / undefined
     if (type === 'undefined') {
-        bytes.push(0xd4, 0, 0);
-        return 3;
+        bytes.push(0xc0);
+        return 1;
+    }
+    // custom types like BigInt (typeof value === 'bigint')
+    if (typeof value.toJSON === 'function') {
+        return _encode(bytes, defers, value.toJSON());
     }
     throw new Error('Could not encode');
 }
