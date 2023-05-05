@@ -10,6 +10,7 @@ export interface ITransportConstructor {
 }
 
 export interface ITransport {
+    isOpen: boolean;
     send(data: ArrayBuffer | Array<number>): void;
     connect(url: string): void;
     close(code?: number, reason?: string): void;

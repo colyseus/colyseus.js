@@ -13,12 +13,17 @@ export class Connection implements ITransport {
         this.transport.send(data);
     }
 
+
     connect(url: string): void {
         this.transport.connect(url);
     }
 
     close(code?: number, reason?: string): void {
         this.transport.close(code, reason);
+    }
+
+    get isOpen() {
+        return this.transport.isOpen;
     }
 
 }

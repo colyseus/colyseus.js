@@ -31,4 +31,8 @@ export class WebSocketTransport implements ITransport {
         this.ws.close(code, reason);
     }
 
+    get isOpen() {
+        return this.ws.readyState === WebSocket.OPEN;
+    }
+
 }
