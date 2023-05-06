@@ -3,7 +3,6 @@ import { assert } from "chai";
 import { Room } from "../src";
 
 import { Schema, type } from "@colyseus/schema";
-console.log(Schema);
 
 // import * as fossilDelta from "fossil-delta";
 import * as msgpack from "../src/msgpack";

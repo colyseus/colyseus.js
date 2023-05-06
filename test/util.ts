@@ -4,4 +4,4 @@ import { LocalStorage } from "node-localstorage";
 (<any>global).WebSocket = class WebSocket { send() {} };
 
 // mock localStorage
-(<any>global).window = { localStorage: new LocalStorage('./tests') };
+(<any>global).window = { localStorage: new LocalStorage('./test') };

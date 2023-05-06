@@ -23,9 +23,9 @@ const DEFAULT_ENDPOINT = (typeof (window) !== "undefined" &&  typeof (window?.lo
 
 export interface EndpointSettings {
     hostname: string,
-    pathname: string,
     secure: boolean,
     port?: number,
+    pathname?: string,
 }
 
 export class Client {
@@ -33,6 +33,9 @@ export class Client {
 
     constructor(settings: string | EndpointSettings = DEFAULT_ENDPOINT) {
         if (typeof (settings) === "string") {
+            //
+            // endpoint by url
+            //
             const url = new URL(settings);
             const secure = (url.protocol === "https:" || url.protocol === "wss:");
             const port = Number(url.port || (secure ? 443 : 80));
@@ -45,8 +48,14 @@ export class Client {
             };
 
         } else {
+            //
+            // endpoint by settings
+            //
             if (settings.port === undefined) {
                 settings.port = (settings.secure) ? 443 : 80;
+            }
+            if (settings.pathname === undefined) {
+                settings.pathname = "";
             }
             this.settings = settings;
         }
@@ -204,7 +213,7 @@ export class Client {
         return `${endpoint}/${room.processId}/${room.roomId}?${params.join('&')}`;
     }
 
-    protected getHttpEndpoint(segments: string) {
+    protected getHttpEndpoint(segments: string = '') {
         return `${(this.settings.secure) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}/matchmake/${segments}`;
     }
 
