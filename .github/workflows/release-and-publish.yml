@@ -10,29 +10,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@master
+      uses: actions/checkout@v3
+
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
         node-version: 18.16.0
+
     - name: Install dependencies
       run: |
         npm ci
         npm run build-ci
         zip --junk-paths colyseus-js-client dist/*
-    - name: Publish to NPM
-      id: publish
-      uses: endel/npm-publish-action@master
+
+    - id: check
+      uses: EndBug/version-check@v2
       with:
-        tag_name: "%s"
-        tag_message: "v%s"
-        commit_pattern: "^bump (\\S+)"
+        file-name: package.json
+        diff-search: true
+
+    - name: Publish package on NPM 📦
+      if: steps.check.outputs.changed == 'true'
+      run: npm publish
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
     - name: Create Release
       id: create_release
-      if: steps.publish.outputs.has_published # create release only if publish to NPM has succeeded
+      if: steps.check.outputs.changed == 'true'
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -41,6 +46,7 @@ jobs:
         release_name: ${{ steps.publish.outputs.tag_name }}
         draft: false
         prerelease: ${{ steps.publish.outputs.is_tagged_release }}
+
     - name: Upload release asset
       if: steps.publish.outputs.has_published # create release only if publish to NPM has succeeded
       uses: actions/upload-release-asset@v1
