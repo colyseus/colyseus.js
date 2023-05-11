@@ -1,9 +1,13 @@
-name: npm-publish
+name: Publish & Release
+
+permissions:
+  contents: write
+
 on:
   push:
     branches:
       - master
-      - dev
+
 jobs:
   npm-publish:
     name: npm-publish
@@ -15,13 +19,16 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: 18.16.0
+        node-version: '18.x'
+        registry-url: 'https://registry.npmjs.org'
 
     - name: Install dependencies
       run: |
         npm ci
-        npm run build-ci
-        zip --junk-paths colyseus-js-client dist/*
+        npm run build
+
+    - name: Create dist asset
+      run: zip --junk-paths colyseus-js-client build/*
 
     - id: check
       uses: EndBug/version-check@v2
@@ -35,26 +42,11 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-    - name: Create Release
-      id: create_release
+    - name: Release
       if: steps.check.outputs.changed == 'true'
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ steps.publish.outputs.tag_name }}
-        release_name: ${{ steps.publish.outputs.tag_name }}
-        draft: false
-        prerelease: ${{ steps.publish.outputs.is_tagged_release }}
-
-    - name: Upload release asset
-      if: steps.publish.outputs.has_published # create release only if publish to NPM has succeeded
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-        asset_path: ./colyseus-js-client.zip
-        asset_name: colyseus-js-client.zip
-        asset_content_type: application/zip
+        tag_name: ${{ steps.check.outputs.version }}
+        prerelease: false
+        files: ./colyseus-js-client.zip
 
