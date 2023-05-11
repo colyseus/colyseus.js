@@ -27,9 +27,6 @@ jobs:
         npm ci
         npm run build-ci
 
-    - name: Create dist asset
-      run: zip --junk-paths colyseus-js-client build/*
-
     - id: check
       uses: EndBug/version-check@v2
       with:
