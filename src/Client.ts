@@ -105,7 +105,7 @@ export class Client {
     public async consumeSeatReservation<T>(
         response: any,
         rootSchema?: SchemaConstructor<T>,
-        previousRoom?: Room // used in devMode
+        reuseRoomInstance?: Room // used in devMode
     ): Promise<Room<T>> {
         const room = this.createRoom<T>(response.room.name, rootSchema);
         room.roomId = response.room.roomId;
@@ -118,7 +118,7 @@ export class Client {
             options.reconnectionToken = response.reconnectionToken;
         }
 
-        const targetRoom = previousRoom || room;
+        const targetRoom = reuseRoomInstance || room;
         room.connect(this.buildEndpoint(response.room, options), response.devMode && (async () => {
             console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x1F504)} Re-establishing connection with room id '${room.roomId}'...`); // 🔄
 
@@ -161,7 +161,8 @@ export class Client {
         method: string,
         roomName: string,
         options: JoinOptions = {},
-        rootSchema?: SchemaConstructor<T>
+        rootSchema?: SchemaConstructor<T>,
+        reuseRoomInstance?: Room,
     ) {
         const response = (
             await post(this.getHttpEndpoint(`${method}/${roomName}`), {
@@ -182,7 +183,7 @@ export class Client {
             response.reconnectionToken = options.reconnectionToken;
         }
 
-        return await this.consumeSeatReservation<T>(response, rootSchema);
+        return await this.consumeSeatReservation<T>(response, rootSchema, reuseRoomInstance);
     }
 
     protected createRoom<T>(roomName: string, rootSchema?: SchemaConstructor<T>) {
