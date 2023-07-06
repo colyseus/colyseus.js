@@ -53,8 +53,8 @@ export default [
             typescript({ tsconfig: './tsconfig/tsconfig.cjs.json' }),
             alias({
                 entries: [
-                    // httpie: force XHR implementation on browser/UMD environment
-                    { find: 'httpie', replacement: './node_modules/httpie/xhr/index.js' },
+                    // httpie: force `fetch` for web environments
+                    { find: 'httpie', replacement: './node_modules/httpie/fetch/index.js' },
 
                     // ws: force browser.js version.
                     { find: 'ws', replacement: './node_modules/ws/browser.js' },
@@ -66,20 +66,19 @@ export default [
             commonjs(),
             nodeResolve({ browser: true }), // "browser" seems to have no effect here. (why??)
         ],
-
     },
 
-    // Decentraland SDK (same as browser/embedded, but use FETCH instead of XHR)
+    // Cocos Creator SDK (same as browser/embedded, but use XHR instead of fetch)
     {
         preserveModules: false,
         input: ['src/index.ts'],
         output: [
             {
-                banner: bannerStatic,
+                banner: `// THIS VERSION USES "XMLHttpRequest" INSTEAD OF "fetch" FOR COMPATIBILITY WITH COCOS CREATOR\n${bannerStatic}`,
                 dir: 'dist',
                 name: "Colyseus",
                 format: 'umd',
-                entryFileNames: 'colyseus-decentraland.js',
+                entryFileNames: 'colyseus-cocos-creator.js',
                 sourcemap: true,
                 amd: { id: pkg.name }
             },
@@ -89,7 +88,7 @@ export default [
             alias({
                 entries: [
                     // httpie: force XHR implementation on browser/UMD environment
-                    { find: 'httpie', replacement: './node_modules/httpie/fetch/index.js' },
+                    { find: 'httpie', replacement: './node_modules/httpie/xhr/index.js' },
 
                     // ws: force browser.js version.
                     { find: 'ws', replacement: './node_modules/ws/browser.js' },

@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.15.9",
+  "version": "0.15.10",
   "description": "Colyseus Multiplayer SDK for JavaScript/TypeScript",
   "author": "Endel Dreyer",
   "license": "MIT",
@@ -12,7 +12,7 @@
     "build-zip-dist": "zip --junk-paths colyseus-js-client dist/colyseus.*",
     "build-all": "tsc && npm run build && npm run build-dist-dts && npm run copy-cocos-creator-files && npm run copy-construct3-files",
     "copy-construct3-files": "cp dist/colyseus.js ../colyseus-construct3/plugin/colyseus.js",
-    "copy-cocos-creator-files": "cp dist/colyseus.js cocos-creator-3-extension/colyseus-sdk/runtime && cp dist/colyseus.d.ts cocos-creator-3-extension/colyseus-sdk/runtime",
+    "copy-cocos-creator-files": "cp dist/colyseus-cocos-creator.js cocos-creator-3-extension/colyseus-sdk/runtime/colyseus.js && cp dist/colyseus.d.ts cocos-creator-3-extension/colyseus-sdk/runtime",
     "watch": "tsc -w",
     "tslint": "tslint --project .",
     "prepublishOnly": "tsc && npm run build"
@@ -36,8 +36,7 @@
       "require": "./build/cjs/index.js",
       "types": "./lib/index.d.ts"
     },
-    "./package.json": "./package.json",
-    "./decentraland": "./dist/colyseus-decentraland.js"
+    "./package.json": "./package.json"
   },
   "decentralandLibrary": {
     "main": "./dist/colyseus-decentraland.js",
