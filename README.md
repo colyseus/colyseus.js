@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/colyseus/colyseus">
-    <img src="https://github.com/colyseus/colyseus/blob/master/media/header.png?raw=true" />
+    <img src="https://github.com/colyseus/colyseus/blob/master/media/logo.svg?raw=true" width="40%" height="100" />
   </a>
   <br>
   <br>
