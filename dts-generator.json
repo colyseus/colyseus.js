@@ -13,10 +13,7 @@
 
             "libraries": {
                 "inlinedLibraries": [
-                    "@colyseus/schema",
-                    "@gamestdio/websocket",
-                    "@gamestdio/state-listener",
-                    "nanoevents"
+                    "@colyseus/schema"
                 ]
             },
 

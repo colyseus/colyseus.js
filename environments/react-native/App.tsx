@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Client } from "colyseus.js";
 
 const client = new Client();
-client.joinOrCreate("dummy").then((room) => {
+client.joinOrCreate("my_room").then((room) => {
   room.onStateChange((state) => {
     console.log("onStateChange:", state);
   });

@@ -45,5 +45,5 @@ jobs:
       with:
         tag_name: ${{ steps.check.outputs.version }}
         prerelease: false
-        files: ./colyseus-js-client.zip
+        files: ./colyseus-sdk.zip
 

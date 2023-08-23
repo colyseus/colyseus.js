@@ -48,6 +48,10 @@
               console.log("LEFT ROOM", arguments);
           });
 
+          room.onError(function(code, message) {
+              console.log("on error:", {code, message});
+          });
+
         //   room.onStateChange(function(state) {
         //       console.log("state change: ", state.toJSON());
         //   });
@@ -73,13 +77,6 @@
           getClient().joinOrCreate(document.getElementById('room_name').value, { code: "one" }).then((r) => {
               room = r
               addListeners(room);
-
-              room.state.players.onAdd((player) => {
-                  console.log("PLAYER ADDED!");
-                //   player.onChange((changes) => console.log("PLAYER CHANGED:", changes));
-              });
-
-              room.state.players.onChange((player) => console.log("Player changed..."));
           });
       }
 

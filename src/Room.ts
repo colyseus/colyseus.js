@@ -6,7 +6,7 @@ import { getSerializer, Serializer } from './serializer/Serializer';
 
 // The unused imports here are important for better `.d.ts` file generation
 // (Later merged with `dts-bundle-generator`)
-import { createNanoEvents } from 'nanoevents';
+import { createNanoEvents } from './core/nanoevents';
 import { createSignal } from './core/signal';
 
 import { Context, decode, encode, Schema } from '@colyseus/schema';
