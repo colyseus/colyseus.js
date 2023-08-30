@@ -11,7 +11,7 @@ describe("Client", function () {
     })
 
     describe("constructor settings", () => {
-        it("url string", () => {
+       
             const room = { roomId: "roomId", processId: "processId", sessionId: "sessionId", };
             const roomWithPublicAddress = { publicAddress: "node-1.colyseus.cloud", roomId: "roomId", processId: "processId", sessionId: "sessionId", };
 
@@ -55,6 +55,7 @@ describe("Client", function () {
             };
 
             for (const url in settingsByUrl) {
+             it(`testing settings by url ${url}`, () => {
                 const expected = settingsByUrl[url]
                 const client = new Client(url);
                 const settings = client['settings'];
@@ -73,8 +74,9 @@ describe("Client", function () {
                 assert.strictEqual(expected.httpEndpoint + "/matchmake/", clientWithSettings['getHttpEndpoint']());
                 assert.strictEqual(expected.wsEndpoint, clientWithSettings['buildEndpoint'](room));
                 assert.strictEqual(expected.wsEndpointPublicAddress, clientWithSettings['buildEndpoint'](roomWithPublicAddress));
+             });
             }
-        });
+       
     });
 
     xit("join", function () {
