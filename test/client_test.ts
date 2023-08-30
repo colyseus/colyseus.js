@@ -40,6 +40,18 @@ describe("Client", function () {
                     wsEndpoint: "wss://localhost/custom/path/processId/roomId?",
                     wsEndpointPublicAddress: "wss://node-1.colyseus.cloud/processId/roomId?"
                 },
+                'https://localhost/with/header': {
+                    settings: { hostname: "localhost", port: 443, secure: true, pathname: "/with/header", headers: { "Authorization": "Bearer ey21xx"} },
+                    httpEndpoint: "https://localhost/with/header",
+                    wsEndpoint: "wss://localhost/with/header/processId/roomId?",
+                    wsEndpointPublicAddress: "wss://node-1.colyseus.cloud/processId/roomId?"
+                },
+                'https://localhost/custom/path?query=value': {
+                    settings: { hostname: "localhost", port: 443, secure: true, pathname: "/custom/path", query: new URLSearchParams({"query": "value"}) },
+                    httpEndpoint: "https://localhost/custom/path",
+                    wsEndpoint: "wss://localhost/custom/path/processId/roomId?query=value",
+                    wsEndpointPublicAddress: "wss://node-1.colyseus.cloud/processId/roomId?query=value"
+                },
             };
 
             for (const url in settingsByUrl) {
@@ -49,6 +61,7 @@ describe("Client", function () {
                 assert.strictEqual(expected.settings.hostname, settings.hostname);
                 assert.strictEqual(expected.settings.port, settings.port);
                 assert.strictEqual(expected.settings.secure, settings.secure);
+                assert.strictEqual(expected.settings.query?.toString(), settings.query?.toString());
                 assert.strictEqual(expected.httpEndpoint + "/matchmake/", client['getHttpEndpoint']());
                 assert.strictEqual(expected.wsEndpoint, client['buildEndpoint'](room));
                 assert.strictEqual(expected.wsEndpointPublicAddress, client['buildEndpoint'](roomWithPublicAddress));

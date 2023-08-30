@@ -26,6 +26,8 @@ export interface EndpointSettings {
     secure: boolean,
     port?: number,
     pathname?: string,
+    query?: URLSearchParams
+    headers?: Record<string,string>
 }
 
 export class Client {
@@ -39,10 +41,13 @@ export class Client {
             const url = new URL(settings);
             const secure = (url.protocol === "https:" || url.protocol === "wss:");
             const port = Number(url.port || (secure ? 443 : 80));
+            const query = new URLSearchParams(url.searchParams);
+            url.search = '';
 
             this.settings = {
                 hostname: url.hostname,
                 pathname: url.pathname !== "/" ? url.pathname : "",
+                ...(query.size > 0 ? { query }: {}),
                 port,
                 secure
             };
@@ -57,6 +62,7 @@ export class Client {
             if (settings.pathname === undefined) {
                 settings.pathname = "";
             }
+
             this.settings = settings;
         }
     }
@@ -96,7 +102,8 @@ export class Client {
         return (
             await get(this.getHttpEndpoint(`${roomName}`), {
                 headers: {
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    ...(this.settings.headers ? this.settings.headers : {})
                 }
             })
         ).data;
@@ -168,7 +175,8 @@ export class Client {
             await post(this.getHttpEndpoint(`${method}/${roomName}`), {
                 headers: {
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    ...(this.settings.headers ? this.settings.headers : {})
                 },
                 body: JSON.stringify(options)
             })
@@ -198,6 +206,12 @@ export class Client {
                 continue;
             }
             params.push(`${name}=${options[name]}`);
+        }
+
+        if(this.settings.query) {
+            for (const [name, value] of [...this.settings.query.entries()]) {
+                params.push(`${name}=${value}`);
+            }
         }
 
         let endpoint = (this.settings.secure)
