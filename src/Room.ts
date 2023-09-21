@@ -55,7 +55,7 @@ export class Room<State= any> {
             (this.serializer as SchemaSerializer).state = new rootSchema();
         }
 
-        this.onError((code, message) => console.warn(`colyseus.js - onError => (${code}) ${message}`));
+        this.onError((code, message) => console.warn?.(`colyseus.js - onError => (${code}) ${message}`));
         this.onLeave(() => this.removeAllListeners());
     }
 
@@ -73,7 +73,7 @@ export class Room<State= any> {
         connection.events.onmessage = Room.prototype.onMessageCallback.bind(room);
         connection.events.onclose = function (e: CloseEvent) {
             if (!room.hasJoined) {
-                console.warn(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
+                console.warn?.(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
                 room.onError.invoke(e.code, e.reason);
                 return;
             }
@@ -85,7 +85,7 @@ export class Room<State= any> {
             }
         };
         connection.events.onerror = function (e: CloseEvent) {
-            console.warn(`Room, onError (${e.code}): ${e.reason}`);
+            console.warn?.(`Room, onError (${e.code}): ${e.reason}`);
             room.onError.invoke(e.code, e.reason);
         };
         connection.connect(endpoint);
@@ -288,7 +288,7 @@ export class Room<State= any> {
             this.onMessageHandlers.emit('*', type, message);
 
         } else {
-            console.warn(`colyseus.js: onMessage() not registered for type '${type}'.`);
+            console.warn?.(`colyseus.js: onMessage() not registered for type '${type}'.`);
         }
     }
 
