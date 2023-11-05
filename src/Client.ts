@@ -1,8 +1,7 @@
-import { post, get } from "httpie";
-
 import { ServerError } from './errors/ServerError';
 import { Room, RoomAvailable } from './Room';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
+import { HTTP } from "./core/HTTP";
 
 export type JoinOptions = any;
 
@@ -29,6 +28,8 @@ export interface EndpointSettings {
 }
 
 export class Client {
+    public http: HTTP;
+
     protected settings: EndpointSettings;
 
     constructor(settings: string | EndpointSettings = DEFAULT_ENDPOINT) {
@@ -59,6 +60,8 @@ export class Client {
             }
             this.settings = settings;
         }
+
+        this.http = new HTTP(this);
     }
 
     public async joinOrCreate<T>(roomName: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {
@@ -94,7 +97,7 @@ export class Client {
 
     public async getAvailableRooms<Metadata = any>(roomName: string = ""): Promise<RoomAvailable<Metadata>[]> {
         return (
-            await get(this.getHttpEndpoint(`${roomName}`), {
+            await this.http.get(`${roomName}`, {
                 headers: {
                     'Accept': 'application/json'
                 }
@@ -165,7 +168,7 @@ export class Client {
         reuseRoomInstance?: Room,
     ) {
         const response = (
-            await post(this.getHttpEndpoint(`${method}/${roomName}`), {
+            await this.http.post(`${method}/${roomName}`, {
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
