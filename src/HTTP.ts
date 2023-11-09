@@ -1,8 +1,8 @@
-import { Client } from "../Client";
+import { Client } from "./Client";
 import { post, get, put, del, Response, Options } from "httpie";
 
 export class HTTP {
-    public token: string;
+    public authToken: string;
 
     constructor(protected client: Client) {}
 
@@ -23,9 +23,12 @@ export class HTTP {
     }
 
     protected getOptions(options: Partial<Options>) {
-        if (this.token) {
-            if (!options.headers) { options.headers = {}; }
-            options.headers['Authorization'] = `Bearer ${this.token}`;
+        if (this.authToken) {
+            if (!options.headers) {
+                options.headers = {};
+            }
+
+            options.headers['Authorization'] = `Bearer ${this.authToken}`;
         }
 
         return options;

@@ -1,7 +1,7 @@
 import { ServerError } from './errors/ServerError';
 import { Room, RoomAvailable } from './Room';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
-import { HTTP } from "./core/HTTP";
+import { HTTP } from "./HTTP";
 
 export type JoinOptions = any;
 
@@ -62,6 +62,14 @@ export class Client {
         }
 
         this.http = new HTTP(this);
+    }
+
+    public set authToken(token: string) {
+        this.http.authToken = token;
+    }
+
+    public get authToken(): string {
+        return this.http.authToken;
     }
 
     public async joinOrCreate<T>(roomName: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {
@@ -196,6 +204,12 @@ export class Client {
     protected buildEndpoint(room: any, options: any = {}) {
         const params = [];
 
+        // manually append authToken
+        if (this.http.authToken) {
+            params.push(`authToken=${this.http.authToken}`);
+        }
+
+        // append provided options
         for (const name in options) {
             if (!options.hasOwnProperty(name)) {
                 continue;
