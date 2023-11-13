@@ -7,19 +7,19 @@ export class HTTP {
     constructor(protected client: Client) {}
 
     public get<T = any>(path: string, options: Partial<Options> = {}): Promise<Response<T>> {
-        return get(this.client['getHttpEndpoint'](path), options);
+        return get(this.client['getHttpEndpoint'](path), this.getOptions(options));
     }
 
     public post<T = any>(path: string, options: Partial<Options> = {}): Promise<Response<T>> {
-        return post(this.client['getHttpEndpoint'](path), options);
+        return post(this.client['getHttpEndpoint'](path), this.getOptions(options));
     }
 
     public del<T = any>(path: string, options: Partial<Options> = {}): Promise<Response<T>> {
-        return del(this.client['getHttpEndpoint'](path), options);
+        return del(this.client['getHttpEndpoint'](path), this.getOptions(options));
     }
 
     public put<T = any>(path: string, options: Partial<Options> = {}): Promise<Response<T>> {
-        return put(this.client['getHttpEndpoint'](path), options);
+        return put(this.client['getHttpEndpoint'](path), this.getOptions(options));
     }
 
     protected getOptions(options: Partial<Options>) {
@@ -29,6 +29,7 @@ export class HTTP {
             }
 
             options.headers['Authorization'] = `Bearer ${this.authToken}`;
+            options.withCredentials = true;
         }
 
         return options;

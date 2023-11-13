@@ -1,206 +1,96 @@
-import * as http from "httpie";
-import { getItem, setItem, removeItem } from "./Storage";
+import { HTTP } from "./HTTP";
 
-const TOKEN_STORAGE = "colyseus-auth-token";
-
-export enum Platform {
-    ios = "ios",
-    android = "android",
+export interface AuthSettings {
+    path: string;
 }
 
-export interface Device {
-    id: string,
-    platform: Platform
+export interface PopupSettings {
+    prefix: string;
+    width: number;
+    height: number;
 }
 
-export interface IStatus {
-    status: boolean;
-}
+export class Auth {
+    settings: AuthSettings = { path: "/auth" };
+    #_signInWindow = undefined;
 
-export interface IUser {
-    _id: string;
-    username: string;
-    displayName: string;
-    avatarUrl: string;
+    constructor(protected http: HTTP) {}
 
-    isAnonymous: boolean;
-    email: string;
-
-    lang: string;
-    location: string;
-    timezone: string;
-    metadata: any;
-
-    devices: Device[];
-
-    facebookId: string;
-    twitterId: string;
-    googleId: string;
-    gameCenterId: string;
-    steamId: string;
-
-    friendIds: string[];
-    blockedUserIds: string[];
-
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-export class Auth implements IUser {
-    _id: string = undefined;
-    username: string = undefined;
-    displayName: string = undefined;
-    avatarUrl: string = undefined;
-
-    isAnonymous: boolean = undefined;
-    email: string = undefined;
-
-    lang: string = undefined;
-    location: string = undefined;
-    timezone: string = undefined;
-    metadata: any = undefined;
-
-    devices: Device[] = undefined;
-
-    facebookId: string = undefined;
-    twitterId: string = undefined;
-    googleId: string = undefined;
-    gameCenterId: string = undefined;
-    steamId: string = undefined;
-
-    friendIds: string[] = undefined;
-    blockedUserIds: string[] = undefined;
-
-    createdAt: Date = undefined;
-    updatedAt: Date = undefined;
-
-    // auth token
-    token: string = undefined;
-
-    protected endpoint: string;
-    protected keepOnlineInterval: any;
-
-    constructor(endpoint: string) {
-        this.endpoint = endpoint.replace("ws", "http");
-        getItem(TOKEN_STORAGE, (token) => this.token = token);
+    public set token(token: string) {
+        this.http.authToken = token;
     }
 
-    get hasToken() {
-        return !!this.token;
+    public get token(): string {
+        return this.http.authToken;
     }
 
-    async login (options: {
-        accessToken?: string,
-        deviceId?: string,
-        platform?: string,
-        email?: string,
-        password?: string,
-    } = {}) {
-        const queryParams: any = Object.assign({}, options);
-
-        if (this.hasToken) {
-            queryParams.token = this.token;
-        }
-
-        const data = await this.request('post', '/auth', queryParams);
-
-        // set & cache token
-        this.token = data.token;
-        setItem(TOKEN_STORAGE, this.token);
-
-        for (let attr in data) {
-            if (this.hasOwnProperty(attr)) { this[attr] = data[attr]; }
-        }
-
-        this.registerPingService();
-
-        return this;
+    public async createUserWithEmailAndPassword(email: string, password: string) {
+        return (await this.http.post(`${this.settings.path}/register`, {
+            headers: { 'Content-Type': 'application/json' },
+            body: { email, password, },
+        })).data;
     }
 
-    async save() {
-        await this.request('put', '/auth', {}, {
-            username: this.username,
-            displayName: this.displayName,
-            avatarUrl: this.avatarUrl,
-            lang: this.lang,
-            location: this.location,
-            timezone: this.timezone,
+    public async signInWithEmailAndPassword(email: string, password: string) {
+        return (await this.http.post(`${this.settings.path}/login`, {
+            headers: { 'Content-Type': 'application/json' },
+            body: { email, password, },
+        })).data;
+    }
+
+    public async signInAnonymously() {
+        return (await this.http.post(`${this.settings.path}/anonymous`, {
+            headers: { 'Content-Type': 'application/json' }
+        })).data;
+    }
+
+    public async signInWithOAuth(providerName: string, settings: Partial<PopupSettings> = {}) {
+        return new Promise((resolve, reject) => {
+            const w = settings.width || 480;
+            const h = settings.height || 768;
+
+            // Capitalize first letter of providerName
+            const title = `Login with ${(providerName[0].toUpperCase() + providerName.substring(1))}`;
+            const url = this.http['client']['getHttpEndpoint'](`${(settings.prefix || "oauth")}/${providerName}`);
+
+            const left = (screen.width / 2) - (w / 2);
+            const top = (screen.height / 2) - (h / 2);
+
+            this.#_signInWindow = window.open(url, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width=' + w + ', height=' + h + ', top=' + top + ', left=' + left);
+
+            const onMessage = (event: MessageEvent) => {
+                // TODO: it is a good idea to check if event.origin can be trusted!
+                debugger;
+                // if (event.origin.indexOf(window.location.hostname) === -1) { return; }
+
+                console.log("popup, event =>", event);
+                console.log("popup, event.data =>", event.data);
+
+                // require 'user' and 'token' inside received data.
+                if (!event.data.user && !event.data.token) { return; }
+
+                clearInterval(rejectionChecker);
+                this.#_signInWindow.close();
+                this.#_signInWindow = undefined;
+
+                window.removeEventListener("message", onMessage);
+                resolve(event.data);
+            }
+
+            const rejectionChecker = setInterval(() => {
+                if (!this.#_signInWindow || this.#_signInWindow.closed) {
+                    this.#_signInWindow = undefined;
+                    reject();
+                    window.removeEventListener("message", onMessage);
+                }
+            }, 200);
+
+            window.addEventListener("message", onMessage);
         });
-
-        return this;
     }
 
-    async getFriends() {
-        return (await this.request('get', '/friends/all')) as IUser[];
-    }
-
-    async getOnlineFriends() {
-        return (await this.request('get', '/friends/online')) as IUser[];
-    }
-
-    async getFriendRequests() {
-        return (await this.request('get', '/friends/requests')) as IUser[];
-    }
-
-    async sendFriendRequest(friendId: string) {
-        return (await this.request('post', '/friends/requests', { userId: friendId })) as IStatus;
-    }
-
-    async acceptFriendRequest(friendId: string) {
-        return (await this.request('put', '/friends/requests', { userId: friendId })) as IStatus;
-    }
-
-    async declineFriendRequest(friendId: string) {
-        return (await this.request('del', '/friends/requests', { userId: friendId })) as IStatus;
-    }
-
-    async blockUser(friendId: string) {
-        return (await this.request('post', '/friends/block', { userId: friendId })) as IStatus;
-    }
-
-    async unblockUser(friendId: string) {
-        return (await this.request('put', '/friends/block', { userId: friendId })) as IStatus;
-    }
-
-    async request(
-        method: 'get' | 'post' | 'put' | 'del',
-        segments: string,
-        query: {[key: string]: number | string} = {},
-        body?: any,
-        headers: {[key: string]: string} = {}
-    ) {
-        headers['Accept'] = 'application/json';
-        if (this.hasToken) { headers['Authorization'] = 'Bearer ' + this.token; }
-
-        const queryParams: string[] = [];
-        for (const name in query) {
-            queryParams.push(`${name}=${query[name]}`);
-        }
-
-        const queryString = (queryParams.length > 0)
-            ? `?${queryParams.join("&")}`
-            : '';
-
-        const opts: Partial<http.Options> = { headers };
-        if (body) { opts.body = body; }
-
-        return (await http[method](`${this.endpoint}${segments}${queryString}`, opts)).data;
-    }
-
-    logout() {
-        this.token = undefined;
-        removeItem(TOKEN_STORAGE);
-        this.unregisterPingService();
-    }
-
-    registerPingService(timeout: number = 15000) {
-        this.unregisterPingService();
-
-        this.keepOnlineInterval = setInterval(() => this.request('get', '/auth'), timeout);
-    }
-
-    unregisterPingService() {
-        clearInterval(this.keepOnlineInterval);
+    public async signOut() {
+        this.http.authToken = undefined;
     }
 
 }
