@@ -1,4 +1,5 @@
 import { HTTP } from "./HTTP";
+import { createNanoEvents } from './core/nanoevents';
 
 export interface AuthSettings {
     path: string;
@@ -10,9 +11,15 @@ export interface PopupSettings {
     height: number;
 }
 
+export interface AuthData {
+    user: any;
+    token: string;
+}
+
 export class Auth {
     settings: AuthSettings = { path: "/auth" };
     #_signInWindow = undefined;
+    #_events = createNanoEvents();
 
     constructor(protected http: HTTP) {}
 
@@ -24,24 +31,42 @@ export class Auth {
         return this.http.authToken;
     }
 
-    public async createUserWithEmailAndPassword(email: string, password: string) {
-        return (await this.http.post(`${this.settings.path}/register`, {
+    public onChange(callback: (response: AuthData) => void) {
+        return this.#_events.on("change", callback);
+    }
+
+    public async registerWithEmailAndPassword(email: string, password: string) {
+        const data = (await this.http.post(`${this.settings.path}/register`, {
             headers: { 'Content-Type': 'application/json' },
             body: { email, password, },
         })).data;
+
+        // emit change event
+        this.#_events.emit("change", data);
+
+        return data;
     }
 
     public async signInWithEmailAndPassword(email: string, password: string) {
-        return (await this.http.post(`${this.settings.path}/login`, {
+        const data = (await this.http.post(`${this.settings.path}/login`, {
             headers: { 'Content-Type': 'application/json' },
             body: { email, password, },
         })).data;
+
+        // emit change event
+        this.#_events.emit("change", data);
+
+        return data;
     }
 
     public async signInAnonymously() {
-        return (await this.http.post(`${this.settings.path}/anonymous`, {
+        const data = (await this.http.post(`${this.settings.path}/anonymous`, {
             headers: { 'Content-Type': 'application/json' }
         })).data;
+
+        this.#_events.emit("change", data);
+
+        return data;
     }
 
     public async signInWithOAuth(providerName: string, settings: Partial<PopupSettings> = {}) {
@@ -75,6 +100,9 @@ export class Auth {
 
                 window.removeEventListener("message", onMessage);
                 resolve(event.data);
+
+                // emit change event
+                this.#_events.emit("change", event.data);
             }
 
             const rejectionChecker = setInterval(() => {
@@ -91,6 +119,7 @@ export class Auth {
 
     public async signOut() {
         this.http.authToken = undefined;
+        this.#_events.emit("change", { user: null, token: null });
     }
 
 }
