@@ -69,7 +69,7 @@ export class Auth {
         return data;
     }
 
-    public async signInWithOAuth(providerName: string, settings: Partial<PopupSettings> = {}) {
+    public async oauth(providerName: string, settings: Partial<PopupSettings> = {}) {
         return new Promise((resolve, reject) => {
             const w = settings.width || 480;
             const h = settings.height || 768;

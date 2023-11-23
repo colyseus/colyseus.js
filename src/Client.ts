@@ -45,7 +45,7 @@ export class Client {
 
             this.settings = {
                 hostname: url.hostname,
-                pathname: url.pathname !== "/" ? url.pathname : "",
+                pathname: url.pathname,
                 port,
                 secure
             };
@@ -61,6 +61,11 @@ export class Client {
                 settings.pathname = "";
             }
             this.settings = settings;
+        }
+
+        // make sure pathname does not end with "/"
+        if (this.settings.pathname.endsWith("/")) {
+            this.settings.pathname = this.settings.pathname.slice(0, -1);
         }
 
         this.http = new HTTP(this);
@@ -100,7 +105,7 @@ export class Client {
 
     public async getAvailableRooms<Metadata = any>(roomName: string = ""): Promise<RoomAvailable<Metadata>[]> {
         return (
-            await this.http.get(`${roomName}`, {
+            await this.http.get(`matchmake/${roomName}`, {
                 headers: {
                     'Accept': 'application/json'
                 }
@@ -171,7 +176,7 @@ export class Client {
         reuseRoomInstance?: Room,
     ) {
         const response = (
-            await this.http.post(`${method}/${roomName}`, {
+            await this.http.post(`matchmake/${method}/${roomName}`, {
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
@@ -222,7 +227,7 @@ export class Client {
     }
 
     protected getHttpEndpoint(segments: string = '') {
-        return `${(this.settings.secure) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}/matchmake/${segments}`;
+        return `${(this.settings.secure) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}/${segments}`;
     }
 
     protected getEndpointPort() {
