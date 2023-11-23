@@ -1,8 +1,10 @@
 import { HTTP } from "./HTTP";
+import { getItem, setItem } from "./Storage";
 import { createNanoEvents } from './core/nanoevents';
 
 export interface AuthSettings {
     path: string;
+    key: string;
 }
 
 export interface PopupSettings {
@@ -17,11 +19,17 @@ export interface AuthData {
 }
 
 export class Auth {
-    settings: AuthSettings = { path: "/auth" };
+    settings: AuthSettings = {
+        path: "/auth",
+        key: "colyseus-auth-token",
+    };
+
     #_signInWindow = undefined;
     #_events = createNanoEvents();
 
-    constructor(protected http: HTTP) {}
+    constructor(protected http: HTTP) {
+        getItem(this.settings.key, (token) => this.token = token);
+    }
 
     public set token(token: string) {
         this.http.authToken = token;
@@ -41,8 +49,7 @@ export class Auth {
             body: { email, password, },
         })).data;
 
-        // emit change event
-        this.#_events.emit("change", data);
+        this.emitChange(data);
 
         return data;
     }
@@ -53,8 +60,7 @@ export class Auth {
             body: { email, password, },
         })).data;
 
-        // emit change event
-        this.#_events.emit("change", data);
+        this.emitChange(data);
 
         return data;
     }
@@ -64,7 +70,7 @@ export class Auth {
             headers: { 'Content-Type': 'application/json' }
         })).data;
 
-        this.#_events.emit("change", data);
+        this.emitChange(data);
 
         return data;
     }
@@ -101,8 +107,7 @@ export class Auth {
                 window.removeEventListener("message", onMessage);
                 resolve(event.data);
 
-                // emit change event
-                this.#_events.emit("change", event.data);
+                this.emitChange(event.data);
             }
 
             const rejectionChecker = setInterval(() => {
@@ -119,7 +124,16 @@ export class Auth {
 
     public async signOut() {
         this.http.authToken = undefined;
-        this.#_events.emit("change", { user: null, token: null });
+        this.emitChange({ user: null, token: null });
+    }
+
+    private emitChange(authData: AuthData) {
+        this.token = authData.token;
+
+        // store key in localStorage
+        setItem(this.settings.key, authData.token);
+
+        this.#_events.emit("change", authData);
     }
 
 }
