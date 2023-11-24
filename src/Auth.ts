@@ -44,18 +44,29 @@ export class Auth {
     public onChange(callback: (response: AuthData) => void) {
         const unbindChange = this.#_events.on("change", callback);
         if (!this.#_initialized) {
-            this.#_initializationPromise = new Promise((resolve, reject) => {
+            this.#_initializationPromise = new Promise<void>((resolve, reject) => {
                 this.getUserData().then((userData) => {
                     this.emitChange(userData);
+
+                }).catch((e) => {
+                    // user is not logged in, or service is down
+                    this.emitChange({ user: null, token: undefined });
+
+                }).finally(() => {
                     resolve();
                 });
             });
         }
+        this.#_initialized = true;
         return unbindChange;
     }
 
     public async getUserData() {
-        return (await this.http.get(`${this.settings.path}/userdata`)).data;
+        if (this.token) {
+            return (await this.http.get(`${this.settings.path}/userdata`)).data;
+        } else {
+            throw new Error("missing auth.token");
+        }
     }
 
     public async registerWithEmailAndPassword(email: string, password: string) {
@@ -106,29 +117,30 @@ export class Auth {
 
             const onMessage = (event: MessageEvent) => {
                 // TODO: it is a good idea to check if event.origin can be trusted!
-                debugger;
                 // if (event.origin.indexOf(window.location.hostname) === -1) { return; }
 
-                console.log("popup, event =>", event);
-                console.log("popup, event.data =>", event.data);
-
                 // require 'user' and 'token' inside received data.
-                if (!event.data.user && !event.data.token) { return; }
+                if (event.data.user === undefined && event.data.token === undefined) { return; }
 
                 clearInterval(rejectionChecker);
                 this.#_signInWindow.close();
                 this.#_signInWindow = undefined;
 
                 window.removeEventListener("message", onMessage);
-                resolve(event.data);
 
-                this.emitChange(event.data);
+                if (event.data.error !== undefined) {
+                    reject(event.data.error);
+
+                } else {
+                    resolve(event.data);
+                    this.emitChange(event.data);
+                }
             }
 
             const rejectionChecker = setInterval(() => {
                 if (!this.#_signInWindow || this.#_signInWindow.closed) {
                     this.#_signInWindow = undefined;
-                    reject();
+                    reject("cancelled");
                     window.removeEventListener("message", onMessage);
                 }
             }, 200);
@@ -141,11 +153,12 @@ export class Auth {
         this.emitChange({ user: null, token: null });
     }
 
-    private emitChange(authData: AuthData) {
-        this.token = authData.token;
-
-        // store key in localStorage
-        setItem(this.settings.key, authData.token);
+    private emitChange(authData: Partial<AuthData>) {
+        if (authData.token !== undefined) {
+            this.token = authData.token;
+            // store key in localStorage
+            setItem(this.settings.key, authData.token);
+        }
 
         this.#_events.emit("change", authData);
     }
