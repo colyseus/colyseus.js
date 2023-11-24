@@ -108,7 +108,7 @@ export class Auth {
 
             // Capitalize first letter of providerName
             const title = `Login with ${(providerName[0].toUpperCase() + providerName.substring(1))}`;
-            const url = this.http['client']['getHttpEndpoint'](`${(settings.prefix || "oauth")}/${providerName}`);
+            const url = this.http['client']['getHttpEndpoint'](`${(settings.prefix || `${this.settings.path}/provider`)}/${providerName}`);
 
             const left = (screen.width / 2) - (w / 2);
             const top = (screen.height / 2) - (h / 2);
