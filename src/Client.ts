@@ -227,7 +227,8 @@ export class Client {
     }
 
     protected getHttpEndpoint(segments: string = '') {
-        return `${(this.settings.secure) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}/${segments}`;
+        const path = segments.startsWith("/") ? segments : `/${segments}`;
+        return `${(this.settings.secure) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}${path}`;
     }
 
     protected getEndpointPort() {

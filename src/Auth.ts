@@ -24,6 +24,8 @@ export class Auth {
         key: "colyseus-auth-token",
     };
 
+    #_initialized = false;
+    #_initializationPromise: Promise<void>;
     #_signInWindow = undefined;
     #_events = createNanoEvents();
 
@@ -40,7 +42,20 @@ export class Auth {
     }
 
     public onChange(callback: (response: AuthData) => void) {
-        return this.#_events.on("change", callback);
+        const unbindChange = this.#_events.on("change", callback);
+        if (!this.#_initialized) {
+            this.#_initializationPromise = new Promise((resolve, reject) => {
+                this.getUserData().then((userData) => {
+                    this.emitChange(userData);
+                    resolve();
+                });
+            });
+        }
+        return unbindChange;
+    }
+
+    public async getUserData() {
+        return (await this.http.get(`${this.settings.path}/userdata`)).data;
     }
 
     public async registerWithEmailAndPassword(email: string, password: string) {
@@ -75,7 +90,7 @@ export class Auth {
         return data;
     }
 
-    public async oauth(providerName: string, settings: Partial<PopupSettings> = {}) {
+    public async signInWithProvider(providerName: string, settings: Partial<PopupSettings> = {}) {
         return new Promise((resolve, reject) => {
             const w = settings.width || 480;
             const h = settings.height || 768;
@@ -123,7 +138,6 @@ export class Auth {
     }
 
     public async signOut() {
-        this.http.authToken = undefined;
         this.emitChange({ user: null, token: null });
     }
 
