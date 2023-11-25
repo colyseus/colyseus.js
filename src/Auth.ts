@@ -46,7 +46,7 @@ export class Auth {
         if (!this.#_initialized) {
             this.#_initializationPromise = new Promise<void>((resolve, reject) => {
                 this.getUserData().then((userData) => {
-                    this.emitChange(userData);
+                    this.emitChange({ ...userData, token: this.token });
 
                 }).catch((e) => {
                     // user is not logged in, or service is down
@@ -93,7 +93,7 @@ export class Auth {
 
     public async signInAnonymously() {
         const data = (await this.http.post(`${this.settings.path}/anonymous`, {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
         })).data;
 
         this.emitChange(data);
