@@ -185,6 +185,7 @@ export class Client {
             })
         ).data;
 
+        // FIXME: HTTP class is already handling this as ServerError.
         if (response.error) {
             throw new MatchMakeError(response.error, response.code);
         }

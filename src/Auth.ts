@@ -1,5 +1,5 @@
 import { HTTP } from "./HTTP";
-import { getItem, setItem } from "./Storage";
+import { getItem, removeItem, setItem } from "./Storage";
 import { createNanoEvents } from './core/nanoevents';
 
 export interface AuthSettings {
@@ -156,8 +156,14 @@ export class Auth {
     private emitChange(authData: Partial<AuthData>) {
         if (authData.token !== undefined) {
             this.token = authData.token;
-            // store key in localStorage
-            setItem(this.settings.key, authData.token);
+
+            if (authData.token === null) {
+                removeItem(this.settings.key);
+
+            } else {
+                // store key in localStorage
+                setItem(this.settings.key, authData.token);
+            }
         }
 
         this.#_events.emit("change", authData);
