@@ -69,10 +69,9 @@ export class Auth {
         }
     }
 
-    public async registerWithEmailAndPassword(email: string, password: string) {
+    public async registerWithEmailAndPassword(email: string, password: string, options?: any) {
         const data = (await this.http.post(`${this.settings.path}/register`, {
-            headers: { 'Content-Type': 'application/json' },
-            body: { email, password, },
+            body: { email, password, options, },
         })).data;
 
         this.emitChange(data);
@@ -82,7 +81,6 @@ export class Auth {
 
     public async signInWithEmailAndPassword(email: string, password: string) {
         const data = (await this.http.post(`${this.settings.path}/login`, {
-            headers: { 'Content-Type': 'application/json' },
             body: { email, password, },
         })).data;
 
@@ -92,9 +90,7 @@ export class Auth {
     }
 
     public async signInAnonymously() {
-        const data = (await this.http.post(`${this.settings.path}/anonymous`, {
-            headers: { 'Content-Type': 'application/json' },
-        })).data;
+        const data = (await this.http.post(`${this.settings.path}/anonymous`)).data;
 
         this.emitChange(data);
 
