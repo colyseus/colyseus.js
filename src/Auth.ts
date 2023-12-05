@@ -89,8 +89,20 @@ export class Auth {
         return data;
     }
 
-    public async signInAnonymously() {
-        const data = (await this.http.post(`${this.settings.path}/anonymous`)).data;
+    public async signInAnonymously(options?: any) {
+        const data = (await this.http.post(`${this.settings.path}/anonymous`, {
+            body: { options, }
+        })).data;
+
+        this.emitChange(data);
+
+        return data;
+    }
+
+    public async sendPasswordResetEmail(email: string) {
+        const data = (await this.http.post(`${this.settings.path}/forgot-password`, {
+            body: { email, }
+        })).data;
 
         this.emitChange(data);
 
