@@ -114,9 +114,12 @@ export class Auth {
             const w = settings.width || 480;
             const h = settings.height || 768;
 
+            // forward existing token for upgrading
+            const upgradingToken = this.token ? `?token=${this.token}` : "";
+
             // Capitalize first letter of providerName
             const title = `Login with ${(providerName[0].toUpperCase() + providerName.substring(1))}`;
-            const url = this.http['client']['getHttpEndpoint'](`${(settings.prefix || `${this.settings.path}/provider`)}/${providerName}`);
+            const url = this.http['client']['getHttpEndpoint'](`${(settings.prefix || `${this.settings.path}/provider`)}/${providerName}${upgradingToken}`);
 
             const left = (screen.width / 2) - (w / 2);
             const top = (screen.height / 2) - (h / 2);
