@@ -1,206 +1,183 @@
-import * as http from "httpie";
-import { getItem, setItem, removeItem } from "./Storage";
+import { HTTP } from "./HTTP";
+import { getItem, removeItem, setItem } from "./Storage";
+import { createNanoEvents } from './core/nanoevents';
 
-const TOKEN_STORAGE = "colyseus-auth-token";
-
-export enum Platform {
-    ios = "ios",
-    android = "android",
+export interface AuthSettings {
+    path: string;
+    key: string;
 }
 
-export interface Device {
-    id: string,
-    platform: Platform
+export interface PopupSettings {
+    prefix: string;
+    width: number;
+    height: number;
 }
 
-export interface IStatus {
-    status: boolean;
+export interface AuthData {
+    user: any;
+    token: string;
 }
 
-export interface IUser {
-    _id: string;
-    username: string;
-    displayName: string;
-    avatarUrl: string;
+export class Auth {
+    settings: AuthSettings = {
+        path: "/auth",
+        key: "colyseus-auth-token",
+    };
 
-    isAnonymous: boolean;
-    email: string;
+    #_initialized = false;
+    #_initializationPromise: Promise<void>;
+    #_signInWindow = undefined;
+    #_events = createNanoEvents();
 
-    lang: string;
-    location: string;
-    timezone: string;
-    metadata: any;
-
-    devices: Device[];
-
-    facebookId: string;
-    twitterId: string;
-    googleId: string;
-    gameCenterId: string;
-    steamId: string;
-
-    friendIds: string[];
-    blockedUserIds: string[];
-
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-export class Auth implements IUser {
-    _id: string = undefined;
-    username: string = undefined;
-    displayName: string = undefined;
-    avatarUrl: string = undefined;
-
-    isAnonymous: boolean = undefined;
-    email: string = undefined;
-
-    lang: string = undefined;
-    location: string = undefined;
-    timezone: string = undefined;
-    metadata: any = undefined;
-
-    devices: Device[] = undefined;
-
-    facebookId: string = undefined;
-    twitterId: string = undefined;
-    googleId: string = undefined;
-    gameCenterId: string = undefined;
-    steamId: string = undefined;
-
-    friendIds: string[] = undefined;
-    blockedUserIds: string[] = undefined;
-
-    createdAt: Date = undefined;
-    updatedAt: Date = undefined;
-
-    // auth token
-    token: string = undefined;
-
-    protected endpoint: string;
-    protected keepOnlineInterval: any;
-
-    constructor(endpoint: string) {
-        this.endpoint = endpoint.replace("ws", "http");
-        getItem(TOKEN_STORAGE, (token) => this.token = token);
+    constructor(protected http: HTTP) {
+        getItem(this.settings.key, (token) => this.token = token);
     }
 
-    get hasToken() {
-        return !!this.token;
+    public set token(token: string) {
+        this.http.authToken = token;
     }
 
-    async login (options: {
-        accessToken?: string,
-        deviceId?: string,
-        platform?: string,
-        email?: string,
-        password?: string,
-    } = {}) {
-        const queryParams: any = Object.assign({}, options);
+    public get token(): string {
+        return this.http.authToken;
+    }
 
-        if (this.hasToken) {
-            queryParams.token = this.token;
+    public onChange(callback: (response: AuthData) => void) {
+        const unbindChange = this.#_events.on("change", callback);
+        if (!this.#_initialized) {
+            this.#_initializationPromise = new Promise<void>((resolve, reject) => {
+                this.getUserData().then((userData) => {
+                    this.emitChange({ ...userData, token: this.token });
+
+                }).catch((e) => {
+                    // user is not logged in, or service is down
+                    this.emitChange({ user: null, token: undefined });
+
+                }).finally(() => {
+                    resolve();
+                });
+            });
         }
-
-        const data = await this.request('post', '/auth', queryParams);
-
-        // set & cache token
-        this.token = data.token;
-        setItem(TOKEN_STORAGE, this.token);
-
-        for (let attr in data) {
-            if (this.hasOwnProperty(attr)) { this[attr] = data[attr]; }
-        }
-
-        this.registerPingService();
-
-        return this;
+        this.#_initialized = true;
+        return unbindChange;
     }
 
-    async save() {
-        await this.request('put', '/auth', {}, {
-            username: this.username,
-            displayName: this.displayName,
-            avatarUrl: this.avatarUrl,
-            lang: this.lang,
-            location: this.location,
-            timezone: this.timezone,
+    public async getUserData() {
+        if (this.token) {
+            return (await this.http.get(`${this.settings.path}/userdata`)).data;
+        } else {
+            throw new Error("missing auth.token");
+        }
+    }
+
+    public async registerWithEmailAndPassword(email: string, password: string, options?: any) {
+        const data = (await this.http.post(`${this.settings.path}/register`, {
+            body: { email, password, options, },
+        })).data;
+
+        this.emitChange(data);
+
+        return data;
+    }
+
+    public async signInWithEmailAndPassword(email: string, password: string) {
+        const data = (await this.http.post(`${this.settings.path}/login`, {
+            body: { email, password, },
+        })).data;
+
+        this.emitChange(data);
+
+        return data;
+    }
+
+    public async signInAnonymously(options?: any) {
+        const data = (await this.http.post(`${this.settings.path}/anonymous`, {
+            body: { options, }
+        })).data;
+
+        this.emitChange(data);
+
+        return data;
+    }
+
+    public async sendPasswordResetEmail(email: string) {
+        const data = (await this.http.post(`${this.settings.path}/forgot-password`, {
+            body: { email, }
+        })).data;
+
+        this.emitChange(data);
+
+        return data;
+    }
+
+    public async signInWithProvider(providerName: string, settings: Partial<PopupSettings> = {}) {
+        return new Promise((resolve, reject) => {
+            const w = settings.width || 480;
+            const h = settings.height || 768;
+
+            // forward existing token for upgrading
+            const upgradingToken = this.token ? `?token=${this.token}` : "";
+
+            // Capitalize first letter of providerName
+            const title = `Login with ${(providerName[0].toUpperCase() + providerName.substring(1))}`;
+            const url = this.http['client']['getHttpEndpoint'](`${(settings.prefix || `${this.settings.path}/provider`)}/${providerName}${upgradingToken}`);
+
+            const left = (screen.width / 2) - (w / 2);
+            const top = (screen.height / 2) - (h / 2);
+
+            this.#_signInWindow = window.open(url, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width=' + w + ', height=' + h + ', top=' + top + ', left=' + left);
+
+            const onMessage = (event: MessageEvent) => {
+                // TODO: it is a good idea to check if event.origin can be trusted!
+                // if (event.origin.indexOf(window.location.hostname) === -1) { return; }
+
+                // require 'user' and 'token' inside received data.
+                if (event.data.user === undefined && event.data.token === undefined) { return; }
+
+                clearInterval(rejectionChecker);
+                this.#_signInWindow.close();
+                this.#_signInWindow = undefined;
+
+                window.removeEventListener("message", onMessage);
+
+                if (event.data.error !== undefined) {
+                    reject(event.data.error);
+
+                } else {
+                    resolve(event.data);
+                    this.emitChange(event.data);
+                }
+            }
+
+            const rejectionChecker = setInterval(() => {
+                if (!this.#_signInWindow || this.#_signInWindow.closed) {
+                    this.#_signInWindow = undefined;
+                    reject("cancelled");
+                    window.removeEventListener("message", onMessage);
+                }
+            }, 200);
+
+            window.addEventListener("message", onMessage);
         });
-
-        return this;
     }
 
-    async getFriends() {
-        return (await this.request('get', '/friends/all')) as IUser[];
+    public async signOut() {
+        this.emitChange({ user: null, token: null });
     }
 
-    async getOnlineFriends() {
-        return (await this.request('get', '/friends/online')) as IUser[];
-    }
+    private emitChange(authData: Partial<AuthData>) {
+        if (authData.token !== undefined) {
+            this.token = authData.token;
 
-    async getFriendRequests() {
-        return (await this.request('get', '/friends/requests')) as IUser[];
-    }
+            if (authData.token === null) {
+                removeItem(this.settings.key);
 
-    async sendFriendRequest(friendId: string) {
-        return (await this.request('post', '/friends/requests', { userId: friendId })) as IStatus;
-    }
-
-    async acceptFriendRequest(friendId: string) {
-        return (await this.request('put', '/friends/requests', { userId: friendId })) as IStatus;
-    }
-
-    async declineFriendRequest(friendId: string) {
-        return (await this.request('del', '/friends/requests', { userId: friendId })) as IStatus;
-    }
-
-    async blockUser(friendId: string) {
-        return (await this.request('post', '/friends/block', { userId: friendId })) as IStatus;
-    }
-
-    async unblockUser(friendId: string) {
-        return (await this.request('put', '/friends/block', { userId: friendId })) as IStatus;
-    }
-
-    async request(
-        method: 'get' | 'post' | 'put' | 'del',
-        segments: string,
-        query: {[key: string]: number | string} = {},
-        body?: any,
-        headers: {[key: string]: string} = {}
-    ) {
-        headers['Accept'] = 'application/json';
-        if (this.hasToken) { headers['Authorization'] = 'Bearer ' + this.token; }
-
-        const queryParams: string[] = [];
-        for (const name in query) {
-            queryParams.push(`${name}=${query[name]}`);
+            } else {
+                // store key in localStorage
+                setItem(this.settings.key, authData.token);
+            }
         }
 
-        const queryString = (queryParams.length > 0)
-            ? `?${queryParams.join("&")}`
-            : '';
-
-        const opts: Partial<http.Options> = { headers };
-        if (body) { opts.body = body; }
-
-        return (await http[method](`${this.endpoint}${segments}${queryString}`, opts)).data;
-    }
-
-    logout() {
-        this.token = undefined;
-        removeItem(TOKEN_STORAGE);
-        this.unregisterPingService();
-    }
-
-    registerPingService(timeout: number = 15000) {
-        this.unregisterPingService();
-
-        this.keepOnlineInterval = setInterval(() => this.request('get', '/auth'), timeout);
-    }
-
-    unregisterPingService() {
-        clearInterval(this.keepOnlineInterval);
+        this.#_events.emit("change", authData);
     }
 
 }
