@@ -100,13 +100,9 @@ export class Auth {
     }
 
     public async sendPasswordResetEmail(email: string) {
-        const data = (await this.http.post(`${this.settings.path}/forgot-password`, {
+        return (await this.http.post(`${this.settings.path}/forgot-password`, {
             body: { email, }
         })).data;
-
-        this.emitChange(data);
-
-        return data;
     }
 
     public async signInWithProvider(providerName: string, settings: Partial<PopupSettings> = {}) {
