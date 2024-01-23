@@ -65,9 +65,10 @@ export class Room<State= any> {
     public connect(
         endpoint: string,
         devModeCloseCallback?: () => void,
-        room: Room = this // when reconnecting on devMode, re-use previous room intance for handling events.
+        room: Room = this, // when reconnecting on devMode, re-use previous room intance for handling events.
+        protocol?: string,
     ) {
-        const connection = new Connection();
+        const connection = new Connection(protocol);
         room.connection = connection;
 
         connection.events.onmessage = Room.prototype.onMessageCallback.bind(room);

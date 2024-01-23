@@ -1,19 +1,10 @@
 import { ITransport, ITransportEventMap } from "./ITransport";
 
-export class WebTransportTransport implements ITransport {
+export class H3TransportTransport implements ITransport {
     wt: WebTransport;
     isOpen: boolean = false;
 
     constructor(public events: ITransportEventMap) {}
-
-    public send(data: ArrayBuffer | Array<number>): void {
-        if (data instanceof ArrayBuffer) {
-            // this.ws.send(data);
-
-        } else if (Array.isArray(data)) {
-            // this.ws.send((new Uint8Array(data)).buffer);
-        }
-    }
 
     public connect(url: string) {
         this.wt = new WebTransport(url);
@@ -34,6 +25,24 @@ export class WebTransportTransport implements ITransport {
         });
 
         // this.wt.onmessage = this.events.onmessage;
+    }
+
+    public send(data: ArrayBuffer | Array<number>): void {
+        if (data instanceof ArrayBuffer) {
+            // this.ws.send(data);
+
+        } else if (Array.isArray(data)) {
+            // this.ws.send((new Uint8Array(data)).buffer);
+        }
+    }
+
+    public sendUnreliable(data: ArrayBuffer | Array<number>): void {
+        if (data instanceof ArrayBuffer) {
+            // this.ws.send(data);
+
+        } else if (Array.isArray(data)) {
+            // this.ws.send((new Uint8Array(data)).buffer);
+        }
     }
 
     public close(code?: number, reason?: string) {

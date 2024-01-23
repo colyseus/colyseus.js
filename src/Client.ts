@@ -155,7 +155,7 @@ export class Client {
             };
 
             setTimeout(retryReconnection, 2000);
-        }), targetRoom);
+        }), targetRoom, response.protocol);
 
         return new Promise((resolve, reject) => {
             const onError = (code, message) => reject(new ServerError(code, message));

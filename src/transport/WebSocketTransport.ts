@@ -18,6 +18,10 @@ export class WebSocketTransport implements ITransport {
         }
     }
 
+    public sendUnreliable(data: ArrayBuffer | Array<number>): void {
+        throw new Error("WebSocket does not support unreliable messages");
+    }
+
     public connect(url: string) {
         this.ws = new WebSocket(url, this.protocols);
         this.ws.binaryType = 'arraybuffer';
