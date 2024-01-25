@@ -6,8 +6,18 @@ export class H3TransportTransport implements ITransport {
 
     constructor(public events: ITransportEventMap) {}
 
-    public connect(url: string) {
-        this.wt = new WebTransport(url);
+    public connect(url: string, fingerprint?: number[]) {
+        const options = fingerprint && ({
+            // requireUnreliable: true,
+            // congestionControl: "default", // "low-latency" || "throughput"
+
+            serverCertificateHashes: [{
+                algorithm: 'sha-256',
+                value: new Uint8Array(fingerprint).buffer
+            }]
+        }) || undefined;
+
+        this.wt = new WebTransport(url, options);
 
         this.wt.ready.then((e) => {
             this.isOpen = true;
