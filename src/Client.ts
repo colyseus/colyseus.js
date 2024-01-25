@@ -100,6 +100,9 @@ export class Client {
             throw new Error("DEPRECATED: .reconnect() now only accepts 'reconnectionToken' as argument.\nYou can get this token from previously connected `room.reconnectionToken`");
         }
         const [roomId, token] = reconnectionToken.split(":");
+		if (!roomId || !token) {
+			throw new Error("Invalid reconnection token format.\nThe format should be roomId:reconnectionToken");
+		}
         return await this.createMatchMakeRequest<T>('reconnect', roomId, { reconnectionToken: token }, rootSchema);
     }
 
