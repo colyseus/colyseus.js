@@ -66,9 +66,9 @@ export class Room<State= any> {
         endpoint: string,
         devModeCloseCallback?: () => void,
         room: Room = this, // when reconnecting on devMode, re-use previous room intance for handling events.
-        protocol?: string,
+        options?: any,
     ) {
-        const connection = new Connection(protocol);
+        const connection = new Connection(options.protocol);
         room.connection = connection;
 
         connection.events.onmessage = Room.prototype.onMessageCallback.bind(room);
@@ -89,7 +89,16 @@ export class Room<State= any> {
             console.warn?.(`Room, onError (${e.code}): ${e.reason}`);
             room.onError.invoke(e.code, e.reason);
         };
-        connection.connect(endpoint);
+
+        // FIXME: refactor this.
+        if (options.protocol === "h3") {
+            const url = new URL(endpoint);
+            connection.connect(url.origin, options);
+
+        } else {
+            connection.connect(endpoint);
+        }
+
     }
 
     public leave(consented: boolean = true): Promise<number> {

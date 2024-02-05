@@ -13,6 +13,6 @@ export interface ITransport {
     isOpen: boolean;
     send(data: ArrayBuffer | Array<number>): void;
     sendUnreliable(data: ArrayBuffer | Array<number>): void;
-    connect(url: string): void;
+    connect(url: string, options?: any): void;
     close(code?: number, reason?: string): void;
 }

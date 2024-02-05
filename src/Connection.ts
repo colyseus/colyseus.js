@@ -10,6 +10,7 @@ export class Connection implements ITransport {
         switch (protocol) {
             case "h3":
                 this.transport = new H3TransportTransport(this.events);
+                break;
 
             default:
                 this.transport = new WebSocketTransport(this.events);
@@ -17,8 +18,8 @@ export class Connection implements ITransport {
         }
     }
 
-    connect(url: string): void {
-        this.transport.connect(url);
+    connect(url: string, options?: any): void {
+        this.transport.connect.call(this.transport, url, options);
     }
 
     send(data: ArrayBuffer | Array<number>): void {
