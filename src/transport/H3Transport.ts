@@ -40,6 +40,10 @@ export class H3TransportTransport implements ITransport {
 
                 // immediately write room/sessionId for establishing the room connection
                 this.sendSeatReservation(options.room.roomId, options.sessionId);
+
+                // start reading incoming data
+                this.readIncomingData();
+
             }).catch((e) => {
                 console.error("failed to read incoming stream", e);
                 console.error("TODO: close the connection");
@@ -65,7 +69,12 @@ export class H3TransportTransport implements ITransport {
     }
 
     public send(data: ArrayBuffer | Array<number>): void {
-        this.writer.write(data);
+        if (data instanceof ArrayBuffer) {
+            this.writer.write(data);
+
+        } else if (Array.isArray(data)) {
+            this.writer.write(new Uint8Array(data));
+        }
     }
 
     public sendUnreliable(data: ArrayBuffer | Array<number>): void {
@@ -74,6 +83,16 @@ export class H3TransportTransport implements ITransport {
 
     public close(code?: number, reason?: string) {
         this.wt.close({ closeCode: code, reason: reason });
+    }
+
+    protected async readIncomingData() {
+        while (true) {
+            const { value, done } = await this.reader.read();
+            if (done) { break; }
+
+            // value is a Uint8Array.
+            this.events.onmessage({ data: value.buffer });
+        }
     }
 
     protected sendSeatReservation (roomId: string, sessionId: string) {
