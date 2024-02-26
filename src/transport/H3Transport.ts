@@ -54,6 +54,7 @@ export class H3TransportTransport implements ITransport {
             // this.events.onerror(e);
             // this.events.onclose({ code: e.closeCode, reason: e.reason });
             console.log("WebTransport not ready!", e)
+            this._close();
         });
 
         this.wt.closed.then((e: WebTransportCloseInfo) => {
@@ -64,8 +65,9 @@ export class H3TransportTransport implements ITransport {
             console.log("WebTransport closed w/ error", e)
             this.events.onerror(e);
             this.events.onclose({ code: e.closeCode, reason: e.reason });
+        }).finally(() => {
+            this._close();
         });
-
     }
 
     public send(data: ArrayBuffer | Array<number>): void {
@@ -86,7 +88,7 @@ export class H3TransportTransport implements ITransport {
     }
 
     protected async readIncomingData() {
-        while (true) {
+        while (this.isOpen) {
             const { value, done } = await this.reader.read();
             if (done) { break; }
 
@@ -102,6 +104,10 @@ export class H3TransportTransport implements ITransport {
         encode.string(bytes, sessionId);
 
         this.writer.write(new Uint8Array(bytes).buffer);
+    }
+
+    protected _close() {
+        this.isOpen = false;
     }
 
 }

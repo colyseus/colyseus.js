@@ -163,6 +163,31 @@ export class Room<State= any> {
         this.connection.send(arr.buffer);
     }
 
+    public sendUnreliable(type: string | number, message?: any): void {
+        const initialBytes: number[] = [Protocol.ROOM_DATA];
+
+        if (typeof(type) === "string") {
+            encode.string(initialBytes, type);
+
+        } else {
+            encode.number(initialBytes, type);
+        }
+
+        let arr: Uint8Array;
+
+        if (message !== undefined) {
+            const encoded = msgpack.encode(message);
+            arr = new Uint8Array(initialBytes.length + encoded.byteLength);
+            arr.set(new Uint8Array(initialBytes), 0);
+            arr.set(new Uint8Array(encoded), initialBytes.length);
+
+        } else {
+            arr = new Uint8Array(initialBytes);
+        }
+
+        this.connection.sendUnreliable(arr.buffer);
+    }
+
     public sendBytes(type: string | number, bytes: number[] | ArrayBufferLike) {
         const initialBytes: number[] = [Protocol.ROOM_DATA_BYTES];
 
@@ -196,6 +221,7 @@ export class Room<State= any> {
     protected onMessageCallback(event: MessageEvent) {
         const bytes = Array.from(new Uint8Array(event.data))
         const code = bytes[0];
+        console.log("onMessageCallback", bytes);
 
         if (code === Protocol.JOIN_ROOM) {
             let offset = 1;
