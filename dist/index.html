@@ -42,10 +42,13 @@
         //       console.log("received message:", type, "=>", message);
         //   });
 
+
+          // listen to player "add" events
           room.state.players.onAdd(function(player, sessionId) {
             console.log("ADD PLAYER", player);
 
             var el = document.createElement("div");
+            el.id = "player-" + sessionId;
             el.style.display = "block";
             el.style.position = "absolute";
             el.style.width = "10px";
@@ -61,22 +64,30 @@
             });
           });
 
+          // listen to player "remove" events
+          room.state.players.onRemove(function(player, sessionId) {
+            var el = document.getElementById("player-" + sessionId);
+            el.parentNode.removeChild(el);
+          });
+
           room.onMessage("*", (type, message) => {
               console.log("onMessage:", { type, message });
           });
 
+          var onmousemove = function (event) {
+              room.sendUnreliable("move", { x: event.clientX, y: event.clientY });
+            //   room.send("move", { x: event.clientX, y: event.clientY });
+          };
+
+          document.addEventListener("mousemove", onmousemove);
+
           room.onLeave(function() {
               console.log("LEFT ROOM", arguments);
+              document.removeEventListener("mousemove", onmousemove);
           });
 
           room.onError(function(code, message) {
               console.log("on error:", {code, message});
-          });
-
-          document.addEventListener("mousemove", function (event) {
-              console.log("move", { x: event.clientX, y: event.clientY });
-            //   room.sendUnreliable("move", { x: event.clientX, y: event.clientY });
-              room.send("move", { x: event.clientX, y: event.clientY });
           });
 
           room.onStateChange(function(state) {

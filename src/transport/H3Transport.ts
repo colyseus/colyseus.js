@@ -71,6 +71,7 @@ export class H3TransportTransport implements ITransport {
     }
 
     public send(data: ArrayBuffer | Array<number>): void {
+        console.log(".send()", data);
         if (data instanceof ArrayBuffer) {
             this.writer.write(data);
 
@@ -80,11 +81,16 @@ export class H3TransportTransport implements ITransport {
     }
 
     public sendUnreliable(data: ArrayBuffer | Array<number>): void {
+        console.log(".sendUnreliable()", data);
         this.unreliableWriter.write(data);
     }
 
     public close(code?: number, reason?: string) {
-        this.wt.close({ closeCode: code, reason: reason });
+        try {
+            this.wt.close({ closeCode: code, reason: reason });
+        } catch (e) {
+            console.error(e);
+        }
     }
 
     protected async readIncomingData() {
@@ -107,6 +113,7 @@ export class H3TransportTransport implements ITransport {
     }
 
     protected _close() {
+        console.log("_close() !!");
         this.isOpen = false;
     }
 
