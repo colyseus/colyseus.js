@@ -43,6 +43,7 @@ export class H3TransportTransport implements ITransport {
 
                 // start reading incoming data
                 this.readIncomingData();
+                this.readIncomingUnreliableData();
 
             }).catch((e) => {
                 console.error("failed to read incoming stream", e);
@@ -94,12 +95,38 @@ export class H3TransportTransport implements ITransport {
     }
 
     protected async readIncomingData() {
+        let result: ReadableStreamReadResult<any>;
+
         while (this.isOpen) {
-            const { value, done } = await this.reader.read();
-            if (done) { break; }
+            try {
+                result = await this.reader.read();
+            } catch (e) {
+                console.error("failed to read incoming data", e);
+                break;
+            }
+
+            if (result.done) { break; }
 
             // value is a Uint8Array.
-            this.events.onmessage({ data: value.buffer });
+            this.events.onmessage({ data: result.value.buffer });
+        }
+    }
+
+    protected async readIncomingUnreliableData() {
+        let result: ReadableStreamReadResult<any>;
+
+        while (this.isOpen) {
+            try {
+                result = await this.unreliableReader.read();
+            } catch (e) {
+                console.error("failed to read incoming data", e);
+                break;
+            }
+
+            if (result.done) { break; }
+
+            // value is a Uint8Array.
+            this.events.onmessage({ data: result.value.buffer });
         }
     }
 
