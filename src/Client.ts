@@ -36,10 +36,14 @@ export class Client {
 
     constructor(settings: string | EndpointSettings = DEFAULT_ENDPOINT) {
         if (typeof (settings) === "string") {
+
             //
             // endpoint by url
             //
-            const url = new URL(settings);
+            const url = (settings.startsWith("/"))
+                ? new URL(settings, DEFAULT_ENDPOINT)
+                : new URL(settings);
+
             const secure = (url.protocol === "https:" || url.protocol === "wss:");
             const port = Number(url.port || (secure ? 443 : 80));
 

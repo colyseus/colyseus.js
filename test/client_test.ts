@@ -40,6 +40,12 @@ describe("Client", function () {
                     wsEndpoint: "wss://localhost/custom/path/processId/roomId?",
                     wsEndpointPublicAddress: "wss://node-1.colyseus.cloud/processId/roomId?"
                 },
+                '/api': {
+                    settings: { hostname: "127.0.0.1", port: 2567, secure: false, pathname: "/api" },
+                    httpEndpoint: "http://127.0.0.1:2567/api/",
+                    wsEndpoint: "ws://127.0.0.1:2567/api/processId/roomId?",
+                    wsEndpointPublicAddress: "ws://node-1.colyseus.cloud/processId/roomId?"
+                },
             };
 
             for (const url in settingsByUrl) {
