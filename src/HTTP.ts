@@ -36,8 +36,10 @@ export class HTTP {
             }
 
             options.headers['Authorization'] = `Bearer ${this.authToken}`;
-            options.withCredentials = true;
         }
+
+        // always include credentials
+        options.withCredentials = true;
 
         return options;
     }
