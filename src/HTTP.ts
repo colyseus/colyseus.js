@@ -25,7 +25,14 @@ export class HTTP {
 
     protected request(method: "get" | "post" | "put" | "del", path: string, options: Partial<httpie.Options> = {}): Promise<httpie.Response> {
         return httpie[method](this.client['getHttpEndpoint'](path), this.getOptions(options)).catch((e: any) => {
-            throw new ServerError(e.statusCode || -1, e.data?.error || e.statusMessage || e.message || "offline");
+            const status = e.statusCode; //  || -1
+            const message = e.data?.error || e.statusMessage || e.message; //  || "offline"
+
+            if (status === undefined && message === undefined) {
+                throw e;
+            }
+
+            throw new ServerError(status, message);
         });
     }
 
