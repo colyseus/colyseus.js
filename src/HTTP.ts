@@ -28,7 +28,7 @@ export class HTTP {
             const status = e.statusCode; //  || -1
             const message = e.data?.error || e.statusMessage || e.message; //  || "offline"
 
-            if (status === undefined && message === undefined) {
+            if (!status && !message) {
                 throw e;
             }
 
