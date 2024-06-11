@@ -11,7 +11,7 @@ import { decode, encode, Iterator } from '@colyseus/schema';
 import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializer';
 import { CloseCode } from './errors/ServerError';
 
-import msgpackr from "msgpackr";
+import { Packr, unpack } from "msgpackr";
 
 type ByteArrayAllocator = new (length: number) => Uint8Array | Buffer;
 const ByteArrayAllocate: ByteArrayAllocator = (typeof Buffer !== 'undefined')
@@ -50,14 +50,14 @@ export class Room<State= any> {
 
     protected onMessageHandlers = createNanoEvents();
 
-    protected packr: msgpackr.Packr;
+    protected packr: Packr;
     protected sendBuffer: Buffer | Uint8Array = new ByteArrayAllocate(8192);
 
     constructor(name: string, rootSchema?: SchemaConstructor<State>) {
         this.roomId = null;
         this.name = name;
 
-        this.packr = new msgpackr.Packr();
+        this.packr = new Packr();
         // @ts-ignore
         this.packr.useBuffer(this.sendBuffer);
 
@@ -224,7 +224,7 @@ export class Room<State= any> {
 
             const message = (buffer.length > it.offset)
                 // @ts-ignore
-                ? msgpackr.unpack(buffer, it.offset)
+                ? unpack(buffer, it.offset)
                 : undefined;
 
             this.dispatchMessage(type, message);
