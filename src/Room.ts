@@ -1,17 +1,22 @@
-import * as msgpack from './msgpack';
-
 import { Connection } from './Connection';
-import { Protocol, utf8Length, utf8Read } from './Protocol';
-import { getSerializer, Serializer } from './serializer/Serializer';
+import { Protocol } from './Protocol';
+import { BufferLike, getSerializer, Serializer } from './serializer/Serializer';
 
 // The unused imports here are important for better `.d.ts` file generation
 // (Later merged with `dts-bundle-generator`)
 import { createNanoEvents } from './core/nanoevents';
 import { createSignal } from './core/signal';
 
-import { Context, decode, encode, Schema } from '@colyseus/schema';
+import { decode, encode, Iterator } from '@colyseus/schema';
 import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializer';
 import { CloseCode } from './errors/ServerError';
+
+import msgpackr from "msgpackr";
+
+type ByteArrayAllocator = new (length: number) => Uint8Array | Buffer;
+const ByteArrayAllocate: ByteArrayAllocator = (typeof Buffer !== 'undefined')
+    ? function (length: number) { return Buffer.allocUnsafeSlow(length) as any } as any
+    : Uint8Array;
 
 export interface RoomAvailable<Metadata = any> {
     name: string;
@@ -45,9 +50,16 @@ export class Room<State= any> {
 
     protected onMessageHandlers = createNanoEvents();
 
+    protected packr: msgpackr.Packr;
+    protected sendBuffer: Buffer | Uint8Array = new ByteArrayAllocate(8192);
+
     constructor(name: string, rootSchema?: SchemaConstructor<State>) {
         this.roomId = null;
         this.name = name;
+
+        this.packr = new msgpackr.Packr();
+        // @ts-ignore
+        this.packr.useBuffer(this.sendBuffer);
 
         if (rootSchema) {
             this.serializer = new (getSerializer("schema"));
@@ -109,66 +121,44 @@ export class Room<State= any> {
         });
     }
 
-    public onMessage<T = any>(
-        type: "*",
-        callback: (type: string | number | Schema, message: T) => void
-    )
-    public onMessage<T extends (typeof Schema & (new (...args: any[]) => any))>(
-        type: T,
-        callback: (message: InstanceType<T>) => void
-    )
-    public onMessage<T = any>(
-        type: string | number,
-        callback: (message: T) => void
-    )
-    public onMessage(
-        type: '*' | string | number | typeof Schema,
-        callback: (...args: any[]) => void
-    ) {
+    public onMessage<T = any>(type: "*", callback: (type: string | number, message: T) => void)
+    public onMessage<T = any>(type: string | number, callback: (message: T) => void)
+    public onMessage(type: '*' | string | number, callback: (...args: any[]) => void) {
         return this.onMessageHandlers.on(this.getMessageHandlerKey(type), callback);
     }
 
     public send(type: string | number, message?: any): void {
-        const initialBytes: number[] = [Protocol.ROOM_DATA];
+        const it: Iterator = { offset: 0 };
+        this.sendBuffer[it.offset++] = Protocol.ROOM_DATA;
 
         if (typeof(type) === "string") {
-            encode.string(initialBytes, type);
+            encode.string(this.sendBuffer, type, it);
 
         } else {
-            encode.number(initialBytes, type);
+            encode.number(this.sendBuffer, type, it);
         }
 
-        let arr: Uint8Array;
+        const data = (message !== undefined)
+            // @ts-ignore
+            ? this.packr.pack(message, 2048 + it.offset) // PR to fix TypeScript types https://github.com/kriszyp/msgpackr/pull/137
+                                    // 2048 = RESERVE_START_SPACE
+            : this.sendBuffer.subarray(0, it.offset);
 
-        if (message !== undefined) {
-            const encoded = msgpack.encode(message);
-            arr = new Uint8Array(initialBytes.length + encoded.byteLength);
-            arr.set(new Uint8Array(initialBytes), 0);
-            arr.set(new Uint8Array(encoded), initialBytes.length);
-
-        } else {
-            arr = new Uint8Array(initialBytes);
-        }
-
-        this.connection.send(arr.buffer);
+        this.connection.send(data);
     }
 
-    public sendBytes(type: string | number, bytes: number[] | ArrayBufferLike) {
-        const initialBytes: number[] = [Protocol.ROOM_DATA_BYTES];
+    public sendBytes(type: string | number, bytes: Uint8Array) {
+        const it: Iterator = { offset: 0 };
+        this.sendBuffer[it.offset++] = Protocol.ROOM_DATA_BYTES;
 
         if (typeof(type) === "string") {
-            encode.string(initialBytes, type);
+            encode.string(this.sendBuffer, type, it);
 
         } else {
-            encode.number(initialBytes, type);
+            encode.number(this.sendBuffer, type, it);
         }
 
-        let arr: Uint8Array;
-        arr = new Uint8Array(initialBytes.length + ((bytes as ArrayBufferLike).byteLength || (bytes as number[]).length));
-        arr.set(new Uint8Array(initialBytes), 0);
-        arr.set(new Uint8Array(bytes), initialBytes.length);
-
-        this.connection.send(arr.buffer);
+        this.connection.send(Buffer.concat([this.sendBuffer.subarray(0, it.offset), bytes]));
     }
 
     public get state (): State {
@@ -184,26 +174,23 @@ export class Room<State= any> {
     }
 
     protected onMessageCallback(event: MessageEvent) {
-        const bytes = Array.from(new Uint8Array(event.data))
-        const code = bytes[0];
+        const buffer = new Uint8Array(event.data);
+        const code = buffer[0];
+
+        const it: Iterator = { offset: 1 };
 
         if (code === Protocol.JOIN_ROOM) {
-            let offset = 1;
-
-            const reconnectionToken = utf8Read(bytes, offset);
-            offset += utf8Length(reconnectionToken);
-
-            this.serializerId = utf8Read(bytes, offset);
-            offset += utf8Length(this.serializerId);
+            const reconnectionToken = decode.utf8Read(buffer, it, buffer[it.offset++]);
+            this.serializerId = decode.utf8Read(buffer, it, buffer[it.offset++]);
 
             // Instantiate serializer if not locally available.
             if (!this.serializer) {
-                const serializer = getSerializer(this.serializerId)
+                const serializer = getSerializer(this.serializerId);
                 this.serializer = new serializer();
             }
 
-            if (bytes.length > offset && this.serializer.handshake) {
-                this.serializer.handshake(bytes, { offset });
+            if (buffer.length > it.offset && this.serializer.handshake) {
+                this.serializer.handshake(buffer, it);
             }
 
             this.reconnectionToken = `${this.roomId}:${reconnectionToken}`;
@@ -212,47 +199,32 @@ export class Room<State= any> {
             this.onJoin.invoke();
 
             // acknowledge successfull JOIN_ROOM
-            this.connection.send([Protocol.JOIN_ROOM]);
+            this.sendBuffer[0] = Protocol.JOIN_ROOM;
+            this.connection.send(this.sendBuffer.subarray(0, 1));
 
         } else if (code === Protocol.ERROR) {
-            const it: decode.Iterator = { offset: 1 };
-
-            const code = decode.number(bytes, it);
-            const message = decode.string(bytes, it);
+            const code = decode.number(buffer, it);
+            const message = decode.string(buffer, it);
 
             this.onError.invoke(code, message);
 
         } else if (code === Protocol.LEAVE_ROOM) {
             this.leave();
 
-        } else if (code === Protocol.ROOM_DATA_SCHEMA) {
-            const it = { offset: 1 };
-
-            const context: Context = (this.serializer.getState() as any).constructor._context;
-            const type = context.get(decode.number(bytes, it));
-
-            const message: Schema = new (type as any)();
-            message.decode(bytes, it);
-
-            this.dispatchMessage(type, message);
-
         } else if (code === Protocol.ROOM_STATE) {
-            bytes.shift(); // drop `code` byte
-            this.setState(bytes);
+            this.setState(buffer.subarray(it.offset));
 
         } else if (code === Protocol.ROOM_STATE_PATCH) {
-            bytes.shift(); // drop `code` byte
-            this.patch(bytes);
+            this.patch(buffer.subarray(it.offset));
 
         } else if (code === Protocol.ROOM_DATA) {
-            const it: decode.Iterator = { offset: 1 };
+            const type = (decode.stringCheck(buffer, it))
+                ? decode.string(buffer, it)
+                : decode.number(buffer, it);
 
-            const type = (decode.stringCheck(bytes, it))
-                ? decode.string(bytes, it)
-                : decode.number(bytes, it);
-
-            const message = (bytes.length > it.offset)
-                ? msgpack.decode(event.data, it.offset)
+            const message = (buffer.length > it.offset)
+                // @ts-ignore
+                ? msgpackr.unpack(buffer, it.offset)
                 : undefined;
 
             this.dispatchMessage(type, message);
@@ -260,25 +232,25 @@ export class Room<State= any> {
         } else if (code === Protocol.ROOM_DATA_BYTES) {
             const it: decode.Iterator = { offset: 1 };
 
-            const type = (decode.stringCheck(bytes, it))
-                ? decode.string(bytes, it)
-                : decode.number(bytes, it);
+            const type = (decode.stringCheck(buffer, it))
+                ? decode.string(buffer, it)
+                : decode.number(buffer, it);
 
-            this.dispatchMessage(type, new Uint8Array(bytes.slice(it.offset)));
+            this.dispatchMessage(type, buffer.slice(it.offset));
         }
     }
 
-    protected setState(encodedState: number[]): void {
+    protected setState(encodedState: BufferLike): void {
         this.serializer.setState(encodedState);
         this.onStateChange.invoke(this.serializer.getState());
     }
 
-    protected patch(binaryPatch: number[]) {
+    protected patch(binaryPatch: BufferLike) {
         this.serializer.patch(binaryPatch);
         this.onStateChange.invoke(this.serializer.getState());
     }
 
-    private dispatchMessage(type: string | number | typeof Schema, message: any) {
+    private dispatchMessage(type: string | number, message: any) {
         const messageType = this.getMessageHandlerKey(type);
 
         if (this.onMessageHandlers.events[messageType]) {
@@ -298,11 +270,8 @@ export class Room<State= any> {
         }
     }
 
-    private getMessageHandlerKey(type: string | number | typeof Schema): string {
+    private getMessageHandlerKey(type: string | number): string {
         switch (typeof(type)) {
-            // typeof Schema
-            case "function": return `$${(type as typeof Schema)._typeid}`;
-
             // string
             case "string": return type;
 

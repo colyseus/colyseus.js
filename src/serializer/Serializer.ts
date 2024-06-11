@@ -1,11 +1,13 @@
+export type BufferLike = number[] | Uint8Array | Buffer;
+
 export interface Serializer<State> {
-    setState(data: any): void;
+    setState(data: BufferLike): void;
     getState(): State;
 
-    patch(data: any): void;
+    patch(data: BufferLike): void;
     teardown(): void;
 
-    handshake?(bytes: number[], it?: any): void;
+    handshake?(bytes: BufferLike, it?: any): void;
 }
 
 const serializers: { [id: string]: any } = {};

@@ -1,13 +1,15 @@
 import { Serializer } from "./Serializer";
-import { Schema, Reflection, Iterator } from "@colyseus/schema";
+import { Schema, Decoder, Reflection, Iterator } from "@colyseus/schema";
 
 export type SchemaConstructor<T = Schema> = new (...args: any[]) => T;
 
 export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
     state: T;
+    decoder: Decoder<T>;
 
-    setState(rawState: any) {
-        return this.state.decode(rawState);
+    setState(encodedState: any, it?: Iterator) {
+        this.decoder = new Decoder(this.state);
+        this.decoder.decode(encodedState, it);
     }
 
     getState() {
@@ -15,18 +17,20 @@ export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
     }
 
     patch(patches) {
-        return this.state.decode(patches);
+        return this.decoder.decode(patches);
     }
 
     teardown() {
-        this.state?.['$changes']?.root.clearRefs();
+        this.decoder.$root.clearRefs();
     }
 
-    handshake(bytes: number[], it?: Iterator) {
+    handshake(bytes: Buffer, it?: Iterator) {
         if (this.state) {
-            // TODO: validate client/server definitinos
-            const reflection = new Reflection();
-            reflection.decode(bytes, it);
+            //
+            // TODO:
+            // validate definitions against concreate this.state instance
+            //
+            Reflection.decode(bytes, it);
 
         } else {
             // initialize reflected state from server
