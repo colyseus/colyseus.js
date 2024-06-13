@@ -1,10 +1,12 @@
+import type { Iterator } from "@colyseus/schema";
+
 export type BufferLike = number[] | Uint8Array | Buffer;
 
 export interface Serializer<State> {
-    setState(data: BufferLike): void;
+    setState(data: BufferLike, it?: Iterator): void;
     getState(): State;
 
-    patch(data: BufferLike): void;
+    patch(data: BufferLike, it?: Iterator): void;
     teardown(): void;
 
     handshake?(bytes: BufferLike, it?: any): void;

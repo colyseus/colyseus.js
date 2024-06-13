@@ -7,8 +7,7 @@ export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
     state: T;
     decoder: Decoder<T>;
 
-    setState(encodedState: any, it?: Iterator) {
-        this.decoder = new Decoder(this.state);
+    setState(encodedState: Buffer, it?: Iterator) {
         this.decoder.decode(encodedState, it);
     }
 
@@ -16,7 +15,7 @@ export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
         return this.state;
     }
 
-    patch(patches) {
+    patch(patches: Buffer, it?: Iterator) {
         return this.decoder.decode(patches);
     }
 
@@ -36,5 +35,7 @@ export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
             // initialize reflected state from server
             this.state = Reflection.decode(bytes, it) as any;
         }
+
+        this.decoder = new Decoder(this.state);
     }
 }

@@ -109,7 +109,8 @@ export class Room<State= any> {
 
             if (this.connection) {
                 if (consented) {
-                    this.connection.send([Protocol.LEAVE_ROOM]);
+                    this.sendBuffer[0] = Protocol.LEAVE_ROOM;
+                    this.connection.send(this.sendBuffer.subarray(0, 1));
 
                 } else {
                     this.connection.close();
@@ -128,8 +129,8 @@ export class Room<State= any> {
     }
 
     public send(type: string | number, message?: any): void {
-        const it: Iterator = { offset: 0 };
-        this.sendBuffer[it.offset++] = Protocol.ROOM_DATA;
+        const it: Iterator = { offset: 1 };
+        this.sendBuffer[0] = Protocol.ROOM_DATA;
 
         if (typeof(type) === "string") {
             encode.string(this.sendBuffer, type, it);
@@ -148,8 +149,8 @@ export class Room<State= any> {
     }
 
     public sendBytes(type: string | number, bytes: Uint8Array) {
-        const it: Iterator = { offset: 0 };
-        this.sendBuffer[it.offset++] = Protocol.ROOM_DATA_BYTES;
+        const it: Iterator = { offset: 1 };
+        this.sendBuffer[0] = Protocol.ROOM_DATA_BYTES;
 
         if (typeof(type) === "string") {
             encode.string(this.sendBuffer, type, it);
@@ -175,9 +176,9 @@ export class Room<State= any> {
 
     protected onMessageCallback(event: MessageEvent) {
         const buffer = new Uint8Array(event.data);
-        const code = buffer[0];
 
         const it: Iterator = { offset: 1 };
+        const code = buffer[0];
 
         if (code === Protocol.JOIN_ROOM) {
             const reconnectionToken = decode.utf8Read(buffer, it, buffer[it.offset++]);
@@ -189,7 +190,7 @@ export class Room<State= any> {
                 this.serializer = new serializer();
             }
 
-            if (buffer.length > it.offset && this.serializer.handshake) {
+            if (buffer.byteLength > it.offset && this.serializer.handshake) {
                 this.serializer.handshake(buffer, it);
             }
 
@@ -212,17 +213,19 @@ export class Room<State= any> {
             this.leave();
 
         } else if (code === Protocol.ROOM_STATE) {
-            this.setState(buffer.subarray(it.offset));
+            this.serializer.setState(buffer, it);
+            this.onStateChange.invoke(this.serializer.getState());
 
         } else if (code === Protocol.ROOM_STATE_PATCH) {
-            this.patch(buffer.subarray(it.offset));
+            this.serializer.patch(buffer, it);
+            this.onStateChange.invoke(this.serializer.getState());
 
         } else if (code === Protocol.ROOM_DATA) {
             const type = (decode.stringCheck(buffer, it))
                 ? decode.string(buffer, it)
                 : decode.number(buffer, it);
 
-            const message = (buffer.length > it.offset)
+            const message = (buffer.byteLength > it.offset)
                 // @ts-ignore
                 ? unpack(buffer, it.offset)
                 : undefined;
@@ -236,18 +239,8 @@ export class Room<State= any> {
                 ? decode.string(buffer, it)
                 : decode.number(buffer, it);
 
-            this.dispatchMessage(type, buffer.slice(it.offset));
+            this.dispatchMessage(type, buffer.subarray(it.offset));
         }
-    }
-
-    protected setState(encodedState: BufferLike): void {
-        this.serializer.setState(encodedState);
-        this.onStateChange.invoke(this.serializer.getState());
-    }
-
-    protected patch(binaryPatch: BufferLike) {
-        this.serializer.patch(binaryPatch);
-        this.onStateChange.invoke(this.serializer.getState());
     }
 
     private dispatchMessage(type: string | number, message: any) {

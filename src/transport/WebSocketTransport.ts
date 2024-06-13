@@ -9,13 +9,8 @@ export class WebSocketTransport implements ITransport {
 
     constructor(public events: ITransportEventMap) {}
 
-    public send(data: ArrayBuffer | Array<number>): void {
-        if (data instanceof ArrayBuffer) {
-            this.ws.send(data);
-
-        } else if (Array.isArray(data)) {
-            this.ws.send((new Uint8Array(data)).buffer);
-        }
+    public send(data: Buffer | Uint8Array): void {
+        this.ws.send(data);
     }
 
     public connect(url: string) {
