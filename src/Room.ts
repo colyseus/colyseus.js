@@ -180,6 +180,8 @@ export class Room<State= any> {
         const it: Iterator = { offset: 1 };
         const code = buffer[0];
 
+        console.log("onMessage ->", code, Protocol[code], `(len: ${buffer.byteLength})`)
+
         if (code === Protocol.JOIN_ROOM) {
             const reconnectionToken = decode.utf8Read(buffer, it, buffer[it.offset++]);
             this.serializerId = decode.utf8Read(buffer, it, buffer[it.offset++]);
@@ -227,14 +229,12 @@ export class Room<State= any> {
 
             const message = (buffer.byteLength > it.offset)
                 // @ts-ignore
-                ? unpack(buffer, it.offset)
+                ? unpack(buffer, { start: it.offset })
                 : undefined;
 
             this.dispatchMessage(type, message);
 
         } else if (code === Protocol.ROOM_DATA_BYTES) {
-            const it: decode.Iterator = { offset: 1 };
-
             const type = (decode.stringCheck(buffer, it))
                 ? decode.string(buffer, it)
                 : decode.number(buffer, it);

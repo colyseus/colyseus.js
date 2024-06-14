@@ -16,11 +16,11 @@ export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
     }
 
     patch(patches: Buffer, it?: Iterator) {
-        return this.decoder.decode(patches);
+        return this.decoder.decode(patches, it);
     }
 
     teardown() {
-        this.decoder.$root.clearRefs();
+        this.decoder.root.clearRefs();
     }
 
     handshake(bytes: Buffer, it?: Iterator) {
