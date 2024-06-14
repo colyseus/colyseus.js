@@ -11,7 +11,7 @@ import { decode, encode, Iterator } from '@colyseus/schema';
 import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializer';
 import { CloseCode } from './errors/ServerError';
 
-import { Packr, unpack } from "msgpackr";
+import { Packr, unpack } from '@colyseus/msgpackr';
 
 type ByteArrayAllocator = new (length: number) => Uint8Array | Buffer;
 const ByteArrayAllocate: ByteArrayAllocator = (typeof Buffer !== 'undefined')
@@ -58,7 +58,6 @@ export class Room<State= any> {
         this.name = name;
 
         this.packr = new Packr();
-        // @ts-ignore
         this.packr.useBuffer(this.sendBuffer);
 
         if (rootSchema) {
@@ -139,10 +138,11 @@ export class Room<State= any> {
             encode.number(this.sendBuffer, type, it);
         }
 
+        // force packr to use beginning of the buffer
+        this.packr.position = 0;
+
         const data = (message !== undefined)
-            // @ts-ignore
-            ? this.packr.pack(message, 2048 + it.offset) // PR to fix TypeScript types https://github.com/kriszyp/msgpackr/pull/137
-                                    // 2048 = RESERVE_START_SPACE
+            ? this.packr.pack(message, 2048 + it.offset) // 2048 = RESERVE_START_SPACE
             : this.sendBuffer.subarray(0, it.offset);
 
         this.connection.send(data);
@@ -159,7 +159,8 @@ export class Room<State= any> {
             encode.number(this.sendBuffer, type, it);
         }
 
-        this.connection.send(Buffer.concat([this.sendBuffer.subarray(0, it.offset), bytes]));
+        this.sendBuffer.set(bytes, it.offset);
+        this.connection.send(this.sendBuffer.subarray(0, it.offset + bytes.byteLength));
     }
 
     public get state (): State {
@@ -228,7 +229,6 @@ export class Room<State= any> {
                 : decode.number(buffer, it);
 
             const message = (buffer.byteLength > it.offset)
-                // @ts-ignore
                 ? unpack(buffer, { start: it.offset })
                 : undefined;
 

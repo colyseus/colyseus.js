@@ -26,6 +26,7 @@
     <button onclick="create()">Create</button>
     <button onclick="joinByLastId()">Join by last id</button>
     <button onclick="getAvailableRooms()">List avaiable rooms</button>
+    <button onclick="sendRandomBytes()">Send random bytes</button>
     <button onclick="closeConnection()">Close connection</button>
     <button onclick="reconnect()">Re-join last closed connection</button>
 
@@ -86,6 +87,15 @@
             room = r;
             addListeners(room);
           });
+      }
+
+      function sendRandomBytes() {
+          const bytes = new Uint8Array(32);
+          for (let i=0; i < bytes.length; i++) {
+              bytes[i] = Math.floor(Math.random() * 256);
+          }
+          console.log("sending bytes", Array.from(bytes));
+          room.sendBytes("bytes", bytes);
       }
 
       function getAvailableRooms() {
