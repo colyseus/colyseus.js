@@ -34,11 +34,6 @@ export class Room<State= any> {
     public name: string;
     public connection: Connection;
 
-    /**
-     * API to attach callbacks to state changes
-     */
-    public $: CallbackProxy<State>;
-
     // Public signals
     public onStateChange = createSignal<(state: State) => void>();
     public onError = createSignal<(code: number, message?: string) => void>();
@@ -223,10 +218,6 @@ export class Room<State= any> {
         } else if (code === Protocol.ROOM_STATE) {
             this.serializer.setState(buffer, it);
             this.onStateChange.invoke(this.serializer.getState());
-
-            // TODO: refactor me on 1.0
-            // @ts-ignore
-            this.$ = getStateCallbacks((this.serializer as SchemaSerializer<State>).decoder);
 
         } else if (code === Protocol.ROOM_STATE_PATCH) {
             this.serializer.patch(buffer, it);
