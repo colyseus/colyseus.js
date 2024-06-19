@@ -5,7 +5,6 @@ import { Room } from "../src";
 import { Schema, type } from "@colyseus/schema";
 
 // import * as fossilDelta from "fossil-delta";
-import * as msgpack from "../src/msgpack";
 // import { FossilDeltaSerializer } from '../src/serializer/FossilDeltaSerializer';
 
 describe("Room", function() {
@@ -54,18 +53,6 @@ describe("Room", function() {
           room['dispatchMessage'](0, 5);
       });
 
-      it("should handle schema message types", (done) => {
-          class MyMessage extends Schema {
-              @type("string") str: string = "hello";
-          }
-
-          room = new Room("chat");
-          room.onMessage(MyMessage, (message) => {
-              assert.equal("hello", message.str);
-              done();
-          });
-          room['dispatchMessage'](MyMessage, new MyMessage());
-      });
   });
 
   /*

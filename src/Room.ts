@@ -1,13 +1,13 @@
 import { Connection } from './Connection';
 import { Protocol } from './Protocol';
-import { BufferLike, getSerializer, Serializer } from './serializer/Serializer';
+import { getSerializer, Serializer } from './serializer/Serializer';
 
 // The unused imports here are important for better `.d.ts` file generation
 // (Later merged with `dts-bundle-generator`)
 import { createNanoEvents } from './core/nanoevents';
 import { createSignal } from './core/signal';
 
-import { decode, encode, Iterator } from '@colyseus/schema';
+import { decode, encode, Iterator, getStateCallbacks, CallbackProxy, Schema } from '@colyseus/schema';
 import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializer';
 import { CloseCode } from './errors/ServerError';
 
@@ -33,6 +33,11 @@ export class Room<State= any> {
 
     public name: string;
     public connection: Connection;
+
+    /**
+     * API to attach callbacks to state changes
+     */
+    public $: CallbackProxy<State>;
 
     // Public signals
     public onStateChange = createSignal<(state: State) => void>();
@@ -218,6 +223,10 @@ export class Room<State= any> {
         } else if (code === Protocol.ROOM_STATE) {
             this.serializer.setState(buffer, it);
             this.onStateChange.invoke(this.serializer.getState());
+
+            // TODO: refactor me on 1.0
+            // @ts-ignore
+            this.$ = getStateCallbacks((this.serializer as SchemaSerializer<State>).decoder);
 
         } else if (code === Protocol.ROOM_STATE_PATCH) {
             this.serializer.patch(buffer, it);
