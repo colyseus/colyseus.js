@@ -5,6 +5,11 @@ export { Protocol, ErrorCode } from './Protocol';
 export { Room, RoomAvailable } from './Room';
 export { Auth, type AuthSettings, type PopupSettings } from "./Auth";
 
+/**
+ * @colyseus/schema
+ */
+export { getStateCallbacks } from "@colyseus/schema";
+
 /*
  * Serializers
  */
