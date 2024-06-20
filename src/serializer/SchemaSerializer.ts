@@ -4,7 +4,7 @@ import type { Room } from "../Room";
 
 export type SchemaConstructor<T = Schema> = new (...args: any[]) => T;
 
-export function getStateCallbacks<T extends Schema>(room: Room) {
+export function getStateCallbacks<T extends Schema>(room: Room<T>) {
     return originalGetStateCallbacks((room['serializer'] as unknown as SchemaSerializer<T>).decoder);
 }
 
