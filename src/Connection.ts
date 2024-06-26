@@ -9,10 +9,9 @@ export class Connection implements ITransport {
         this.transport = new WebSocketTransport(this.events);
     }
 
-    send(data: ArrayBuffer | Array<number>): void {
+    send(data: Buffer | Uint8Array): void {
         this.transport.send(data);
     }
-
 
     connect(url: string): void {
         this.transport.connect(url);
