@@ -45,8 +45,15 @@ export class HTTP {
             options.headers['Authorization'] = `Bearer ${this.authToken}`;
         }
 
-        // always include credentials
-        options.withCredentials = true;
+        if (typeof (cc) !== 'undefined' && cc.sys && cc.sys.isNative) {
+            //
+            // Workaround for Cocos Creator on Native platform
+            // "Cannot set property withCredentials of #<XMLHttpRequest> which has only a getter"
+            //
+        } else {
+            // always include credentials
+            options.withCredentials = true;
+        }
 
         return options;
     }

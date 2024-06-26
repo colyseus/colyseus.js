@@ -9,5 +9,8 @@ declare module cc {
     export interface Isys {
         /** cc.sys.localStorage is a local storage component. */
         localStorage: Storage;
+
+        /** Is native ? This is set to be true in jsb auto. */
+        isNative: boolean;
     }
 }
