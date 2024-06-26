@@ -181,8 +181,6 @@ export class Room<State= any> {
         const it: Iterator = { offset: 1 };
         const code = buffer[0];
 
-        console.log("onMessage ->", code, Protocol[code], `(len: ${buffer.byteLength})`)
-
         if (code === Protocol.JOIN_ROOM) {
             const reconnectionToken = decode.utf8Read(buffer, it, buffer[it.offset++]);
             this.serializerId = decode.utf8Read(buffer, it, buffer[it.offset++]);
