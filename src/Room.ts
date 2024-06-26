@@ -127,7 +127,7 @@ export class Room<State= any> {
         return this.onMessageHandlers.on(this.getMessageHandlerKey(type), callback);
     }
 
-    public send(type: string | number, message?: any): void {
+    public send<T = any>(type: string | number, message?: T): void {
         const it: Iterator = { offset: 1 };
         this.sendBuffer[0] = Protocol.ROOM_DATA;
 
