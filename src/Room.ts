@@ -70,9 +70,6 @@ export class Room<State= any> {
         this.onLeave(() => this.removeAllListeners());
     }
 
-    // TODO: deprecate me on version 1.0
-    get id() { return this.roomId; }
-
     public connect(
         endpoint: string,
         devModeCloseCallback?: () => void,

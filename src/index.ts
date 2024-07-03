@@ -1,7 +1,7 @@
 import './legacy';
 
 export { Client, JoinOptions } from './Client';
-export { Protocol, ErrorCode } from './Protocol';
+export { Protocol, ErrorCode, SeatReservation } from './Protocol';
 export { Room, RoomAvailable } from './Room';
 export { Auth, type AuthSettings, type PopupSettings } from "./Auth";
 

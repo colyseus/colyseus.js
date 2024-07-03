@@ -3,6 +3,7 @@ import { Room, RoomAvailable } from './Room';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
 import { HTTP } from "./HTTP";
 import { Auth } from './Auth';
+import { SeatReservation } from './Protocol';
 
 export type JoinOptions = any;
 
@@ -121,7 +122,7 @@ export class Client {
     }
 
     public async consumeSeatReservation<T>(
-        response: any,
+        response: SeatReservation,
         rootSchema?: SchemaConstructor<T>,
         reuseRoomInstance?: Room // used in devMode
     ): Promise<Room<T>> {
@@ -183,7 +184,7 @@ export class Client {
         reuseRoomInstance?: Room,
     ) {
         const response = (
-            await this.http.post(`matchmake/${method}/${roomName}`, {
+            await this.http.post<SeatReservation>(`matchmake/${method}/${roomName}`, {
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
@@ -193,9 +194,8 @@ export class Client {
         ).data;
 
         // FIXME: HTTP class is already handling this as ServerError.
-        if (response.error) {
-            throw new MatchMakeError(response.error, response.code);
-        }
+        // @ts-ignore
+        if (response.error) { throw new MatchMakeError(response.error, response.code); }
 
         // forward reconnection token during "reconnect" methods.
         if (method === "reconnect") {

@@ -1,4 +1,10 @@
-import type { Iterator } from "@colyseus/schema";
+import { RoomAvailable } from "./Room";
+
+export interface SeatReservation {
+    room: RoomAvailable;
+    sessionId: string;
+    reconnectionToken?: string;
+}
 
 // Use codes between 0~127 for lesser throughput (1 byte)
 export enum Protocol {
