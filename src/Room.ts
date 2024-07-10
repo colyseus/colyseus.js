@@ -51,14 +51,15 @@ export class Room<State= any> {
     protected onMessageHandlers = createNanoEvents();
 
     protected packr: Packr;
-    protected sendBuffer: Buffer | Uint8Array = new ByteArrayAllocate(8192);
 
     constructor(name: string, rootSchema?: SchemaConstructor<State>) {
         this.roomId = null;
         this.name = name;
 
         this.packr = new Packr();
-        this.packr.useBuffer(this.sendBuffer);
+
+        // msgpackr workaround: force buffer to be created.
+        this.packr.encode(undefined);
 
         if (rootSchema) {
             this.serializer = new (getSerializer("schema"));
@@ -105,8 +106,8 @@ export class Room<State= any> {
 
             if (this.connection) {
                 if (consented) {
-                    this.sendBuffer[0] = Protocol.LEAVE_ROOM;
-                    this.connection.send(this.sendBuffer.subarray(0, 1));
+                    this.packr.buffer[0] = Protocol.LEAVE_ROOM;
+                    this.connection.send(this.packr.buffer.subarray(0, 1));
 
                 } else {
                     this.connection.close();
@@ -126,13 +127,13 @@ export class Room<State= any> {
 
     public send<T = any>(type: string | number, message?: T): void {
         const it: Iterator = { offset: 1 };
-        this.sendBuffer[0] = Protocol.ROOM_DATA;
+        this.packr.buffer[0] = Protocol.ROOM_DATA;
 
         if (typeof(type) === "string") {
-            encode.string(this.sendBuffer, type, it);
+            encode.string(this.packr.buffer, type, it);
 
         } else {
-            encode.number(this.sendBuffer, type, it);
+            encode.number(this.packr.buffer, type, it);
         }
 
         // force packr to use beginning of the buffer
@@ -140,24 +141,24 @@ export class Room<State= any> {
 
         const data = (message !== undefined)
             ? this.packr.pack(message, 2048 + it.offset) // 2048 = RESERVE_START_SPACE
-            : this.sendBuffer.subarray(0, it.offset);
+            : this.packr.buffer.subarray(0, it.offset);
 
         this.connection.send(data);
     }
 
     public sendBytes(type: string | number, bytes: Uint8Array) {
         const it: Iterator = { offset: 1 };
-        this.sendBuffer[0] = Protocol.ROOM_DATA_BYTES;
+        this.packr.buffer[0] = Protocol.ROOM_DATA_BYTES;
 
         if (typeof(type) === "string") {
-            encode.string(this.sendBuffer, type, it);
+            encode.string(this.packr.buffer, type, it);
 
         } else {
-            encode.number(this.sendBuffer, type, it);
+            encode.number(this.packr.buffer, type, it);
         }
 
-        this.sendBuffer.set(bytes, it.offset);
-        this.connection.send(this.sendBuffer.subarray(0, it.offset + bytes.byteLength));
+        this.packr.buffer.set(bytes, it.offset);
+        this.connection.send(this.packr.buffer.subarray(0, it.offset + bytes.byteLength));
     }
 
     public get state (): State {
@@ -198,8 +199,8 @@ export class Room<State= any> {
             this.onJoin.invoke();
 
             // acknowledge successfull JOIN_ROOM
-            this.sendBuffer[0] = Protocol.JOIN_ROOM;
-            this.connection.send(this.sendBuffer.subarray(0, 1));
+            this.packr.buffer[0] = Protocol.JOIN_ROOM;
+            this.connection.send(this.packr.buffer.subarray(0, 1));
 
         } else if (code === Protocol.ERROR) {
             const code = decode.number(buffer, it);
