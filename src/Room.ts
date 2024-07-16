@@ -171,6 +171,11 @@ export class Room<State= any> {
         this.onError.clear();
         this.onLeave.clear();
         this.onMessageHandlers.events = {};
+
+        if (this.serializer instanceof SchemaSerializer) {
+            // Remove callback references
+            this.serializer.decoder.root.callbacks = {};
+        }
     }
 
     protected onMessageCallback(event: MessageEvent) {
