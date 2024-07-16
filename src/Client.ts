@@ -4,6 +4,7 @@ import { SchemaConstructor } from './serializer/SchemaSerializer';
 import { HTTP } from "./HTTP";
 import { Auth } from './Auth';
 import { SeatReservation } from './Protocol';
+import { discordURLBuilder } from './3rd_party/discord';
 
 export type JoinOptions = any;
 
@@ -34,8 +35,12 @@ export class Client {
     public auth: Auth;
 
     protected settings: EndpointSettings;
+    protected urlBuilder: (url: URL) => string;
 
-    constructor(settings: string | EndpointSettings = DEFAULT_ENDPOINT) {
+    constructor(
+        settings: string | EndpointSettings = DEFAULT_ENDPOINT,
+        customURLBuilder?: (url: URL) => string
+    ) {
         if (typeof (settings) === "string") {
 
             //
@@ -75,6 +80,20 @@ export class Client {
 
         this.http = new HTTP(this);
         this.auth = new Auth(this.http);
+
+        this.urlBuilder = customURLBuilder;
+
+        //
+        // Discord Embedded SDK requires a custom URL builder
+        //
+        if (
+            !this.urlBuilder &&
+            typeof (window) !== "undefined" &&
+            window?.location?.hostname?.includes("discordsays.com")
+        ) {
+            this.urlBuilder = discordURLBuilder;
+            console.log("Colyseus SDK: Discord Embedded SDK detected. Using custom URL builder.");
+        }
     }
 
     public async joinOrCreate<T>(roomName: string, options: JoinOptions = {}, rootSchema?: SchemaConstructor<T>) {
@@ -231,12 +250,18 @@ export class Client {
             endpoint += `${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}`;
         }
 
-        return `${endpoint}/${room.processId}/${room.roomId}?${params.join('&')}`;
+        const endpointURL = `${endpoint}/${room.processId}/${room.roomId}?${params.join('&')}`;
+        return (this.urlBuilder)
+            ? this.urlBuilder(new URL(endpointURL))
+            : endpointURL;
     }
 
     protected getHttpEndpoint(segments: string = '') {
         const path = segments.startsWith("/") ? segments : `/${segments}`;
-        return `${(this.settings.secure) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}${path}`;
+        const endpointURL = `${(this.settings.secure) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}${path}`;
+        return (this.urlBuilder)
+            ? this.urlBuilder(new URL(endpointURL))
+            : endpointURL;
     }
 
     protected getEndpointPort() {

@@ -2,6 +2,7 @@ import './util';
 import { assert } from "chai";
 import { Client } from "../src";
 import { Schema, type } from '@colyseus/schema';
+import { discordURLBuilder } from '../src/3rd_party/discord';
 
 describe("Client", function () {
     let client: Client;
@@ -66,6 +67,42 @@ describe("Client", function () {
                 assert.strictEqual(expected.httpEndpoint, clientWithSettings['getHttpEndpoint']());
                 assert.strictEqual(expected.wsEndpoint, clientWithSettings['buildEndpoint'](room));
                 assert.strictEqual(expected.wsEndpointPublicAddress, clientWithSettings['buildEndpoint'](roomWithPublicAddress));
+            }
+        });
+
+        it("discord url builder", () => {
+            const room = { roomId: "roomId", processId: "processId", sessionId: "sessionId", };
+            const roomWithPublicAddress = { publicAddress: "node-1.colyseus.cloud", roomId: "roomId", processId: "processId", sessionId: "sessionId", };
+
+            const settingsByUrl = {
+                'ws://example.com': {
+                    httpEndpoint: "http://localhost/colyseus/",
+                    wsEndpoint: "ws://localhost/colyseus/processId/roomId",
+                    wsEndpointPublicAddress: "ws://localhost/colyseus/node-1/processId/roomId"
+                },
+                'ws://subdomain.colyseus.cloud': {
+                    httpEndpoint: "http://localhost/colyseus/subdomain/",
+                    wsEndpoint: "ws://localhost/colyseus/subdomain/processId/roomId",
+                    wsEndpointPublicAddress: "ws://localhost/colyseus/node-1/processId/roomId"
+                },
+                'https://subdomain.colyseus.cloud/custom/path': {
+                    httpEndpoint: "https://localhost/colyseus/subdomain/custom/path/",
+                    wsEndpoint: "wss://localhost/colyseus/subdomain/custom/path/processId/roomId",
+                    wsEndpointPublicAddress: "wss://localhost/colyseus/node-1/processId/roomId"
+                },
+                // '/api': {
+                //     httpEndpoint: "http://127.0.0.1:2567/api/",
+                //     wsEndpoint: "ws://127.0.0.1:2567/api/processId/roomId",
+                //     wsEndpointPublicAddress: "ws://node-1.colyseus.cloud/processId/roomId"
+                // },
+            };
+
+            for (const url in settingsByUrl) {
+                const expected = settingsByUrl[url];
+                const client = new Client(url, discordURLBuilder);
+                assert.strictEqual(expected.httpEndpoint, client['getHttpEndpoint']());
+                assert.strictEqual(expected.wsEndpoint, client['buildEndpoint'](room));
+                assert.strictEqual(expected.wsEndpointPublicAddress, client['buildEndpoint'](roomWithPublicAddress));
             }
         });
     });
