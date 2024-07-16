@@ -7,7 +7,7 @@ import { getSerializer, Serializer } from './serializer/Serializer';
 import { createNanoEvents } from './core/nanoevents';
 import { createSignal } from './core/signal';
 
-import { decode, encode, Iterator, getStateCallbacks, CallbackProxy, Schema } from '@colyseus/schema';
+import { decode, encode, Iterator } from '@colyseus/schema';
 import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializer';
 import { CloseCode } from './errors/ServerError';
 
