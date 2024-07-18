@@ -11,7 +11,7 @@
     <strong>Messages</strong><br>
 
     <form id="form">
-      Endpoint: <input type="text" id="endpoint" value="ws://localhost:2567" /> <br />
+      Endpoint: <input type="text" id="endpoint" value="https://localhost:2567" /> <br />
       Room name: <input type="text" id="room_name" value="my_room" /> <br />
 
       Send data: <input type="text" id="message_type" value="" placeholder="messageType" />
@@ -44,19 +44,58 @@
               console.log("received message:", type, "=>", message);
           });
 
-          room.onMessage("onJoin", () => {});
+
+          // listen to player "add" events
+          room.state.players.onAdd(function(player, sessionId) {
+            console.log("ADD PLAYER", player);
+
+            var el = document.createElement("div");
+            el.id = "player-" + sessionId;
+            el.style.pointerEvents = "none";
+            el.style.display = "block";
+            el.style.position = "absolute";
+            el.style.width = "10px";
+            el.style.height = "10px";
+            el.style.backgroundColor = "red";
+            // el.style.left = player.x + "px";
+            // el.style.top = player.y + "px";
+            document.body.appendChild(el);
+
+            player.onChange(function() {
+                el.style.left = player.x + "px";
+                el.style.top = player.y + "px";
+            });
+          });
+
+          // listen to player "remove" events
+          room.state.players.onRemove(function(player, sessionId) {
+            var el = document.getElementById("player-" + sessionId);
+            el.parentNode.removeChild(el);
+          });
+
+          room.onMessage("*", (type, message) => {
+              console.log("onMessage:", { type, message });
+          });
+
+          var onmousemove = function (event) {
+              room.sendUnreliable("move", { x: event.clientX, y: event.clientY });
+            //   room.send("move", { x: event.clientX, y: event.clientY });
+          };
+
+          document.addEventListener("mousemove", onmousemove);
 
           room.onLeave(function() {
               console.log("LEFT ROOM", arguments);
+              document.removeEventListener("mousemove", onmousemove);
           });
 
           room.onError(function(code, message) {
               console.log("on error:", {code, message});
           });
 
-        //   room.onStateChange(function(state) {
-        //       console.log("state change: ", state.toJSON());
-        //   });
+          room.onStateChange(function(state) {
+              console.log("state change: ", state.toJSON());
+          });
       }
 
       function join () {

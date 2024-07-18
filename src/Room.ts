@@ -13,11 +13,6 @@ import { CloseCode } from './errors/ServerError';
 
 import { Packr, unpack } from '@colyseus/msgpackr';
 
-type ByteArrayAllocator = new (length: number) => Uint8Array | Buffer;
-const ByteArrayAllocate: ByteArrayAllocator = (typeof Buffer !== 'undefined')
-    ? function (length: number) { return Buffer.allocUnsafeSlow(length) as any } as any
-    : Uint8Array;
-
 export interface RoomAvailable<Metadata = any> {
     name: string;
     roomId: string;
@@ -74,9 +69,10 @@ export class Room<State= any> {
     public connect(
         endpoint: string,
         devModeCloseCallback?: () => void,
-        room: Room = this // when reconnecting on devMode, re-use previous room intance for handling events.
+        room: Room = this, // when reconnecting on devMode, re-use previous room intance for handling events.
+        options?: any,
     ) {
-        const connection = new Connection();
+        const connection = new Connection(options.protocol);
         room.connection = connection;
 
         connection.events.onmessage = Room.prototype.onMessageCallback.bind(room);
@@ -97,7 +93,16 @@ export class Room<State= any> {
             console.warn?.(`Room, onError (${e.code}): ${e.reason}`);
             room.onError.invoke(e.code, e.reason);
         };
-        connection.connect(endpoint);
+
+        // FIXME: refactor this.
+        if (options.protocol === "h3") {
+            const url = new URL(endpoint);
+            connection.connect(url.origin, options);
+
+        } else {
+            connection.connect(endpoint);
+        }
+
     }
 
     public leave(consented: boolean = true): Promise<number> {
@@ -144,6 +149,27 @@ export class Room<State= any> {
             : this.packr.buffer.subarray(0, it.offset);
 
         this.connection.send(data);
+    }
+
+    public sendUnreliable(type: string | number, message?: Uint8Array): void {
+        const it: Iterator = { offset: 1 };
+        this.packr.buffer[0] = Protocol.ROOM_DATA;
+
+        if (typeof(type) === "string") {
+            encode.string(this.packr.buffer, type, it);
+
+        } else {
+            encode.number(this.packr.buffer, type, it);
+        }
+
+        // force packr to use beginning of the buffer
+        this.packr.position = 0;
+
+        const data = (message !== undefined)
+            ? this.packr.pack(message, 2048 + it.offset) // 2048 = RESERVE_START_SPACE
+            : this.packr.buffer.subarray(0, it.offset);
+
+        this.connection.sendUnreliable(data);
     }
 
     public sendBytes(type: string | number, bytes: Uint8Array) {

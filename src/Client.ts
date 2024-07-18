@@ -157,7 +157,7 @@ export class Client {
         }
 
         const targetRoom = reuseRoomInstance || room;
-        room.connect(this.buildEndpoint(response.room, options), response.devMode && (async () => {
+        room.connect(this.buildEndpoint(response.room, options, response.protocol), response.devMode && (async () => {
             console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x1F504)} Re-establishing connection with room id '${room.roomId}'...`); // 🔄
 
             let retryCount = 0;
@@ -182,7 +182,7 @@ export class Client {
             };
 
             setTimeout(retryReconnection, 2000);
-        }), targetRoom);
+        }), targetRoom, response);
 
         return new Promise((resolve, reject) => {
             const onError = (code, message) => reject(new ServerError(code, message));
@@ -228,7 +228,7 @@ export class Client {
         return new Room<T>(roomName, rootSchema);
     }
 
-    protected buildEndpoint(room: any, options: any = {}) {
+    protected buildEndpoint(room: any, options: any = {}, protocol: string = "ws") {
         const params = [];
 
         // append provided options
@@ -239,9 +239,13 @@ export class Client {
             params.push(`${name}=${options[name]}`);
         }
 
+        if (protocol === "h3") {
+            protocol = "http";
+        }
+
         let endpoint = (this.settings.secure)
-            ? "wss://"
-            : "ws://"
+            ? `${protocol}s://`
+            : `${protocol}://`;
 
         if (room.publicAddress) {
             endpoint += `${room.publicAddress}`;
