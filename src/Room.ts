@@ -151,7 +151,7 @@ export class Room<State= any> {
         this.connection.send(data);
     }
 
-    public sendUnreliable(type: string | number, message?: Uint8Array): void {
+    public sendUnreliable<T = any>(type: string | number, message?: T): void {
         const it: Iterator = { offset: 1 };
         this.packr.buffer[0] = Protocol.ROOM_DATA;
 

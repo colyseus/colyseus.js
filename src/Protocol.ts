@@ -5,6 +5,7 @@ export interface SeatReservation {
     sessionId: string;
     reconnectionToken?: string;
     devMode?: boolean;
+    protocol?: string;
 }
 
 // Use codes between 0~127 for lesser throughput (1 byte)

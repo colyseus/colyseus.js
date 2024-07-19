@@ -1,5 +1,5 @@
 import { ITransport, ITransportEventMap } from "./ITransport";
-import { encode } from '@colyseus/schema';
+import { encode, Iterator } from '@colyseus/schema';
 
 export class H3TransportTransport implements ITransport {
     wt: WebTransport;
@@ -71,18 +71,11 @@ export class H3TransportTransport implements ITransport {
         });
     }
 
-    public send(data: ArrayBuffer | Array<number>): void {
-        console.log(".send()", data);
-        if (data instanceof ArrayBuffer) {
-            this.writer.write(data);
-
-        } else if (Array.isArray(data)) {
-            this.writer.write(new Uint8Array(data));
-        }
+    public send(data: Buffer | Uint8Array): void {
+        this.writer.write(data);
     }
 
-    public sendUnreliable(data: ArrayBuffer | Array<number>): void {
-        console.log(".sendUnreliable()", data);
+    public sendUnreliable(data: Buffer | Uint8Array): void {
         this.unreliableWriter.write(data);
     }
 
@@ -131,20 +124,20 @@ export class H3TransportTransport implements ITransport {
     }
 
     protected sendSeatReservation (roomId: string, sessionId: string, reconnectionToken?: string) {
+        const it: Iterator = { offset: 0 };
         const bytes: number[] = [];
 
-        encode.string(bytes, roomId);
-        encode.string(bytes, sessionId);
+        encode.string(bytes, roomId, it);
+        encode.string(bytes, sessionId, it);
 
         if (reconnectionToken) {
-            encode.string(bytes, reconnectionToken);
+            encode.string(bytes, reconnectionToken, it);
         }
 
         this.writer.write(new Uint8Array(bytes).buffer);
     }
 
     protected _close() {
-        console.log("_close() !!");
         this.isOpen = false;
     }
 

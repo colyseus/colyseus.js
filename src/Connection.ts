@@ -26,7 +26,7 @@ export class Connection implements ITransport {
         this.transport.send(data);
     }
 
-    sendUnreliable(data: ArrayBuffer | Array<number>): void {
+    sendUnreliable(data: Buffer | Uint8Array): void {
         this.transport.sendUnreliable(data);
     }
 
