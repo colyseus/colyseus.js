@@ -38,15 +38,16 @@
       }
 
       function addListeners (room) {
+          const $ = Colyseus.getStateCallbacks(room);
+
           console.log('joined!');
 
           room.onMessage("*", (type, message) => {
               console.log("received message:", type, "=>", message);
           });
 
-
           // listen to player "add" events
-          room.state.players.onAdd(function(player, sessionId) {
+          $(room.state).players.onAdd(function(player, sessionId) {
             console.log("ADD PLAYER", player);
 
             var el = document.createElement("div");
@@ -61,14 +62,14 @@
             // el.style.top = player.y + "px";
             document.body.appendChild(el);
 
-            player.onChange(function() {
+            $(player).onChange(function() {
                 el.style.left = player.x + "px";
                 el.style.top = player.y + "px";
             });
           });
 
           // listen to player "remove" events
-          room.state.players.onRemove(function(player, sessionId) {
+          $(room.state).players.onRemove(function(player, sessionId) {
             var el = document.getElementById("player-" + sessionId);
             el.parentNode.removeChild(el);
           });
@@ -94,7 +95,7 @@
           });
 
           room.onStateChange(function(state) {
-              console.log("state change: ", state.toJSON());
+            //   console.log("state change: ", state.toJSON());
           });
       }
 
