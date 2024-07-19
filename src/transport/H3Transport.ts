@@ -8,8 +8,8 @@ export class H3TransportTransport implements ITransport {
     reader: ReadableStreamDefaultReader;
     writer: WritableStreamDefaultWriter;
 
-    unreliableReader: ReadableStreamDefaultReader;
-    unreliableWriter: WritableStreamDefaultWriter;
+    unreliableReader: ReadableStreamDefaultReader<Uint8Array>;
+    unreliableWriter: WritableStreamDefaultWriter<Uint8Array>;
 
     constructor(public events: ITransportEventMap) { }
 
@@ -88,29 +88,62 @@ export class H3TransportTransport implements ITransport {
     }
 
     protected async readIncomingData() {
-        let result: ReadableStreamReadResult<any>;
+        let result: ReadableStreamReadResult<Uint8Array>;
 
         while (this.isOpen) {
             try {
                 result = await this.reader.read();
+
+                //
+                // a single read may contain multiple messages
+                // each message is prefixed with its length
+                //
+
+                const messages = result.value;
+                const it: Iterator = { offset: 0 };
+                do {
+                    //
+                    // QUESTION: should we buffer the message in case it's not fully read?
+                    //
+
+                    const length = messages[it.offset++];
+                    this.events.onmessage({ data: messages.subarray(it.offset, it.offset + length) });
+                    it.offset += length;
+                } while (it.offset < messages.length);
+
             } catch (e) {
                 console.error("failed to read incoming data", e);
                 break;
             }
 
             if (result.done) { break; }
-
-            // value is a Uint8Array.
-            this.events.onmessage({ data: result.value.buffer });
         }
     }
 
     protected async readIncomingUnreliableData() {
-        let result: ReadableStreamReadResult<any>;
+        let result: ReadableStreamReadResult<Uint8Array>;
 
         while (this.isOpen) {
             try {
                 result = await this.unreliableReader.read();
+
+                //
+                // a single read may contain multiple messages
+                // each message is prefixed with its length
+                //
+
+                const messages = result.value;
+                const it: Iterator = { offset: 0 };
+                do {
+                    //
+                    // QUESTION: should we buffer the message in case it's not fully read?
+                    //
+
+                    const length = messages[it.offset++];
+                    this.events.onmessage({ data: messages.subarray(it.offset, it.offset + length) });
+                    it.offset += length;
+                } while (it.offset < messages.length);
+
             } catch (e) {
                 console.error("failed to read incoming data", e);
                 break;
