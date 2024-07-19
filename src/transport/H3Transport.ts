@@ -72,11 +72,17 @@ export class H3TransportTransport implements ITransport {
     }
 
     public send(data: Buffer | Uint8Array): void {
-        this.writer.write(data);
+        const lengthPrefixed = new Uint8Array(data.byteLength + 1);
+        lengthPrefixed[0] = data.byteLength;
+        lengthPrefixed.set(new Uint8Array(data), 1);
+        this.writer.write(lengthPrefixed);
     }
 
     public sendUnreliable(data: Buffer | Uint8Array): void {
-        this.unreliableWriter.write(data);
+        const lengthPrefixed = new Uint8Array(data.byteLength + 1);
+        lengthPrefixed[0] = data.byteLength;
+        lengthPrefixed.set(new Uint8Array(data), 1);
+        this.unreliableWriter.write(lengthPrefixed);
     }
 
     public close(code?: number, reason?: string) {
