@@ -1,5 +1,5 @@
 import { ITransport, ITransportEventMap } from "./ITransport";
-import { encode, Iterator } from '@colyseus/schema';
+import { encode, decode, Iterator } from '@colyseus/schema';
 
 export class H3TransportTransport implements ITransport {
     wt: WebTransport;
@@ -10,6 +10,8 @@ export class H3TransportTransport implements ITransport {
 
     unreliableReader: ReadableStreamDefaultReader<Uint8Array>;
     unreliableWriter: WritableStreamDefaultWriter<Uint8Array>;
+
+    private lengthPrefixBuffer = new Uint8Array(9); // 9 bytes is the maximum length of a length prefix
 
     constructor(public events: ITransportEventMap) { }
 
@@ -72,17 +74,19 @@ export class H3TransportTransport implements ITransport {
     }
 
     public send(data: Buffer | Uint8Array): void {
-        const lengthPrefixed = new Uint8Array(data.byteLength + 1);
-        lengthPrefixed[0] = data.byteLength;
-        lengthPrefixed.set(new Uint8Array(data), 1);
-        this.writer.write(lengthPrefixed);
+        const prefixLength = encode.number(this.lengthPrefixBuffer, data.length, { offset: 0 });
+        const dataWithPrefixedLength = new Uint8Array(prefixLength + data.length);
+        dataWithPrefixedLength.set(this.lengthPrefixBuffer.subarray(0, prefixLength), 0);
+        dataWithPrefixedLength.set(data, prefixLength);
+        this.writer.write(dataWithPrefixedLength);
     }
 
     public sendUnreliable(data: Buffer | Uint8Array): void {
-        const lengthPrefixed = new Uint8Array(data.byteLength + 1);
-        lengthPrefixed[0] = data.byteLength;
-        lengthPrefixed.set(new Uint8Array(data), 1);
-        this.unreliableWriter.write(lengthPrefixed);
+        const prefixLength = encode.number(this.lengthPrefixBuffer, data.length, { offset: 0 });
+        const dataWithPrefixedLength = new Uint8Array(prefixLength + data.length);
+        dataWithPrefixedLength.set(this.lengthPrefixBuffer.subarray(0, prefixLength), 0);
+        dataWithPrefixedLength.set(data, prefixLength);
+        this.unreliableWriter.write(dataWithPrefixedLength);
     }
 
     public close(code?: number, reason?: string) {
@@ -112,17 +116,21 @@ export class H3TransportTransport implements ITransport {
                     // QUESTION: should we buffer the message in case it's not fully read?
                     //
 
-                    const length = messages[it.offset++];
+                    const length = decode.number(messages, it);
                     this.events.onmessage({ data: messages.subarray(it.offset, it.offset + length) });
                     it.offset += length;
                 } while (it.offset < messages.length);
 
             } catch (e) {
-                console.error("failed to read incoming data", e);
+                if (e.message.indexOf("session is closed") === -1) {
+                    console.error("H3Transport: failed to read incoming data", e);
+                }
                 break;
             }
 
-            if (result.done) { break; }
+            if (result.done) {
+                break;
+            }
         }
     }
 
@@ -145,20 +153,21 @@ export class H3TransportTransport implements ITransport {
                     // QUESTION: should we buffer the message in case it's not fully read?
                     //
 
-                    const length = messages[it.offset++];
+                    const length = decode.number(messages, it);
                     this.events.onmessage({ data: messages.subarray(it.offset, it.offset + length) });
                     it.offset += length;
                 } while (it.offset < messages.length);
 
             } catch (e) {
-                console.error("failed to read incoming data", e);
+                if (e.message.indexOf("session is closed") === -1) {
+                    console.error("H3Transport: failed to read incoming data", e);
+                }
                 break;
             }
 
-            if (result.done) { break; }
-
-            // value is a Uint8Array.
-            this.events.onmessage({ data: result.value.buffer });
+            if (result.done) {
+                break;
+            }
         }
     }
 
