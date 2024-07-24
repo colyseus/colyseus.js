@@ -3,6 +3,7 @@ import { Room, RoomAvailable } from './Room';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
 import { HTTP } from "./HTTP";
 import { Auth } from './Auth';
+import { SeatReservation } from './Protocol';
 import { discordURLBuilder } from './3rd_party/discord';
 
 export type JoinOptions = any;
@@ -140,7 +141,7 @@ export class Client {
     }
 
     public async consumeSeatReservation<T>(
-        response: any,
+        response: SeatReservation,
         rootSchema?: SchemaConstructor<T>,
         reuseRoomInstance?: Room // used in devMode
     ): Promise<Room<T>> {
@@ -156,7 +157,7 @@ export class Client {
         }
 
         const targetRoom = reuseRoomInstance || room;
-        room.connect(this.buildEndpoint(response.room, options), response.devMode && (async () => {
+        room.connect(this.buildEndpoint(response.room, options, response.protocol), response.devMode && (async () => {
             console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x1F504)} Re-establishing connection with room id '${room.roomId}'...`); // 🔄
 
             let retryCount = 0;
@@ -181,7 +182,7 @@ export class Client {
             };
 
             setTimeout(retryReconnection, 2000);
-        }), targetRoom);
+        }), targetRoom, response);
 
         return new Promise((resolve, reject) => {
             const onError = (code, message) => reject(new ServerError(code, message));
@@ -202,7 +203,7 @@ export class Client {
         reuseRoomInstance?: Room,
     ) {
         const response = (
-            await this.http.post(`matchmake/${method}/${roomName}`, {
+            await this.http.post<SeatReservation>(`matchmake/${method}/${roomName}`, {
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
@@ -212,9 +213,8 @@ export class Client {
         ).data;
 
         // FIXME: HTTP class is already handling this as ServerError.
-        if (response.error) {
-            throw new MatchMakeError(response.error, response.code);
-        }
+        // @ts-ignore
+        if (response.error) { throw new MatchMakeError(response.error, response.code); }
 
         // forward reconnection token during "reconnect" methods.
         if (method === "reconnect") {
@@ -228,7 +228,7 @@ export class Client {
         return new Room<T>(roomName, rootSchema);
     }
 
-    protected buildEndpoint(room: any, options: any = {}) {
+    protected buildEndpoint(room: any, options: any = {}, protocol: string = "ws") {
         const params = [];
 
         // append provided options
@@ -239,9 +239,13 @@ export class Client {
             params.push(`${name}=${options[name]}`);
         }
 
+        if (protocol === "h3") {
+            protocol = "http";
+        }
+
         let endpoint = (this.settings.secure)
-            ? "wss://"
-            : "ws://"
+            ? `${protocol}s://`
+            : `${protocol}://`;
 
         if (room.publicAddress) {
             endpoint += `${room.publicAddress}`;
