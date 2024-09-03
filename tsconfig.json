@@ -9,6 +9,7 @@
         "noImplicitAny": false,
         "esModuleInterop": true,
         "experimentalDecorators": true,
-        "inlineSources": true
+        "inlineSources": true,
+        "skipLibCheck": true
     }
 }
