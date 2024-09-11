@@ -32,6 +32,7 @@ export class Room<State= any> {
     // Public signals
     public onStateChange = createSignal<(state: State) => void>();
     public onError = createSignal<(code: number, message?: string) => void>();
+    public onClose = createSignal<(code: number) => void>();
     public onLeave = createSignal<(code: number) => void>();
     protected onJoin = createSignal();
 
@@ -75,6 +76,12 @@ export class Room<State= any> {
             if (!room.hasJoined) {
                 console.warn?.(`Room connection was closed unexpectedly (${e.code}): ${e.reason}`);
                 room.onError.invoke(e.code, e.reason);
+                return;
+            }
+            // allow the user to throw an error in onClose to cancel leaving
+            try {
+                room.onClose.invoke(e.code);
+            } catch (error) {
                 return;
             }
             if (e.code === CloseCode.DEVMODE_RESTART && devModeCloseCallback) {
