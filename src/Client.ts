@@ -118,7 +118,16 @@ export class Client {
      * @param rootSchema (optional) Concrete root schema definition
      * @returns Promise<Room>
      */
-    public async reconnect<T>(reconnectionToken: string, rootSchema?: SchemaConstructor<T>) {
+    public async reconnect<T>(reconnectionToken: string, rootSchema?: SchemaConstructor<T>) : Promise<Room<T>>;
+    /**
+     * Re-establish connection with a room this client was previously connected to.
+     *
+     * @param room The previously connected room.
+     * @returns Promise<Room> - The room that was passed in.
+     */
+    public async reconnect<T>(room: Room<T>) : Promise<Room<T>>;
+    public async reconnect<T>(value: string | Room<T>, rootSchema?: SchemaConstructor<T>) {
+        const { reconnectionToken, room } = typeof (value) === "object" ? { reconnectionToken: value.reconnectionToken, room: value } : { reconnectionToken: value, room: undefined };
         if (typeof (reconnectionToken) === "string" && typeof (rootSchema) === "string") {
             throw new Error("DEPRECATED: .reconnect() now only accepts 'reconnectionToken' as argument.\nYou can get this token from previously connected `room.reconnectionToken`");
         }
@@ -126,7 +135,7 @@ export class Client {
 		if (!roomId || !token) {
 			throw new Error("Invalid reconnection token format.\nThe format should be roomId:reconnectionToken");
 		}
-        return await this.createMatchMakeRequest<T>('reconnect', roomId, { reconnectionToken: token }, rootSchema);
+        return await this.createMatchMakeRequest<T>('reconnect', roomId, { reconnectionToken: token }, rootSchema, room);
     }
 
     public async getAvailableRooms<Metadata = any>(roomName: string = ""): Promise<RoomAvailable<Metadata>[]> {
@@ -142,9 +151,11 @@ export class Client {
     public async consumeSeatReservation<T>(
         response: any,
         rootSchema?: SchemaConstructor<T>,
-        reuseRoomInstance?: Room // used in devMode
+        reuseRoomInstance?: Room, // used in devMode and when reconnecting in place
+        simpleConnect: boolean = false
     ): Promise<Room<T>> {
-        const room = this.createRoom<T>(response.room.name, rootSchema);
+        
+        const room = reuseRoomInstance ?? this.createRoom<T>(response.room.name, rootSchema);
         room.roomId = response.room.roomId;
         room.sessionId = response.sessionId;
 
@@ -156,32 +167,38 @@ export class Client {
         }
 
         const targetRoom = reuseRoomInstance || room;
-        room.connect(this.buildEndpoint(response.room, options), response.devMode && (async () => {
-            console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x1F504)} Re-establishing connection with room id '${room.roomId}'...`); // 🔄
 
-            let retryCount = 0;
-            let retryMaxRetries = 8;
+        // true if reconnecting in place
+        if (simpleConnect) {
+            room.connection.connect(this.buildEndpoint(response.room, options));
+        } else {
+            room.connect(this.buildEndpoint(response.room, options), response.devMode && (async () => {
+                console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x1F504)} Re-establishing connection with room id '${room.roomId}'...`); // 🔄
 
-            const retryReconnection = async () => {
-                retryCount++;
+                let retryCount = 0;
+                let retryMaxRetries = 8;
 
-                try {
-                    await this.consumeSeatReservation(response, rootSchema, targetRoom);
-                    console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x2705)} Successfully re-established connection with room '${room.roomId}'`); // ✅
+                const retryReconnection = async () => {
+                    retryCount++;
 
-                } catch (e) {
-                    if (retryCount < retryMaxRetries) {
-                        console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x1F504)} retrying... (${retryCount} out of ${retryMaxRetries})`); // 🔄
-                        setTimeout(retryReconnection, 2000);
+                    try {
+                        await this.consumeSeatReservation(response, rootSchema, targetRoom);
+                        console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x2705)} Successfully re-established connection with room '${room.roomId}'`); // ✅
 
-                    } else {
-                        console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x274C)} Failed to reconnect. Is your server running? Please check server logs.`); // ❌
+                    } catch (e) {
+                        if (retryCount < retryMaxRetries) {
+                            console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x1F504)} retrying... (${retryCount} out of ${retryMaxRetries})`); // 🔄
+                            setTimeout(retryReconnection, 2000);
+
+                        } else {
+                            console.info(`[Colyseus devMode]: ${String.fromCodePoint(0x274C)} Failed to reconnect. Is your server running? Please check server logs.`); // ❌
+                        }
                     }
-                }
-            };
+                };
 
-            setTimeout(retryReconnection, 2000);
-        }), targetRoom);
+                setTimeout(retryReconnection, 2000);
+            }), targetRoom);
+        }
 
         return new Promise((resolve, reject) => {
             const onError = (code, message) => reject(new ServerError(code, message));
@@ -221,7 +238,7 @@ export class Client {
             response.reconnectionToken = options.reconnectionToken;
         }
 
-        return await this.consumeSeatReservation<T>(response, rootSchema, reuseRoomInstance);
+        return await this.consumeSeatReservation<T>(response, rootSchema, reuseRoomInstance, !!reuseRoomInstance);
     }
 
     protected createRoom<T>(roomName: string, rootSchema?: SchemaConstructor<T>) {
