@@ -31,6 +31,8 @@ export interface EndpointSettings {
 }
 
 export class Client {
+    static VERSION = process.env.VERSION;
+
     public http: HTTP;
     public auth: Auth;
 

@@ -2,6 +2,7 @@ import typescript from '@rollup/plugin-typescript';
 import commonjs from '@rollup/plugin-commonjs';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import alias from '@rollup/plugin-alias';
+import replace from '@rollup/plugin-replace';
 
 import pkg from "./package.json";
 import schemapkg from "./node_modules/@colyseus/schema/package.json";
@@ -10,6 +11,10 @@ const external = Object.keys(pkg.dependencies);
 
 const banner = `// colyseus.js@${pkg.version}`;
 const bannerStatic = `// colyseus.js@${pkg.version} (@colyseus/schema ${schemapkg.version})`;
+
+const replacePlugin = replace({
+    'process.env.VERSION': JSON.stringify(pkg.version),
+});
 
 export default [
 
@@ -20,7 +25,8 @@ export default [
         output: [{ banner, dir: 'build/esm', format: 'esm', entryFileNames: '[name].mjs', sourcemap: true },],
         external,
         plugins: [
-            typescript({ tsconfig: './tsconfig/tsconfig.esm.json' })
+            replacePlugin,
+            typescript({ tsconfig: './tsconfig/tsconfig.esm.json' }),
         ],
     },
 
@@ -30,7 +36,8 @@ export default [
         output: [{ banner, dir: 'build/cjs', format: 'cjs', entryFileNames: '[name].js', sourcemap: true },],
         external,
         plugins: [
-            typescript({ tsconfig: './tsconfig/tsconfig.cjs.json' })
+            replacePlugin,
+            typescript({ tsconfig: './tsconfig/tsconfig.cjs.json' }),
         ],
     },
 
@@ -50,6 +57,7 @@ export default [
             },
         ],
         plugins: [
+            replacePlugin,
             typescript({ tsconfig: './tsconfig/tsconfig.cjs.json' }),
             alias({
                 entries: [
@@ -84,6 +92,7 @@ export default [
             },
         ],
         plugins: [
+            replacePlugin,
             typescript({ tsconfig: './tsconfig/tsconfig.cjs.json' }),
             alias({
                 entries: [
