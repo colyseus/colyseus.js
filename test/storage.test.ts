@@ -1,10 +1,11 @@
 import './util';
+import { describe, test } from "vitest";
 import assert from "assert";
 import { setItem, getItem } from "../src/Storage";
 
 describe("Storage", function() {
 
-    it("get and set", () => {
+    test("get and set", () => {
         setItem("test", "test");
 
         let getCalled = false;

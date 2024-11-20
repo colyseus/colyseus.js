@@ -1,4 +1,5 @@
 import './util';
+import { describe, beforeAll, test } from "vitest";
 import { assert } from "chai";
 import { Client } from "../src";
 import { Schema, type } from '@colyseus/schema';
@@ -7,12 +8,12 @@ import { discordURLBuilder } from '../src/3rd_party/discord';
 describe("Client", function () {
     let client: Client;
 
-    before(() => {
+    beforeAll(() => {
         client = new Client("ws://localhost:2546");
     })
 
     describe("constructor settings", () => {
-        it("url string", () => {
+        test("url string", () => {
             const room = { roomId: "roomId", processId: "processId", sessionId: "sessionId", };
             const roomWithPublicAddress = { publicAddress: "node-1.colyseus.cloud", roomId: "roomId", processId: "processId", sessionId: "sessionId", };
 
@@ -70,25 +71,25 @@ describe("Client", function () {
             }
         });
 
-        it("discord url builder", () => {
+        test("discord url builder", () => {
             const room = { roomId: "roomId", processId: "processId", sessionId: "sessionId", };
             const roomWithPublicAddress = { publicAddress: "node-1.colyseus.cloud", roomId: "roomId", processId: "processId", sessionId: "sessionId", };
 
             const settingsByUrl = {
                 'ws://example.com': {
-                    httpEndpoint: "http://localhost/colyseus/",
-                    wsEndpoint: "ws://localhost/colyseus/processId/roomId",
-                    wsEndpointPublicAddress: "ws://localhost/colyseus/node-1/processId/roomId"
+                    httpEndpoint: "http://localhost/.proxy/colyseus/",
+                    wsEndpoint: "ws://localhost/.proxy/colyseus/processId/roomId",
+                    wsEndpointPublicAddress: "ws://localhost/.proxy/colyseus/node-1/processId/roomId"
                 },
                 'ws://subdomain.colyseus.cloud': {
-                    httpEndpoint: "http://localhost/colyseus/subdomain/",
-                    wsEndpoint: "ws://localhost/colyseus/subdomain/processId/roomId",
-                    wsEndpointPublicAddress: "ws://localhost/colyseus/node-1/processId/roomId"
+                    httpEndpoint: "http://localhost/.proxy/colyseus/subdomain/",
+                    wsEndpoint: "ws://localhost/.proxy/colyseus/subdomain/processId/roomId",
+                    wsEndpointPublicAddress: "ws://localhost/.proxy/colyseus/node-1/processId/roomId"
                 },
                 'https://subdomain.colyseus.cloud/custom/path': {
-                    httpEndpoint: "https://localhost/colyseus/subdomain/custom/path/",
-                    wsEndpoint: "wss://localhost/colyseus/subdomain/custom/path/processId/roomId",
-                    wsEndpointPublicAddress: "wss://localhost/colyseus/node-1/processId/roomId"
+                    httpEndpoint: "https://localhost/.proxy/colyseus/subdomain/custom/path/",
+                    wsEndpoint: "wss://localhost/.proxy/colyseus/subdomain/custom/path/processId/roomId",
+                    wsEndpointPublicAddress: "wss://localhost/.proxy/colyseus/node-1/processId/roomId"
                 },
                 // '/api': {
                 //     httpEndpoint: "http://127.0.0.1:2567/api/",
@@ -107,13 +108,13 @@ describe("Client", function () {
         });
     });
 
-    xit("join", function () {
+    test.skip("join", function () {
         const room = client.join("chat");
         // assert.equal(room.name, "chat")
         // assert.deepEqual(room.state, {})
     });
 
-    xit("should allow to pass a Schema constructor as third argument", async () => {
+    test.skip("should allow to pass a Schema constructor as third argument", async () => {
         class State extends Schema {
             @type("string") str: string;
         }

@@ -1,4 +1,5 @@
 import './util';
+import { describe, beforeEach, test } from "vitest";
 import { assert } from "chai";
 import { Room } from "../src";
 
@@ -11,7 +12,7 @@ describe("Room", function() {
   let room: Room = null;
 
   describe("onMessage / dispatchMessage", () => {
-      it("* should handle if message is not registered", (done) => {
+      test("* should handle if message is not registered", () => new Promise<void>((done) => {
           room = new Room("chat");
 
           room.onMessage("*", (type, message) => {
@@ -24,34 +25,34 @@ describe("Room", function() {
 
           room['dispatchMessage']("type", 5);
           room['dispatchMessage']("something", 1);
-      });
+      }));
 
-      it("should handle string message types", (done) => {
+      test("should handle string message types", () => new Promise<void>((done) => {
           room = new Room("chat");
           room.onMessage("type", (message) => {
               assert.equal(5, message);
               done();
           });
           room['dispatchMessage']("type", 5);
-      });
+      }));
 
-      it("should handle number message types", (done) => {
+      test("should handle number message types", () => new Promise<void>((done) => {
           room = new Room("chat");
           room.onMessage(0, (message) => {
               assert.equal(5, message);
               done();
           });
           room['dispatchMessage'](0, 5);
-      });
+      }));
 
-      it("should handle number message types", (done) => {
+      test("should handle number message types", () => new Promise<void>((done) => {
           room = new Room("chat");
           room.onMessage(0, (message) => {
               assert.equal(5, message);
               done();
           });
           room['dispatchMessage'](0, 5);
-      });
+      }));
 
   });
 
@@ -64,12 +65,12 @@ describe("Room", function() {
         (room as any).serializer = new FossilDeltaSerializer();
     });
 
-    it("should initialize room with empty state", function() {
+    test("should initialize room with empty state", function() {
         assert.equal(room.name, "chat")
         assert.deepEqual(room.state, {})
     });
 
-    it("should emit state change", function(done) {
+    test("should emit state change", function(done) {
         room.onStateChange((data) => {
             assert.deepEqual(data.messages, []);
             done();
@@ -78,7 +79,7 @@ describe("Room", function() {
         (<any>room).setState(msgpack.encode({ messages: [] }), 0, 0);
     })
 
-    it("should patch room state", function(done) {
+    test("should patch room state", function(done) {
         let state = {
             players: {
                 'one': { hp: 100, lvl: 1, position: {x: 0, y: 0} },

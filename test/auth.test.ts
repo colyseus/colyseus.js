@@ -1,4 +1,5 @@
 import './util';
+import { describe, beforeAll, test } from "vitest";
 import assert from "assert";
 import { Client, Room } from "../src";
 import { AuthData } from '../src/Auth';
@@ -6,18 +7,18 @@ import { AuthData } from '../src/Auth';
 describe("Auth", function() {
     let client: Client;
 
-    before(() => {
+    beforeAll(() => {
         client = new Client("ws://localhost:2546");
     });
 
     describe("store token", () => {
-        it("should store token on localStorage", () => {
+        test("should store token on localStorage", () => {
             client.auth['emitChange']({ user: {}, token: "123" });
             assert.strictEqual("123", client.auth.token);
             assert.strictEqual("123", window.localStorage.getItem(client.auth.settings.key));
         });
 
-        it("should reject if no token is stored", async () => {
+        test("should reject if no token is stored", async () => {
             // @ts-ignore
             client.auth.token = undefined;
 
@@ -29,7 +30,7 @@ describe("Auth", function() {
     });
 
     describe("onChange", () => {
-        it("should trigger onChange when token is set", () => {
+        test("should trigger onChange when token is set", () => {
             let onChangePayload: AuthData | undefined = undefined;
             client.auth.onChange((data) => onChangePayload = data);
             client.auth['emitChange']({ user: { dummy: true }, token: "123" });
