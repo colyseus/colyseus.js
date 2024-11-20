@@ -31,16 +31,16 @@ export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
     handshake(bytes: Buffer, it?: Iterator) {
         if (this.state) {
             //
-            // TODO:
-            // validate definitions against concreate this.state instance
+            // TODO: validate definitions against concreate this.state instance
             //
-            Reflection.decode(bytes, it);
+            Reflection.decode(bytes, it); // no-op
+
+            this.decoder = new Decoder(this.state);
 
         } else {
             // initialize reflected state from server
-            this.state = Reflection.decode(bytes, it) as any;
+            this.decoder = Reflection.decode(bytes, it);
+            this.state = this.decoder.state;
         }
-
-        this.decoder = new Decoder(this.state);
     }
 }
