@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.16.0-preview.23",
+  "version": "0.16.0-preview.24",
   "description": "Colyseus Multiplayer SDK for JavaScript/TypeScript",
   "author": "Endel Dreyer",
   "license": "MIT",
@@ -31,7 +31,7 @@
   "typings": "lib/index.d.ts",
   "exports": {
     ".": {
-      "browser": "./lib/index.js",
+      "browser": "./build/cjs/index.js",
       "import": "./build/esm/index.mjs",
       "require": "./build/cjs/index.js",
       "types": "./lib/index.d.ts"
