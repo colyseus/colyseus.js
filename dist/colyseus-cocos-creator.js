@@ -8306,7 +8306,7 @@
         ? "".concat(window.location.protocol.replace("http", "ws"), "//").concat(window.location.hostname).concat((window.location.port && ":".concat(window.location.port)))
         : "ws://127.0.0.1:2567";
     var Client = /** @class */ (function () {
-        function Client(settings, customURLBuilder) {
+        function Client(settings, customURLBuilder, externalMatchMaker) {
             if (settings === void 0) { settings = DEFAULT_ENDPOINT; }
             var _a, _b;
             if (typeof (settings) === "string") {
@@ -8352,6 +8352,9 @@
                 ((_b = (_a = window === null || window === void 0 ? void 0 : window.location) === null || _a === void 0 ? void 0 : _a.hostname) === null || _b === void 0 ? void 0 : _b.includes("discordsays.com"))) {
                 this.urlBuilder = discordURLBuilder;
                 console.log("Colyseus SDK: Discord Embedded SDK detected. Using custom URL builder.");
+            }
+            if (externalMatchMaker) {
+                this.externalMatchMaker = new HTTP(this);
             }
         }
         Client.prototype.joinOrCreate = function (roomName_1) {
@@ -8504,6 +8507,41 @@
             });
         };
         Client.prototype.createMatchMakeRequest = function (method_1, roomName_1) {
+            return __awaiter(this, arguments, void 0, function (method, roomName, options, rootSchema, reuseRoomInstance) {
+                var response;
+                if (options === void 0) { options = {}; }
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            if (!!this.externalMatchMaker) return [3 /*break*/, 2];
+                            return [4 /*yield*/, this.createDirectMatchMakeRequest(method, roomName, options, rootSchema, reuseRoomInstance)];
+                        case 1: // if we aren't using an external matchmaker then we can use the default matchmaker nbd
+                        return [2 /*return*/, _a.sent()];
+                        case 2: return [4 /*yield*/, this.externalMatchMaker.post("matchmake/".concat(method, "/").concat(roomName), {
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(options)
+                            })];
+                        case 3:
+                            response = (_a.sent()).data;
+                            // FIXME: HTTP class is already handling this as ServerError.
+                            // @ts-ignore
+                            if (response.error) {
+                                throw new MatchMakeError(response.error, response.code);
+                            }
+                            // the response from the external matchmaker should contain the settings for the server we need to connect to
+                            this.settings = response.settings;
+                            this.http = new HTTP(this); // we have to rebuild the http client with the new settings
+                            return [4 /*yield*/, this.createDirectMatchMakeRequest(response.method, response.roomName, response.options, rootSchema, reuseRoomInstance)];
+                        case 4: // we have to rebuild the http client with the new settings
+                        return [2 /*return*/, _a.sent()];
+                    }
+                });
+            });
+        };
+        Client.prototype.createDirectMatchMakeRequest = function (method_1, roomName_1) {
             return __awaiter(this, arguments, void 0, function (method, roomName, options, rootSchema, reuseRoomInstance) {
                 var response;
                 if (options === void 0) { options = {}; }

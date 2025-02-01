@@ -24,7 +24,8 @@ class Client {
     auth;
     settings;
     urlBuilder;
-    constructor(settings = DEFAULT_ENDPOINT, customURLBuilder) {
+    externalMatchMaker;
+    constructor(settings = DEFAULT_ENDPOINT, customURLBuilder, externalMatchMaker) {
         if (typeof (settings) === "string") {
             //
             // endpoint by url
@@ -68,6 +69,9 @@ class Client {
             window?.location?.hostname?.includes("discordsays.com")) {
             this.urlBuilder = discordURLBuilder;
             console.log("Colyseus SDK: Discord Embedded SDK detected. Using custom URL builder.");
+        }
+        if (externalMatchMaker) {
+            this.externalMatchMaker = new HTTP(this);
         }
     }
     async joinOrCreate(roomName, options = {}, rootSchema) {
@@ -149,6 +153,27 @@ class Client {
         });
     }
     async createMatchMakeRequest(method, roomName, options = {}, rootSchema, reuseRoomInstance) {
+        if (!this.externalMatchMaker) { // if we aren't using an external matchmaker then we can use the default matchmaker nbd
+            return await this.createDirectMatchMakeRequest(method, roomName, options, rootSchema, reuseRoomInstance);
+        }
+        const response = (await this.externalMatchMaker.post(`matchmake/${method}/${roomName}`, {
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(options)
+        })).data;
+        // FIXME: HTTP class is already handling this as ServerError.
+        // @ts-ignore
+        if (response.error) {
+            throw new MatchMakeError(response.error, response.code);
+        }
+        // the response from the external matchmaker should contain the settings for the server we need to connect to
+        this.settings = response.settings;
+        this.http = new HTTP(this); // we have to rebuild the http client with the new settings
+        return await this.createDirectMatchMakeRequest(response.method, response.roomName, response.options, rootSchema, reuseRoomInstance);
+    }
+    async createDirectMatchMakeRequest(method, roomName, options = {}, rootSchema, reuseRoomInstance) {
         const response = (await this.http.post(`matchmake/${method}/${roomName}`, {
             headers: {
                 'Accept': 'application/json',
