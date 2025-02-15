@@ -1,5 +1,5 @@
 import { ServerError } from './errors/ServerError';
-import { Room, RoomAvailable } from './Room';
+import { Room } from './Room';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
 import { HTTP } from "./HTTP";
 import { Auth } from './Auth';
@@ -130,16 +130,6 @@ export class Client {
 			throw new Error("Invalid reconnection token format.\nThe format should be roomId:reconnectionToken");
 		}
         return await this.createMatchMakeRequest<T>('reconnect', roomId, { reconnectionToken: token }, rootSchema);
-    }
-
-    public async getAvailableRooms<Metadata = any>(roomName: string = ""): Promise<RoomAvailable<Metadata>[]> {
-        return (
-            await this.http.get(`matchmake/${roomName}`, {
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
-        ).data;
     }
 
     public async consumeSeatReservation<T>(
