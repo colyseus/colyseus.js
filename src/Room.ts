@@ -183,6 +183,14 @@ export class Room<State= any> {
             encode.number(this.packr.buffer, type, it);
         }
 
+        // check if buffer needs to be resized
+        // TODO: can we avoid this?
+        if (bytes.byteLength + it.offset > this.packr.buffer.byteLength) {
+            const newBuffer = new Uint8Array(it.offset + bytes.byteLength);
+            newBuffer.set(this.packr.buffer);
+            this.packr.useBuffer(newBuffer);
+        }
+
         this.packr.buffer.set(bytes, it.offset);
         this.connection.send(this.packr.buffer.subarray(0, it.offset + bytes.byteLength));
     }
