@@ -85,8 +85,8 @@
 
           document.addEventListener("mousemove", onmousemove);
 
-          room.onLeave(function() {
-              console.log("LEFT ROOM", arguments);
+          room.onLeave(function(code, reason) {
+              console.log("LEFT ROOM",{code, reason});
               document.removeEventListener("mousemove", onmousemove);
           });
 
