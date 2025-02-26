@@ -32,7 +32,7 @@ export class Room<State= any> {
     // Public signals
     public onStateChange = createSignal<(state: State) => void>();
     public onError = createSignal<(code: number, message?: string) => void>();
-    public onLeave = createSignal<(code: number) => void>();
+    public onLeave = createSignal<(code: number, reason?: string) => void>();
     protected onJoin = createSignal();
 
     public serializerId: string;
@@ -80,7 +80,7 @@ export class Room<State= any> {
             if (e.code === CloseCode.DEVMODE_RESTART && devModeCloseCallback) {
                 devModeCloseCallback();
             } else {
-                room.onLeave.invoke(e.code);
+                room.onLeave.invoke(e.code, e.reason);
                 room.destroy();
             }
         };
