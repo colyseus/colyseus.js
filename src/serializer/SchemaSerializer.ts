@@ -1,11 +1,11 @@
 import { Serializer } from "./Serializer";
-import { Schema, Decoder, Reflection, Iterator, getDecoderStateCallbacks, type SchemaCallback } from "@colyseus/schema";
+import { Schema, Decoder, Reflection, Iterator, getDecoderStateCallbacks } from "@colyseus/schema";
 import type { Room } from "../Room";
 
 export type SchemaConstructor<T = Schema> = new (...args: any[]) => T;
 
 export function getStateCallbacks<T extends Schema>(room: Room<T>) {
-    return getDecoderStateCallbacks((room['serializer'] as unknown as SchemaSerializer<T>).decoder) as unknown as SchemaCallback<T>;
+    return getDecoderStateCallbacks((room['serializer'] as unknown as SchemaSerializer<T>).decoder);
 }
 
 export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
