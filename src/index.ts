@@ -13,6 +13,8 @@ import { SchemaSerializer, getStateCallbacks } from "./serializer/SchemaSerializ
 import { NoneSerializer } from "./serializer/NoneSerializer";
 import { registerSerializer } from './serializer/Serializer';
 
+export type { SchemaCallback } from '@colyseus/schema';
+
 export { registerSerializer, SchemaSerializer, getStateCallbacks };
 registerSerializer('schema', SchemaSerializer);
 registerSerializer('none', NoneSerializer);
