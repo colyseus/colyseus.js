@@ -20,6 +20,10 @@ function getStorage(): Storage {
         }
     }
 
+    if (!storage && typeof (globalThis.indexedDB) !== 'undefined') {
+        storage = new IndexedDBStorage();
+    }
+
     if (!storage) {
         // mock localStorage if not available (Node.js or RN environment)
         storage = {
@@ -54,5 +58,37 @@ export function getItem(key: string, callback: Function) {
     } else {
         // react-native is asynchronous
         value.then((id) => callback(id));
+    }
+}
+
+/**
+ * When running in a Web Worker, we need to use IndexedDB to store data.
+ */
+class IndexedDBStorage {
+    private dbPromise: Promise<IDBDatabase> = new Promise((resolve) => {
+        const request = indexedDB.open('_colyseus_storage', 1);
+        request.onupgradeneeded = () => request.result.createObjectStore('store');
+        request.onsuccess = () => resolve(request.result);
+    });
+
+    private async tx(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest) {
+        const db = await this.dbPromise;
+        const store = db.transaction('store', mode).objectStore('store');
+        return fn(store);
+    }
+
+    setItem(key: string, value: string) {
+        return this.tx('readwrite', store => store.put(value, key)).then();
+    }
+
+    async getItem(key: string) {
+        const request = await this.tx('readonly', store => store.get(key));
+        return new Promise<string | undefined>((resolve) => {
+            request.onsuccess = () => resolve(request.result);
+        });
+    }
+
+    removeItem(key: string) {
+        return this.tx('readwrite', store => store.delete(key)).then();
     }
 }
