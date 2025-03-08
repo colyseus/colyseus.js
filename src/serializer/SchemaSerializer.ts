@@ -5,7 +5,13 @@ import type { Room } from "../Room";
 export type SchemaConstructor<T = Schema> = new (...args: any[]) => T;
 
 export function getStateCallbacks<T extends Schema>(room: Room<T>) {
-    return getDecoderStateCallbacks((room['serializer'] as unknown as SchemaSerializer<T>).decoder);
+    try {
+        // SchemaSerializer
+        return getDecoderStateCallbacks((room['serializer'] as unknown as SchemaSerializer<T>).decoder);
+    } catch (e) {
+        // NoneSerializer
+        return undefined;
+    }
 }
 
 export class SchemaSerializer<T extends Schema = any> implements Serializer<T> {
