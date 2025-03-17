@@ -13,6 +13,7 @@ export class MatchMakeError extends Error {
     constructor(message: string, code: number) {
         super(message);
         this.code = code;
+        this.name = "MatchMakeError";
         Object.setPrototypeOf(this, MatchMakeError.prototype);
     }
 }
