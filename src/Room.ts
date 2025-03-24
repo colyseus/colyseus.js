@@ -71,6 +71,7 @@ export class Room<State= any> {
         devModeCloseCallback?: () => void,
         room: Room = this, // when reconnecting on devMode, re-use previous room intance for handling events.
         options?: any,
+        headers?: any,
     ) {
         const connection = new Connection(options.protocol);
         room.connection = connection;
@@ -100,7 +101,7 @@ export class Room<State= any> {
             connection.connect(url.origin, options);
 
         } else {
-            connection.connect(endpoint);
+            connection.connect(endpoint, headers);
         }
 
     }

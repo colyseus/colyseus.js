@@ -5,7 +5,10 @@ import * as httpie from "httpie";
 export class HTTP {
     public authToken: string;
 
-    constructor(protected client: Client) {}
+    constructor(
+        protected client: Client,
+        public headers: { [id: string]: string } = {},
+    ) {}
 
     public get<T = any>(path: string, options: Partial<httpie.Options> = {}): Promise<httpie.Response<T>> {
         return this.request("get", path, options);
@@ -37,11 +40,10 @@ export class HTTP {
     }
 
     protected getOptions(options: Partial<httpie.Options>) {
-        if (this.authToken) {
-            if (!options.headers) {
-                options.headers = {};
-            }
+        // merge default custom headers with user headers
+        options.headers = Object.assign({}, this.headers, options.headers);
 
+        if (this.authToken) {
             options.headers['Authorization'] = `Bearer ${this.authToken}`;
         }
 

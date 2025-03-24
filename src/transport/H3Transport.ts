@@ -16,7 +16,7 @@ export class H3TransportTransport implements ITransport {
     constructor(public events: ITransportEventMap) { }
 
     public connect(url: string, options: any = {}) {
-        const wtOpts = options.fingerprint && ({
+        const wtOpts: WebTransportOptions = options.fingerprint && ({
             // requireUnreliable: true,
             // congestionControl: "default", // "low-latency" || "throughput"
 

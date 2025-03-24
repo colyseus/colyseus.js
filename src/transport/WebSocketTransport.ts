@@ -17,8 +17,13 @@ export class WebSocketTransport implements ITransport {
         console.warn("colyseus.js: The WebSocket transport does not support unreliable messages");
     }
 
-    public connect(url: string) {
-        this.ws = new WebSocket(url, this.protocols);
+    /**
+     * @param url URL to connect to
+     * @param headers custom headers to send with the connection (only supported in Node.js. Web Browsers do not allow setting custom headers)
+     */
+    public connect(url: string, headers?: any): void {
+        // @ts-ignore
+        this.ws = new WebSocket(url, { headers, protocols: this.protocols });
         this.ws.binaryType = 'arraybuffer';
         this.ws.onopen = this.events.onopen;
         this.ws.onmessage = this.events.onmessage;
