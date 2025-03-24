@@ -1,6 +1,6 @@
 import './legacy';
 
-export { Client, JoinOptions } from './Client';
+export { Client, JoinOptions, MatchMakeError, type EndpointSettings, type ClientOptions } from './Client';
 export { Protocol, ErrorCode } from './Protocol';
 export { Room, RoomAvailable } from './Room';
 export { Auth, type AuthSettings, type PopupSettings } from "./Auth";

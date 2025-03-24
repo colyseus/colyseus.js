@@ -14,8 +14,8 @@ export class Connection implements ITransport {
     }
 
 
-    connect(url: string): void {
-        this.transport.connect(url);
+    connect(url: string, options: any): void {
+        this.transport.connect(url, options);
     }
 
     close(code?: number, reason?: string): void {

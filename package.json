@@ -1,6 +1,6 @@
 {
   "name": "colyseus.js",
-  "version": "0.15.27",
+  "version": "0.15.28",
   "description": "Colyseus Multiplayer SDK for JavaScript/TypeScript",
   "author": "Endel Dreyer",
   "license": "MIT",
@@ -70,7 +70,7 @@
     "@rollup/plugin-typescript": "^8.2.5",
     "@types/chai": "^3.4.34",
     "@types/mocha": "^2.2.44",
-    "@types/ws": "^7.4.0",
+    "@types/node": "^22.13.13",
     "benchmark": "^2.1.4",
     "chai": "^3.5.0",
     "dts-bundle-generator": "^6.9.0",

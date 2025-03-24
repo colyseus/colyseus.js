@@ -65,7 +65,8 @@ export class Room<State= any> {
     public connect(
         endpoint: string,
         devModeCloseCallback?: () => void,
-        room: Room = this // when reconnecting on devMode, re-use previous room intance for handling events.
+        room: Room = this, // when reconnecting on devMode, re-use previous room intance for handling events.
+        headers?: any,
     ) {
         const connection = new Connection();
         room.connection = connection;
@@ -88,7 +89,8 @@ export class Room<State= any> {
             console.warn?.(`Room, onError (${e.code}): ${e.reason}`);
             room.onError.invoke(e.code, e.reason);
         };
-        connection.connect(endpoint);
+
+        connection.connect(endpoint, headers);
     }
 
     public leave(consented: boolean = true): Promise<number> {

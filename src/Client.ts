@@ -29,6 +29,11 @@ export interface EndpointSettings {
     pathname?: string,
 }
 
+export interface ClientOptions {
+    headers?: { [id: string]: string };
+    urlBuilder?: (url: URL) => string;
+}
+
 export class Client {
     public http: HTTP;
     public auth: Auth;
@@ -38,7 +43,7 @@ export class Client {
 
     constructor(
         settings: string | EndpointSettings = DEFAULT_ENDPOINT,
-        customURLBuilder?: (url: URL) => string
+        options?: ClientOptions,
     ) {
         if (typeof (settings) === "string") {
 
@@ -77,10 +82,10 @@ export class Client {
             this.settings.pathname = this.settings.pathname.slice(0, -1);
         }
 
-        this.http = new HTTP(this);
+        this.http = new HTTP(this, options?.headers || {});
         this.auth = new Auth(this.http);
 
-        this.urlBuilder = customURLBuilder;
+        this.urlBuilder = options?.urlBuilder;
 
         //
         // Discord Embedded SDK requires a custom URL builder
@@ -181,7 +186,7 @@ export class Client {
             };
 
             setTimeout(retryReconnection, 2000);
-        }), targetRoom);
+        }), targetRoom, this.http.headers);
 
         return new Promise((resolve, reject) => {
             const onError = (code, message) => reject(new ServerError(code, message));
