@@ -22,8 +22,15 @@ export class WebSocketTransport implements ITransport {
      * @param headers custom headers to send with the connection (only supported in Node.js. Web Browsers do not allow setting custom headers)
      */
     public connect(url: string, headers?: any): void {
-        // @ts-ignore
-        this.ws = new WebSocket(url, { headers, protocols: this.protocols });
+        try {
+            // Node or Bun environments (supports custom headers)
+            this.ws = new WebSocket(url, { headers, protocols: this.protocols });
+
+        } catch (e) {
+            // browser environment (custom headers not supported)
+            this.ws = new WebSocket(url, this.protocols);
+        }
+
         this.ws.binaryType = 'arraybuffer';
         this.ws.onopen = this.events.onopen;
         this.ws.onmessage = this.events.onmessage;
