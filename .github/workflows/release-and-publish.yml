@@ -26,6 +26,7 @@ jobs:
       run: |
         npm ci
         npm run build-ci
+        npm install --save @colyseus/schema@latest
 
     - id: check
       uses: EndBug/version-check@v2
