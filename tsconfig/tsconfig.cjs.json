@@ -2,6 +2,6 @@
     "extends": "./tsconfig.all.json",
     "compilerOptions": {
         "module": "ESNext",
-        "target": "es5",
+        "target": "ES2015",
     }
 }
