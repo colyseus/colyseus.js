@@ -100,7 +100,7 @@ describe("Client", function () {
 
             for (const url in settingsByUrl) {
                 const expected = settingsByUrl[url];
-                const client = new Client(url, discordURLBuilder);
+                const client = new Client(url, { urlBuilder: discordURLBuilder });
                 assert.strictEqual(expected.httpEndpoint, client['getHttpEndpoint']());
                 assert.strictEqual(expected.wsEndpoint, client['buildEndpoint'](room));
                 assert.strictEqual(expected.wsEndpointPublicAddress, client['buildEndpoint'](roomWithPublicAddress));
