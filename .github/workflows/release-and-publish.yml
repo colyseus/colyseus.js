@@ -25,8 +25,9 @@ jobs:
     - name: Install dependencies
       run: |
         npm ci
-        npm run build-ci
         npm install --save @colyseus/schema@latest
+        git checkout package.json
+        npm run build-ci
 
     - id: check
       uses: EndBug/version-check@v2
