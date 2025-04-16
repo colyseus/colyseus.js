@@ -1,10 +1,10 @@
-import { ServerError } from './errors/ServerError';
-import { Room } from './Room';
-import { SchemaConstructor } from './serializer/SchemaSerializer';
-import { HTTP } from "./HTTP";
-import { Auth } from './Auth';
-import { SeatReservation } from './Protocol';
 import { discordURLBuilder } from './3rd_party/discord';
+import { Auth } from './Auth';
+import { ServerError } from './errors/ServerError';
+import { HTTP } from "./HTTP";
+import { SeatReservation } from './Protocol';
+import { Room, splitURL } from './Room';
+import { SchemaConstructor } from './serializer/SchemaSerializer';
 
 export type JoinOptions = any;
 
@@ -33,7 +33,7 @@ export interface EndpointSettings {
 
 export interface ClientOptions {
     headers?: { [id: string]: string };
-    urlBuilder?: (url: URL) => string;
+    urlBuilder?: (url: URL | ReturnType<typeof splitURL>) => string;
 }
 
 export class Client {
@@ -43,7 +43,7 @@ export class Client {
     public auth: Auth;
 
     protected settings: EndpointSettings;
-    protected urlBuilder: (url: URL) => string;
+    protected urlBuilder: (url: URL | ReturnType<typeof splitURL>) => string;
 
     constructor(
         settings: string | EndpointSettings = DEFAULT_ENDPOINT,
@@ -55,8 +55,8 @@ export class Client {
             // endpoint by url
             //
             const url = (settings.startsWith("/"))
-                ? new URL(settings, DEFAULT_ENDPOINT)
-                : new URL(settings);
+                ? splitURL(settings, DEFAULT_ENDPOINT)
+                : splitURL(settings);
 
             const secure = (url.protocol === "https:" || url.protocol === "wss:");
             const port = Number(url.port || (secure ? 443 : 80));
@@ -254,7 +254,7 @@ export class Client {
 
         const endpointURL = `${endpoint}/${room.processId}/${room.roomId}?${params.join('&')}`;
         return (this.urlBuilder)
-            ? this.urlBuilder(new URL(endpointURL))
+            ? this.urlBuilder(splitURL(endpointURL))
             : endpointURL;
     }
 
@@ -262,7 +262,7 @@ export class Client {
         const path = segments.startsWith("/") ? segments : `/${segments}`;
         const endpointURL = `${(this.settings.secure) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}${path}`;
         return (this.urlBuilder)
-            ? this.urlBuilder(new URL(endpointURL))
+            ? this.urlBuilder(splitURL(endpointURL))
             : endpointURL;
     }
 

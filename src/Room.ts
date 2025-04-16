@@ -8,10 +8,56 @@ import { createNanoEvents } from './core/nanoevents';
 import { createSignal } from './core/signal';
 
 import { decode, encode, Iterator } from '@colyseus/schema';
-import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializer';
 import { CloseCode } from './errors/ServerError';
+import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializer';
 
 import { Packr, unpack } from '@colyseus/msgpackr';
+
+export function splitURL(url: string, base?: string) {
+    // 检查 URL 是否为空或非字符串
+    if (!url || typeof url !== 'string') {
+        throw new Error("URL must be a non-empty string");
+    }
+
+    // 尝试使用全局 URL 构造函数
+    if (typeof globalThis !== 'undefined' && globalThis.URL) {
+        try {
+            return base ? new URL(url, base) : new URL(url);
+        } catch (e) {
+            // URL 构造函数可能会因为无效 URL 抛出错误
+            // 继续使用备选方案
+        }
+    }
+
+    // 如果有基础 URL 且 url 是相对路径，先进行合并
+    if (base && url.startsWith('/')) {
+        // 简单合并，可能需要更复杂的逻辑来处理各种情况
+        let baseUrl = base;
+        if (baseUrl.endsWith('/')) {
+            baseUrl = baseUrl.slice(0, -1);
+        }
+        url = baseUrl + url;
+    }
+
+    // 备选方案：使用正则表达式解析 URL
+    var urlPattern = /^(?:([A-Za-z]+):)?(?:\/\/)?(?:([0-9.\-A-Za-z]+)(?::(\d+))?)?(\/[^?#]*)?(?:\?([^#]*))?(?:#(.*))?$/;
+    var matches = url.match(urlPattern);
+    if (!matches) {
+        throw new Error("Invalid URL");
+    }
+    
+    return {
+        protocol: matches[1] ? matches[1] + ":" : "",
+        hostname: matches[2] || "",
+        port: matches[3] || "",
+        pathname: matches[4] || "/",
+        search: matches[5] ? "?" + matches[5] : "",
+        hash: matches[6] ? "#" + matches[6] : "",
+        href: url,
+        origin: (matches[1] ? matches[1] + "://" : "//") + (matches[2] || "") + (matches[3] ? ":" + matches[3] : "")
+    };
+}
+
 
 export interface RoomAvailable<Metadata = any> {
     name: string;
@@ -21,7 +67,7 @@ export interface RoomAvailable<Metadata = any> {
     metadata?: Metadata;
 }
 
-export class Room<State= any> {
+export class Room<State = any> {
     public roomId: string;
     public sessionId: string;
     public reconnectionToken: string;
@@ -97,7 +143,7 @@ export class Room<State= any> {
 
         // FIXME: refactor this.
         if (options.protocol === "h3") {
-            const url = new URL(endpoint);
+            const url = splitURL(endpoint);
             connection.connect(url.origin, options);
 
         } else {
@@ -135,7 +181,7 @@ export class Room<State= any> {
         const it: Iterator = { offset: 1 };
         this.packr.buffer[0] = Protocol.ROOM_DATA;
 
-        if (typeof(type) === "string") {
+        if (typeof (type) === "string") {
             encode.string(this.packr.buffer, type, it);
 
         } else {
@@ -156,7 +202,7 @@ export class Room<State= any> {
         const it: Iterator = { offset: 1 };
         this.packr.buffer[0] = Protocol.ROOM_DATA;
 
-        if (typeof(type) === "string") {
+        if (typeof (type) === "string") {
             encode.string(this.packr.buffer, type, it);
 
         } else {
@@ -177,7 +223,7 @@ export class Room<State= any> {
         const it: Iterator = { offset: 1 };
         this.packr.buffer[0] = Protocol.ROOM_DATA_BYTES;
 
-        if (typeof(type) === "string") {
+        if (typeof (type) === "string") {
             encode.string(this.packr.buffer, type, it);
 
         } else {
@@ -196,7 +242,7 @@ export class Room<State= any> {
         this.connection.send(this.packr.buffer.subarray(0, it.offset + bytes.byteLength));
     }
 
-    public get state (): State {
+    public get state(): State {
         return this.serializer.getState();
     }
 
@@ -293,14 +339,14 @@ export class Room<State= any> {
         }
     }
 
-    private destroy () {
+    private destroy() {
         if (this.serializer) {
             this.serializer.teardown();
         }
     }
 
     private getMessageHandlerKey(type: string | number): string {
-        switch (typeof(type)) {
+        switch (typeof (type)) {
             // string
             case "string": return type;
 
