@@ -229,6 +229,11 @@ export class Client {
     protected buildEndpoint(room: any, options: any = {}, protocol: string = "ws") {
         const params = [];
 
+        // forward authentication token
+        if (this.http.authToken) {
+            options['_authToken'] = this.http.authToken;
+        }
+
         // append provided options
         for (const name in options) {
             if (!options.hasOwnProperty(name)) {
