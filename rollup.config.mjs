@@ -63,7 +63,7 @@ export default [
             alias({
                 entries: [
                     // httpie: force `fetch` for web environments
-                    { find: 'httpie', replacement: path.resolve('./node_modules/httpie/fetch/index.js') },
+                    { find: '@colyseus/httpie', replacement: path.resolve('./node_modules/@colyseus/httpie/fetch/index.js') },
 
                     // ws: force browser.js version.
                     { find: 'ws', replacement: path.resolve('./node_modules/ws/browser.js') },
@@ -98,7 +98,7 @@ export default [
             alias({
                 entries: [
                     // httpie: force XHR implementation on browser/UMD environment
-                    { find: 'httpie', replacement: path.resolve('./node_modules/httpie/xhr/index.js' ) },
+                    { find: '@colyseus/httpie', replacement: path.resolve('./node_modules/@colyseus/httpie/xhr/index.js' ) },
 
                     // ws: force browser.js version.
                     { find: 'ws', replacement: path.resolve('./node_modules/ws/browser.js' ) },

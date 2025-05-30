@@ -1,11 +1,11 @@
 {
   "name": "colyseus.js",
-  "version": "0.16.17",
+  "version": "0.16.18",
   "description": "Colyseus Multiplayer SDK for JavaScript/TypeScript",
   "author": "Endel Dreyer",
   "license": "MIT",
   "scripts": {
-    "test": "vitest --dir test",
+    "test": "vitest --dir test --reporter verbose",
     "build": "rollup -c rollup.config.mjs",
     "build-dist-dts": "dts-bundle-generator --config dts-generator.json",
     "build-ci": "tsc && npm run build && npm run build-dist-dts && npm run build-zip-dist",
@@ -60,7 +60,7 @@
   "dependencies": {
     "@colyseus/msgpackr": "^1.11.2",
     "@colyseus/schema": "^3.0.0",
-    "httpie": "^2.0.0-next.13",
+    "@colyseus/httpie": "^2.0.0",
     "tslib": "^2.1.0",
     "ws": "^8.13.0"
   },

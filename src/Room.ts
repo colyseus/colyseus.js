@@ -9,7 +9,7 @@ import { createSignal } from './core/signal';
 
 import { decode, encode, Iterator } from '@colyseus/schema';
 import { SchemaConstructor, SchemaSerializer } from './serializer/SchemaSerializer';
-import { CloseCode } from './errors/ServerError';
+import { CloseCode } from './errors/Errors';
 
 import { Packr, unpack } from '@colyseus/msgpackr';
 

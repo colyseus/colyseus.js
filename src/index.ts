@@ -4,7 +4,7 @@ export { Client, JoinOptions, MatchMakeError, type EndpointSettings, type Client
 export { Protocol, ErrorCode, SeatReservation } from './Protocol';
 export { Room, RoomAvailable } from './Room';
 export { Auth, type AuthSettings, type PopupSettings } from "./Auth";
-export { ServerError } from './errors/ServerError';
+export { ServerError } from './errors/Errors';
 
 /*
  * Serializers

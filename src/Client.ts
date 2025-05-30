@@ -1,4 +1,4 @@
-import { ServerError } from './errors/ServerError';
+import { ServerError } from './errors/Errors';
 import { Room } from './Room';
 import { SchemaConstructor } from './serializer/SchemaSerializer';
 import { HTTP } from "./HTTP";

@@ -1,6 +1,6 @@
 import { Client } from "./Client";
-import { ServerError } from "./errors/ServerError";
-import * as httpie from "httpie";
+import { AbortError, ServerError } from "./errors/Errors";
+import * as httpie from "@colyseus/httpie";
 
 export class HTTP {
     public authToken: string;
@@ -28,6 +28,10 @@ export class HTTP {
 
     protected request(method: "get" | "post" | "put" | "del", path: string, options: Partial<httpie.Options> = {}): Promise<httpie.Response> {
         return httpie[method](this.client['getHttpEndpoint'](path), this.getOptions(options)).catch((e: any) => {
+            if (e.aborted) {
+                throw new AbortError("Request aborted");
+            }
+
             const status = e.statusCode; //  || -1
             const message = e.data?.error || e.statusMessage || e.message; //  || "offline"
 
