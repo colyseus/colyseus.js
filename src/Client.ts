@@ -29,6 +29,7 @@ export interface EndpointSettings {
     secure: boolean,
     port?: number,
     pathname?: string,
+    searchParams?: string,
 }
 
 export interface ClientOptions {
@@ -65,7 +66,8 @@ export class Client {
                 hostname: url.hostname,
                 pathname: url.pathname,
                 port,
-                secure
+                secure,
+                searchParams: url.searchParams.toString() || undefined,
             };
 
         } else {
@@ -227,7 +229,7 @@ export class Client {
     }
 
     protected buildEndpoint(room: any, options: any = {}, protocol: string = "ws") {
-        const params = [];
+        let searchParams = this.settings.searchParams || "";
 
         // forward authentication token
         if (this.http.authToken) {
@@ -239,7 +241,7 @@ export class Client {
             if (!options.hasOwnProperty(name)) {
                 continue;
             }
-            params.push(`${name}=${options[name]}`);
+            searchParams += (searchParams ? '&' : '') + `${name}=${options[name]}`;
         }
 
         if (protocol === "h3") {
@@ -257,7 +259,7 @@ export class Client {
             endpoint += `${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}`;
         }
 
-        const endpointURL = `${endpoint}/${room.processId}/${room.roomId}?${params.join('&')}`;
+        const endpointURL = `${endpoint}/${room.processId}/${room.roomId}?${searchParams}`;
         return (this.urlBuilder)
             ? this.urlBuilder(new URL(endpointURL))
             : endpointURL;
@@ -265,7 +267,13 @@ export class Client {
 
     protected getHttpEndpoint(segments: string = '') {
         const path = segments.startsWith("/") ? segments : `/${segments}`;
-        const endpointURL = `${(this.settings.secure) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}${path}`;
+
+        let endpointURL = `${(this.settings.secure) ? "https" : "http"}://${this.settings.hostname}${this.getEndpointPort()}${this.settings.pathname}${path}`;
+
+        if (this.settings.searchParams) {
+            endpointURL += `?${this.settings.searchParams}`;
+        }
+
         return (this.urlBuilder)
             ? this.urlBuilder(new URL(endpointURL))
             : endpointURL;

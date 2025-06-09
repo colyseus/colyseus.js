@@ -42,6 +42,12 @@ describe("Client", function () {
                     wsEndpoint: "wss://localhost/custom/path/processId/roomId?",
                     wsEndpointPublicAddress: "wss://node-1.colyseus.cloud/processId/roomId?"
                 },
+                'https://localhost/custom/path?with=query&params=true': {
+                    settings: { hostname: "localhost", port: 443, secure: true, pathname: "/custom/path", searchParams: "with=query&params=true" },
+                    httpEndpoint: "https://localhost/custom/path/?with=query&params=true",
+                    wsEndpoint: "wss://localhost/custom/path/processId/roomId?with=query&params=true",
+                    wsEndpointPublicAddress: "wss://node-1.colyseus.cloud/processId/roomId?with=query&params=true"
+                },
                 '/api': {
                     settings: { hostname: "127.0.0.1", port: 2567, secure: false, pathname: "/api" },
                     httpEndpoint: "http://127.0.0.1:2567/api/",
@@ -57,6 +63,7 @@ describe("Client", function () {
                 assert.strictEqual(expected.settings.hostname, settings.hostname);
                 assert.strictEqual(expected.settings.port, settings.port);
                 assert.strictEqual(expected.settings.secure, settings.secure);
+                assert.strictEqual(expected.settings.searchParams, settings.searchParams);
                 assert.strictEqual(expected.httpEndpoint, client['getHttpEndpoint']());
                 assert.strictEqual(expected.wsEndpoint, client['buildEndpoint'](room));
                 assert.strictEqual(expected.wsEndpointPublicAddress, client['buildEndpoint'](roomWithPublicAddress));
