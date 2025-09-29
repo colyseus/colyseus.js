@@ -15,7 +15,8 @@ export type SchemaConstructor<T = Schema> = new (...args: any[]) => T;
 export function getStateCallbacks<T>(room: Room<T>) {
     try {
         // SchemaSerializer
-        return getDecoderStateCallbacks((room['serializer'] as unknown as SchemaSerializer).decoder);
+        // @ts-ignore
+        return getDecoderStateCallbacks<T>((room['serializer'] as unknown as SchemaSerializer<T>).decoder);
     } catch (e) {
         // NoneSerializer
         return undefined;
